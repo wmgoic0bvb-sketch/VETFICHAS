@@ -19,10 +19,14 @@ function createDefaultRepository() {
   return new LocalStoragePatientRepository();
 }
 
+/** Campos editables de la ficha (sin id ni historial de consultas). */
+export type PacienteEditable = Omit<PacienteDraft, "consultas">;
+
 interface PatientsContextValue {
   patients: Paciente[];
   ready: boolean;
   addPatient: (draft: PacienteDraft) => Paciente;
+  updatePatient: (id: string, data: PacienteEditable) => void;
   removePatient: (id: string) => void;
   getById: (id: string) => Paciente | undefined;
   addConsulta: (patientId: string, consulta: Omit<Consulta, "id">) => void;
@@ -78,6 +82,33 @@ export function PatientsProvider({
     [repository],
   );
 
+  const updatePatient = useCallback(
+    (id: string, data: PacienteEditable) => {
+      setPatients((prev) => {
+        const next = prev.map((p) =>
+          p.id === id
+            ? {
+                ...p,
+                especie: data.especie,
+                nombre: data.nombre,
+                raza: data.raza,
+                sexo: data.sexo,
+                fnac: data.fnac,
+                castrado: data.castrado,
+                color: data.color,
+                dueno: data.dueno,
+                tel: data.tel,
+                dir: data.dir,
+              }
+            : p,
+        );
+        repository.persist(next);
+        return next;
+      });
+    },
+    [repository],
+  );
+
   const getById = useCallback(
     (id: string) => patients.find((p) => p.id === id),
     [patients],
@@ -104,11 +135,12 @@ export function PatientsProvider({
       patients,
       ready,
       addPatient,
+      updatePatient,
       removePatient,
       getById,
       addConsulta,
     }),
-    [patients, ready, addPatient, removePatient, getById, addConsulta],
+    [patients, ready, addPatient, updatePatient, removePatient, getById, addConsulta],
   );
 
   return (

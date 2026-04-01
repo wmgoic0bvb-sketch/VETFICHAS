@@ -1,10 +1,14 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { FieldError, inputErrorRing } from "@/components/ui/field-error";
 import { Modal } from "@/components/ui/modal";
 import type { Especie, PacienteDraft } from "@/types/patient";
 
 const steps = [1, 2, 3] as const;
+
+type FieldKeys = "especie" | "nombre" | "dueno";
+type FieldErrors = Partial<Record<FieldKeys, string>>;
 
 export function NewPatientWizard({
   open,
@@ -26,6 +30,16 @@ export function NewPatientWizard({
   const [dueno, setDueno] = useState("");
   const [tel, setTel] = useState("");
   const [dir, setDir] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+
+  const clearFieldError = (key: FieldKeys) => {
+    setFieldErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  };
 
   const reset = useCallback(() => {
     setPaso(1);
@@ -39,6 +53,7 @@ export function NewPatientWizard({
     setDueno("");
     setTel("");
     setDir("");
+    setFieldErrors({});
   }, []);
 
   const handleClose = () => {
@@ -51,16 +66,20 @@ export function NewPatientWizard({
   const guardar = () => {
     const n = nombre.trim();
     const d = dueno.trim();
-    if (!n || !d) {
-      window.alert("Completá al menos el nombre de la mascota y el dueño.");
+    const nextErrors: FieldErrors = {};
+    if (!especie) nextErrors.especie = "Elegí si es perro o gato.";
+    if (!n) nextErrors.nombre = "Ingresá el nombre de la mascota.";
+    if (!d) nextErrors.dueno = "Ingresá el nombre del dueño o la dueña.";
+    if (Object.keys(nextErrors).length) {
+      setFieldErrors(nextErrors);
+      if (!especie) setPaso(1);
+      else if (!n) setPaso(2);
+      else setPaso(3);
       return;
     }
-    if (!especie) {
-      window.alert("Elegí el tipo de mascota.");
-      return;
-    }
+    setFieldErrors({});
     onSave({
-      especie,
+      especie: especie as Especie,
       nombre: n,
       raza: raza.trim(),
       sexo,
@@ -112,7 +131,10 @@ export function NewPatientWizard({
               <button
                 key={esp}
                 type="button"
-                onClick={() => setEspecie(esp)}
+                onClick={() => {
+                  setEspecie(esp);
+                  clearFieldError("especie");
+                }}
                 className={`flex-1 rounded-2xl border-2 px-2.5 py-4 text-center transition-all hover:border-[#52b788] ${
                   especie === esp
                     ? "border-[#2d6a4f] bg-[#f0faf5]"
@@ -126,6 +148,9 @@ export function NewPatientWizard({
               </button>
             ))}
           </div>
+          {fieldErrors.especie ? (
+            <FieldError message={fieldErrors.especie} />
+          ) : null}
           <div className="mt-6 flex gap-2.5">
             <button
               type="button"
@@ -148,15 +173,31 @@ export function NewPatientWizard({
             Paso 2 de 3 — Información del animal
           </p>
           <div className="mb-4">
-            <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
+            <label
+              htmlFor="wizard-nombre"
+              className="mb-1.5 block text-[13px] font-semibold text-[#555]"
+            >
               Nombre de la mascota *
             </label>
             <input
+              id="wizard-nombre"
               value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+              onChange={(e) => {
+                setNombre(e.target.value);
+                clearFieldError("nombre");
+              }}
+              aria-invalid={Boolean(fieldErrors.nombre)}
+              aria-describedby={
+                fieldErrors.nombre ? "wizard-nombre-err" : undefined
+              }
+              className={`w-full rounded-xl border-[1.5px] px-3.5 py-2.5 text-sm outline-none transition-colors ${inputErrorRing(
+                Boolean(fieldErrors.nombre),
+              )}`}
               placeholder="Ej: Toto, Luna..."
             />
+            {fieldErrors.nombre ? (
+              <FieldError id="wizard-nombre-err" message={fieldErrors.nombre} />
+            ) : null}
           </div>
           <div className="mb-4 grid grid-cols-2 gap-3">
             <div>
@@ -247,15 +288,31 @@ export function NewPatientWizard({
           <h2 className="text-xl font-bold text-[#1a1a1a]">Datos del dueño 👤</h2>
           <p className="mb-5 text-sm text-[#888]">Paso 3 de 3 — Contacto</p>
           <div className="mb-4">
-            <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
+            <label
+              htmlFor="wizard-dueno"
+              className="mb-1.5 block text-[13px] font-semibold text-[#555]"
+            >
               Nombre del dueño/a *
             </label>
             <input
+              id="wizard-dueno"
               value={dueno}
-              onChange={(e) => setDueno(e.target.value)}
-              className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+              onChange={(e) => {
+                setDueno(e.target.value);
+                clearFieldError("dueno");
+              }}
+              aria-invalid={Boolean(fieldErrors.dueno)}
+              aria-describedby={
+                fieldErrors.dueno ? "wizard-dueno-err" : undefined
+              }
+              className={`w-full rounded-xl border-[1.5px] px-3.5 py-2.5 text-sm outline-none transition-colors ${inputErrorRing(
+                Boolean(fieldErrors.dueno),
+              )}`}
               placeholder="Ej: Martín López"
             />
+            {fieldErrors.dueno ? (
+              <FieldError id="wizard-dueno-err" message={fieldErrors.dueno} />
+            ) : null}
           </div>
           <div className="mb-4">
             <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">

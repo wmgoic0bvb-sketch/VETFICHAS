@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { FieldError, inputErrorRing } from "@/components/ui/field-error";
 import { Modal } from "@/components/ui/modal";
 import { todayISODate } from "@/lib/date-utils";
 import type { Consulta, ConsultaTipo } from "@/types/patient";
@@ -24,6 +25,7 @@ export function ConsultaModal({
   const [diag, setDiag] = useState("");
   const [trat, setTrat] = useState("");
   const [meds, setMeds] = useState("");
+  const [motivoError, setMotivoError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -35,15 +37,17 @@ export function ConsultaModal({
       setDiag("");
       setTrat("");
       setMeds("");
+      setMotivoError(null);
     }
   }, [open]);
 
   const guardar = () => {
     const m = motivo.trim();
     if (!m) {
-      window.alert("Completá el motivo de la consulta.");
+      setMotivoError("Completá el motivo de la consulta.");
       return;
     }
+    setMotivoError(null);
     onSave({
       motivo: m,
       tipo,
@@ -77,15 +81,31 @@ export function ConsultaModal({
       </h2>
       <div className="mt-4 space-y-4">
         <div>
-          <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
+          <label
+            htmlFor="consulta-motivo"
+            className="mb-1.5 block text-[13px] font-semibold text-[#555]"
+          >
             Motivo de la consulta *
           </label>
           <input
+            id="consulta-motivo"
             value={motivo}
-            onChange={(e) => setMotivo(e.target.value)}
-            className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+            onChange={(e) => {
+              setMotivo(e.target.value);
+              if (motivoError) setMotivoError(null);
+            }}
+            aria-invalid={Boolean(motivoError)}
+            aria-describedby={
+              motivoError ? "consulta-motivo-err" : undefined
+            }
+            className={`w-full rounded-xl border-[1.5px] px-3.5 py-2.5 text-sm outline-none transition-colors ${inputErrorRing(
+              Boolean(motivoError),
+            )}`}
             placeholder="Ej: Control anual, Vómitos..."
           />
+          {motivoError ? (
+            <FieldError id="consulta-motivo-err" message={motivoError} />
+          ) : null}
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
