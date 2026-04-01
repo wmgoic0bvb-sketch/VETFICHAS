@@ -1,0 +1,303 @@
+"use client";
+
+import { useCallback, useState } from "react";
+import { Modal } from "@/components/ui/modal";
+import type { Especie, PacienteDraft } from "@/types/patient";
+
+const steps = [1, 2, 3] as const;
+
+export function NewPatientWizard({
+  open,
+  onClose,
+  onSave,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSave: (draft: PacienteDraft) => void;
+}) {
+  const [paso, setPaso] = useState(1);
+  const [especie, setEspecie] = useState<Especie | "">("");
+  const [nombre, setNombre] = useState("");
+  const [raza, setRaza] = useState("");
+  const [sexo, setSexo] = useState("");
+  const [fnac, setFnac] = useState("");
+  const [castrado, setCastrado] = useState("");
+  const [color, setColor] = useState("");
+  const [dueno, setDueno] = useState("");
+  const [tel, setTel] = useState("");
+  const [dir, setDir] = useState("");
+
+  const reset = useCallback(() => {
+    setPaso(1);
+    setEspecie("");
+    setNombre("");
+    setRaza("");
+    setSexo("");
+    setFnac("");
+    setCastrado("");
+    setColor("");
+    setDueno("");
+    setTel("");
+    setDir("");
+  }, []);
+
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
+
+  const go = (n: number) => setPaso(n);
+
+  const guardar = () => {
+    const n = nombre.trim();
+    const d = dueno.trim();
+    if (!n || !d) {
+      window.alert("Completá al menos el nombre de la mascota y el dueño.");
+      return;
+    }
+    if (!especie) {
+      window.alert("Elegí el tipo de mascota.");
+      return;
+    }
+    onSave({
+      especie,
+      nombre: n,
+      raza: raza.trim(),
+      sexo,
+      fnac,
+      castrado,
+      color: color.trim(),
+      dueno: d,
+      tel: tel.trim(),
+      dir: dir.trim(),
+      consultas: [],
+    });
+    handleClose();
+  };
+
+  const stepClass = (i: number) => {
+    if (i < paso) return "bg-[#2d6a4f]";
+    if (i === paso) return "bg-[#52b788]";
+    return "bg-[#e8e0d8]";
+  };
+
+  return (
+    <Modal open={open} onClose={handleClose} labelledBy="wizard-title">
+      <button
+        type="button"
+        onClick={handleClose}
+        className="absolute right-[18px] top-4 text-[22px] leading-none text-[#aaa] hover:text-[#333]"
+        aria-label="Cerrar"
+      >
+        ✕
+      </button>
+
+      <div className="mb-6 flex gap-2">
+        {steps.map((i) => (
+          <div
+            key={i}
+            className={`h-1 flex-1 rounded ${stepClass(i)} transition-colors`}
+          />
+        ))}
+      </div>
+
+      {paso === 1 && (
+        <div>
+          <h2 id="wizard-title" className="text-xl font-bold text-[#1a1a1a]">
+            ¿Quién viene hoy? 🐾
+          </h2>
+          <p className="mb-5 text-sm text-[#888]">Paso 1 de 3 — Tipo de mascota</p>
+          <div className="mb-5 flex gap-3">
+            {(["Perro", "Gato"] as const).map((esp) => (
+              <button
+                key={esp}
+                type="button"
+                onClick={() => setEspecie(esp)}
+                className={`flex-1 rounded-2xl border-2 px-2.5 py-4 text-center transition-all hover:border-[#52b788] ${
+                  especie === esp
+                    ? "border-[#2d6a4f] bg-[#f0faf5]"
+                    : "border-[#e8e0d8]"
+                }`}
+              >
+                <span className="mb-1.5 block text-4xl">
+                  {esp === "Perro" ? "🐶" : "🐱"}
+                </span>
+                <span className="text-sm font-semibold text-[#333]">{esp}</span>
+              </button>
+            ))}
+          </div>
+          <div className="mt-6 flex gap-2.5">
+            <button
+              type="button"
+              disabled={!especie}
+              onClick={() => go(2)}
+              className="flex-[2] rounded-xl bg-[#2d6a4f] py-3 text-[15px] font-semibold text-white hover:bg-[#1b4332] disabled:cursor-not-allowed disabled:bg-[#b7d5c9]"
+            >
+              Siguiente →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {paso === 2 && (
+        <div>
+          <h2 className="text-xl font-bold text-[#1a1a1a]">
+            Datos de la mascota 🐾
+          </h2>
+          <p className="mb-5 text-sm text-[#888]">
+            Paso 2 de 3 — Información del animal
+          </p>
+          <div className="mb-4">
+            <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
+              Nombre de la mascota *
+            </label>
+            <input
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+              placeholder="Ej: Toto, Luna..."
+            />
+          </div>
+          <div className="mb-4 grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
+                Raza
+              </label>
+              <input
+                value={raza}
+                onChange={(e) => setRaza(e.target.value)}
+                className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+                placeholder="Ej: Golden, Siamés..."
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
+                Sexo
+              </label>
+              <select
+                value={sexo}
+                onChange={(e) => setSexo(e.target.value)}
+                className="w-full cursor-pointer rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+              >
+                <option value="">Elegir...</option>
+                <option>Macho</option>
+                <option>Hembra</option>
+              </select>
+            </div>
+          </div>
+          <div className="mb-4 grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
+                Fecha de nacimiento
+              </label>
+              <input
+                type="date"
+                value={fnac}
+                onChange={(e) => setFnac(e.target.value)}
+                className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
+                ¿Castrado/a?
+              </label>
+              <select
+                value={castrado}
+                onChange={(e) => setCastrado(e.target.value)}
+                className="w-full cursor-pointer rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+              >
+                <option value="">Elegir...</option>
+                <option>Sí</option>
+                <option>No</option>
+              </select>
+            </div>
+          </div>
+          <div className="mb-4">
+            <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
+              Color / señas particulares
+            </label>
+            <input
+              value={color}
+              onChange={(e) => setColor(e.target.value)}
+              className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+              placeholder="Ej: Negro con pecho blanco"
+            />
+          </div>
+          <div className="mt-6 flex gap-2.5">
+            <button
+              type="button"
+              onClick={() => go(1)}
+              className="flex-1 rounded-xl border-[1.5px] border-[#e8e0d8] bg-transparent py-3 text-[15px] font-medium text-[#555] hover:bg-[#f5f0eb]"
+            >
+              ← Atrás
+            </button>
+            <button
+              type="button"
+              onClick={() => go(3)}
+              className="flex-[2] rounded-xl bg-[#2d6a4f] py-3 text-[15px] font-semibold text-white hover:bg-[#1b4332]"
+            >
+              Siguiente →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {paso === 3 && (
+        <div>
+          <h2 className="text-xl font-bold text-[#1a1a1a]">Datos del dueño 👤</h2>
+          <p className="mb-5 text-sm text-[#888]">Paso 3 de 3 — Contacto</p>
+          <div className="mb-4">
+            <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
+              Nombre del dueño/a *
+            </label>
+            <input
+              value={dueno}
+              onChange={(e) => setDueno(e.target.value)}
+              className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+              placeholder="Ej: Martín López"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
+              Teléfono
+            </label>
+            <input
+              type="tel"
+              value={tel}
+              onChange={(e) => setTel(e.target.value)}
+              className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+              placeholder="Ej: 2980 123456"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
+              Dirección (opcional)
+            </label>
+            <input
+              value={dir}
+              onChange={(e) => setDir(e.target.value)}
+              className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+              placeholder="Ej: Belgrano 450"
+            />
+          </div>
+          <div className="mt-6 flex gap-2.5">
+            <button
+              type="button"
+              onClick={() => go(2)}
+              className="flex-1 rounded-xl border-[1.5px] border-[#e8e0d8] bg-transparent py-3 text-[15px] font-medium text-[#555] hover:bg-[#f5f0eb]"
+            >
+              ← Atrás
+            </button>
+            <button
+              type="button"
+              onClick={guardar}
+              className="flex-[2] rounded-xl bg-[#2d6a4f] py-3 text-[15px] font-semibold text-white hover:bg-[#1b4332]"
+            >
+              ✓ Guardar ficha
+            </button>
+          </div>
+        </div>
+      )}
+    </Modal>
+  );
+}
