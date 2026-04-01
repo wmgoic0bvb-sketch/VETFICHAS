@@ -3,17 +3,11 @@
 import { useEffect, useState } from "react";
 import { usePatients } from "@/components/providers/patients-provider";
 import type { PacienteEditable } from "@/components/providers/patients-provider";
+import { ConfirmAlertDialog } from "@/components/ui/confirm-alert-dialog";
 import { FieldError, inputErrorRing } from "@/components/ui/field-error";
 import { Modal } from "@/components/ui/modal";
 import { calcularEdad, formatFecha } from "@/lib/date-utils";
-import type { Consulta, Paciente } from "@/types/patient";
-
-const tipoClass: Record<string, string> = {
-  Control: "bg-emerald-100 text-emerald-900",
-  Urgencia: "bg-red-100 text-red-900",
-  Cirugía: "bg-amber-100 text-amber-900",
-  Vacuna: "bg-sky-100 text-sky-900",
-};
+import type { Paciente } from "@/types/patient";
 
 type FieldKeys = "especie" | "nombre" | "dueno";
 type FieldErrors = Partial<Record<FieldKeys, string>>;
@@ -62,23 +56,27 @@ export function PatientDetailModal({
   onClose,
   onDelete,
   onAddConsulta,
+  onOpenDetails,
 }: {
   patient: Paciente | null;
   open: boolean;
   onClose: () => void;
   onDelete: (id: string) => void;
   onAddConsulta: () => void;
+  onOpenDetails: (id: string) => void;
 }) {
   const { updatePatient } = usePatients();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<PacienteEditable | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (!open) {
       setEditing(false);
       setDraft(null);
       setFieldErrors({});
+      setDeleteConfirmOpen(false);
     }
   }, [open]);
 
@@ -90,7 +88,6 @@ export function PatientDetailModal({
 
   if (!patient) return null;
 
-  const consultas = [...(patient.consultas ?? [])].reverse();
   const clearFieldError = (key: FieldKeys) => {
     setFieldErrors((prev) => {
       if (!prev[key]) return prev;
@@ -148,47 +145,11 @@ export function PatientDetailModal({
   })();
   const previewEspecie = editing && draft ? draft.especie : patient.especie;
 
-  const renderConsulta = (c: Consulta) => (
-    <div
-      key={c.id}
-      className="mb-2.5 rounded-[14px] bg-[#f5f0eb] px-4 py-3.5 last:mb-0"
-    >
-      <div className="mb-1 text-xs text-[#888]">{formatFecha(c.fecha)}</div>
-      <span
-        className={`mb-1.5 inline-block rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${tipoClass[c.tipo] ?? tipoClass.Control}`}
-      >
-        {c.tipo}
-      </span>
-      <div className="text-[15px] font-semibold text-[#1a1a1a]">{c.motivo}</div>
-      {(c.peso || c.temp) && (
-        <div className="mt-1 text-[13px] leading-relaxed text-[#555]">
-          {c.peso ? `⚖️ Peso: ${c.peso} kg` : ""}
-          {c.peso && c.temp ? " · " : ""}
-          {c.temp ? `🌡️ Temp: ${c.temp}°C` : ""}
-        </div>
-      )}
-      {c.diag ? (
-        <div className="mt-1 text-[13px] leading-relaxed text-[#555]">
-          📋 {c.diag}
-        </div>
-      ) : null}
-      {c.trat ? (
-        <div className="mt-1 text-[13px] leading-relaxed text-[#555]">
-          💊 {c.trat}
-        </div>
-      ) : null}
-      {c.meds ? (
-        <div className="mt-1 text-[13px] leading-relaxed text-[#555]">
-          🧴 {c.meds}
-        </div>
-      ) : null}
-    </div>
-  );
-
   const inputBase =
     "w-full rounded-xl border-[1.5px] px-3.5 py-2.5 text-sm outline-none transition-colors";
 
   return (
+    <>
     <Modal open={open} onClose={onClose} labelledBy="ficha-nombre">
       <button
         type="button"
@@ -249,6 +210,23 @@ export function PatientDetailModal({
               {patient.tel ? <Row label="Teléfono" value={patient.tel} /> : null}
               {patient.dir ? <Row label="Dirección" value={patient.dir} /> : null}
             </div>
+          </section>
+
+          <section className="mb-5 space-y-2">
+            <button
+              type="button"
+              onClick={onAddConsulta}
+              className="w-full rounded-xl border-2 border-dashed border-[#b7d5c9] bg-transparent py-3 text-sm font-semibold text-[#2d6a4f] hover:bg-[#f0faf5]"
+            >
+              + Agregar consulta
+            </button>
+            <button
+              type="button"
+              onClick={() => onOpenDetails(patient.id)}
+              className="w-full rounded-xl bg-[#2d6a4f] py-3 text-sm font-semibold text-white hover:bg-[#1b4332]"
+            >
+              Ver información detallada
+            </button>
           </section>
         </>
       ) : (
@@ -514,41 +492,10 @@ export function PatientDetailModal({
         )
       )}
 
-      {!editing && (
-        <section className="mb-5">
-          <h3 className="mb-2.5 text-xs font-bold uppercase tracking-wider text-[#2d6a4f]">
-            Historial de consultas ({patient.consultas?.length ?? 0})
-          </h3>
-          {consultas.length === 0 ? (
-            <div className="py-5 text-center text-sm text-[#aaa]">
-              Sin consultas registradas aún
-            </div>
-          ) : (
-            consultas.map(renderConsulta)
-          )}
-          <button
-            type="button"
-            onClick={onAddConsulta}
-            className="mt-1 w-full rounded-xl border-2 border-dashed border-[#b7d5c9] bg-transparent py-3 text-sm font-semibold text-[#2d6a4f] hover:bg-[#f0faf5]"
-          >
-            + Agregar consulta
-          </button>
-        </section>
-      )}
-
       <div className="mt-5 flex gap-2.5">
         <button
           type="button"
-          onClick={() => {
-            if (
-              window.confirm(
-                "¿Eliminar esta ficha? Esta acción no se puede deshacer.",
-              )
-            ) {
-              onDelete(patient.id);
-              onClose();
-            }
-          }}
+          onClick={() => setDeleteConfirmOpen(true)}
           className="flex-1 rounded-xl border-[1.5px] border-red-300 bg-transparent py-2.5 text-sm font-medium text-red-600 hover:bg-red-100"
         >
           🗑 Eliminar
@@ -562,6 +509,21 @@ export function PatientDetailModal({
         </button>
       </div>
     </Modal>
+    <ConfirmAlertDialog
+      open={deleteConfirmOpen}
+      onOpenChange={setDeleteConfirmOpen}
+      title="¿Eliminar esta ficha?"
+      description="Esta acción no se puede deshacer."
+      confirmLabel="Eliminar"
+      cancelLabel="Cancelar"
+      destructive
+      onConfirm={() => {
+        onDelete(patient.id);
+        onClose();
+        setDeleteConfirmOpen(false);
+      }}
+    />
+    </>
   );
 }
 

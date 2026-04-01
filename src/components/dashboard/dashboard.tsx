@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { usePatients } from "@/components/providers/patients-provider";
 import type { Consulta } from "@/types/patient";
 import { ConsultaModal } from "./consulta-modal";
@@ -11,6 +12,7 @@ import { PatientGrid } from "./patient-grid";
 import { PatientSearch } from "./patient-search";
 
 export function Dashboard() {
+  const router = useRouter();
   const { patients, ready, addPatient, removePatient, getById, addConsulta } =
     usePatients();
   const [query, setQuery] = useState("");
@@ -61,6 +63,7 @@ export function Dashboard() {
         onSave={(draft) => {
           const p = addPatient(draft);
           setSelectedId(p.id);
+          setConsultaOpen(true);
         }}
       />
 
@@ -70,6 +73,10 @@ export function Dashboard() {
         onClose={() => setSelectedId(null)}
         onDelete={removePatient}
         onAddConsulta={() => setConsultaOpen(true)}
+        onOpenDetails={(id) => {
+          setSelectedId(null);
+          router.push(`/patient/${id}`);
+        }}
       />
 
       <ConsultaModal

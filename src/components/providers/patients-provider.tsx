@@ -13,7 +13,12 @@ import {
   LocalStoragePatientRepository,
   type PatientRepository,
 } from "@/lib/repositories/patient-repository";
-import type { Consulta, Paciente, PacienteDraft } from "@/types/patient";
+import type {
+  Consulta,
+  Estudio,
+  Paciente,
+  PacienteDraft,
+} from "@/types/patient";
 
 function createDefaultRepository() {
   return new LocalStoragePatientRepository();
@@ -30,6 +35,8 @@ interface PatientsContextValue {
   removePatient: (id: string) => void;
   getById: (id: string) => Paciente | undefined;
   addConsulta: (patientId: string, consulta: Omit<Consulta, "id">) => void;
+  addEstudio: (patientId: string, estudio: Omit<Estudio, "id" | "fecha">) => void;
+  removeEstudio: (patientId: string, estudioId: string) => void;
 }
 
 const PatientsContext = createContext<PatientsContextValue | null>(null);
@@ -60,6 +67,7 @@ export function PatientsProvider({
         ...draft,
         id: `${Date.now()}`,
         consultas: draft.consultas ?? [],
+        estudios: draft.estudios ?? [],
       };
       setPatients((prev) => {
         const next = [paciente, ...prev];
@@ -130,6 +138,44 @@ export function PatientsProvider({
     [repository],
   );
 
+  const addEstudio = useCallback(
+    (patientId: string, data: Omit<Estudio, "id" | "fecha">) => {
+      const estudio: Estudio = {
+        ...data,
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        fecha: new Date().toISOString(),
+      };
+      setPatients((prev) => {
+        const next = prev.map((p) =>
+          p.id === patientId
+            ? { ...p, estudios: [...(p.estudios ?? []), estudio] }
+            : p,
+        );
+        repository.persist(next);
+        return next;
+      });
+    },
+    [repository],
+  );
+
+  const removeEstudio = useCallback(
+    (patientId: string, estudioId: string) => {
+      setPatients((prev) => {
+        const next = prev.map((p) =>
+          p.id === patientId
+            ? {
+                ...p,
+                estudios: (p.estudios ?? []).filter((e) => e.id !== estudioId),
+              }
+            : p,
+        );
+        repository.persist(next);
+        return next;
+      });
+    },
+    [repository],
+  );
+
   const value = useMemo(
     () => ({
       patients,
@@ -139,8 +185,20 @@ export function PatientsProvider({
       removePatient,
       getById,
       addConsulta,
+      addEstudio,
+      removeEstudio,
     }),
-    [patients, ready, addPatient, updatePatient, removePatient, getById, addConsulta],
+    [
+      patients,
+      ready,
+      addPatient,
+      updatePatient,
+      removePatient,
+      getById,
+      addConsulta,
+      addEstudio,
+      removeEstudio,
+    ],
   );
 
   return (

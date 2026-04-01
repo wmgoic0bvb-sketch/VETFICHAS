@@ -26,6 +26,8 @@ export function ConsultaModal({
   const [trat, setTrat] = useState("");
   const [meds, setMeds] = useState("");
   const [motivoError, setMotivoError] = useState<string | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -38,8 +40,18 @@ export function ConsultaModal({
       setTrat("");
       setMeds("");
       setMotivoError(null);
+      setHasChanges(false);
+      setConfirmCloseOpen(false);
     }
   }, [open]);
+
+  const requestClose = () => {
+    if (!hasChanges) {
+      onClose();
+      return;
+    }
+    setConfirmCloseOpen(true);
+  };
 
   const guardar = () => {
     const m = motivo.trim();
@@ -58,19 +70,20 @@ export function ConsultaModal({
       trat: trat.trim(),
       meds: meds.trim(),
     });
+    setHasChanges(false);
     onClose();
   };
 
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={requestClose}
       labelledBy="consulta-title"
       overlayClassName="z-[210]"
     >
       <button
         type="button"
-        onClick={onClose}
+        onClick={requestClose}
         className="absolute right-[18px] top-4 text-[22px] leading-none text-[#aaa] hover:text-[#333]"
         aria-label="Cerrar"
       >
@@ -92,6 +105,7 @@ export function ConsultaModal({
             value={motivo}
             onChange={(e) => {
               setMotivo(e.target.value);
+              setHasChanges(true);
               if (motivoError) setMotivoError(null);
             }}
             aria-invalid={Boolean(motivoError)}
@@ -114,7 +128,10 @@ export function ConsultaModal({
             </label>
             <select
               value={tipo}
-              onChange={(e) => setTipo(e.target.value as ConsultaTipo)}
+              onChange={(e) => {
+                setTipo(e.target.value as ConsultaTipo);
+                setHasChanges(true);
+              }}
               className="w-full cursor-pointer rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
             >
               {tipos.map((t) => (
@@ -131,7 +148,10 @@ export function ConsultaModal({
             <input
               type="date"
               value={fecha}
-              onChange={(e) => setFecha(e.target.value)}
+              onChange={(e) => {
+                setFecha(e.target.value);
+                setHasChanges(true);
+              }}
               className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
             />
           </div>
@@ -145,7 +165,10 @@ export function ConsultaModal({
               type="number"
               step="0.1"
               value={peso}
-              onChange={(e) => setPeso(e.target.value)}
+              onChange={(e) => {
+                setPeso(e.target.value);
+                setHasChanges(true);
+              }}
               className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
               placeholder="Ej: 12.5"
             />
@@ -158,7 +181,10 @@ export function ConsultaModal({
               type="number"
               step="0.1"
               value={temp}
-              onChange={(e) => setTemp(e.target.value)}
+              onChange={(e) => {
+                setTemp(e.target.value);
+                setHasChanges(true);
+              }}
               className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
               placeholder="Ej: 38.5"
             />
@@ -170,7 +196,10 @@ export function ConsultaModal({
           </label>
           <textarea
             value={diag}
-            onChange={(e) => setDiag(e.target.value)}
+            onChange={(e) => {
+              setDiag(e.target.value);
+              setHasChanges(true);
+            }}
             rows={2}
             className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
             placeholder="Descripción del diagnóstico..."
@@ -182,7 +211,10 @@ export function ConsultaModal({
           </label>
           <textarea
             value={trat}
-            onChange={(e) => setTrat(e.target.value)}
+            onChange={(e) => {
+              setTrat(e.target.value);
+              setHasChanges(true);
+            }}
             rows={2}
             className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
             placeholder="Tratamiento y observaciones..."
@@ -194,7 +226,10 @@ export function ConsultaModal({
           </label>
           <input
             value={meds}
-            onChange={(e) => setMeds(e.target.value)}
+            onChange={(e) => {
+              setMeds(e.target.value);
+              setHasChanges(true);
+            }}
             className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
             placeholder="Ej: Amoxicilina 500mg cada 12hs por 7 días"
           />
@@ -202,7 +237,7 @@ export function ConsultaModal({
         <div className="mt-6 flex gap-2.5">
           <button
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
             className="flex-1 rounded-xl border-[1.5px] border-[#e8e0d8] bg-transparent py-3 text-[15px] font-medium text-[#555] hover:bg-[#f5f0eb]"
           >
             Cancelar
@@ -216,6 +251,42 @@ export function ConsultaModal({
           </button>
         </div>
       </div>
+
+      <Modal
+        open={confirmCloseOpen}
+        onClose={() => setConfirmCloseOpen(false)}
+        labelledBy="confirm-close-consulta-title"
+        overlayClassName="z-[220]"
+      >
+        <h3
+          id="confirm-close-consulta-title"
+          className="text-lg font-bold text-[#1a1a1a]"
+        >
+          ¿Cerrar sin guardar?
+        </h3>
+        <p className="mt-2 text-sm text-[#555]">
+          Tenés cambios sin guardar en esta consulta.
+        </p>
+        <div className="mt-5 flex gap-2.5">
+          <button
+            type="button"
+            onClick={() => setConfirmCloseOpen(false)}
+            className="flex-1 rounded-xl border-[1.5px] border-[#e8e0d8] bg-transparent py-2.5 text-sm font-medium text-[#555] hover:bg-[#f5f0eb]"
+          >
+            Seguir editando
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setConfirmCloseOpen(false);
+              onClose();
+            }}
+            className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700"
+          >
+            Descartar cambios
+          </button>
+        </div>
+      </Modal>
     </Modal>
   );
 }

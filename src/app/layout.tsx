@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AppToaster } from "@/components/ui/app-toaster";
 import { PatientsProvider } from "@/components/providers/patients-provider";
 import "./globals.css";
 
@@ -16,6 +17,7 @@ export default function RootLayout({
     <html lang="es" className="h-full antialiased">
       <body className="min-h-full font-sans">
         <PatientsProvider>{children}</PatientsProvider>
+        <AppToaster />
       </body>
     </html>
   );

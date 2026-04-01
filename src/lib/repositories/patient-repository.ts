@@ -7,12 +7,20 @@ export interface PatientRepository {
   persist(patients: Paciente[]): void;
 }
 
+function normalizePatient(p: Paciente): Paciente {
+  return {
+    ...p,
+    consultas: Array.isArray(p.consultas) ? p.consultas : [],
+    estudios: Array.isArray(p.estudios) ? p.estudios : [],
+  };
+}
+
 function parsePatients(raw: string | null): Paciente[] {
   if (!raw) return [];
   try {
     const data = JSON.parse(raw) as unknown;
     if (!Array.isArray(data)) return [];
-    return data as Paciente[];
+    return (data as Paciente[]).map(normalizePatient);
   } catch {
     return [];
   }
