@@ -19,6 +19,8 @@ export interface ProximoControl {
   nota?: string;
   /** Solo cuando la fecha ya pasó: si asistió o se ausentó. */
   asistencia?: AsistenciaProximoControl | null;
+  /** True cuando ya se envió al menos un recordatorio por WhatsApp. */
+  recordatorioEnviado?: boolean;
 }
 
 export interface Consulta {
