@@ -24,9 +24,13 @@ export async function connectMongo(): Promise<typeof mongoose> {
     );
   }
 
+  /** Si la URI no incluye el nombre de la base (o apunta a otra), fijá acá la misma que en Atlas (ej. vetfichas-db). */
+  const dbName = process.env.STORAGE_MONGODB_DB?.trim() || undefined;
+  const connectOptions = dbName ? { dbName } : undefined;
+
   if (cache.conn) return cache.conn;
   if (!cache.promise) {
-    cache.promise = mongoose.connect(uri);
+    cache.promise = mongoose.connect(uri, connectOptions);
   }
   cache.conn = await cache.promise;
   return cache.conn;
