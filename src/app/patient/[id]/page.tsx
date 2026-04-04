@@ -34,6 +34,9 @@ function ConsultaHeader({ c }: { c: Consulta }) {
         {c.tipo}
       </span>
       <div className="text-[15px] font-semibold leading-snug text-[#1a1a1a]">{c.motivo}</div>
+      {c.veterinario ? (
+        <div className="mt-1 text-[13px] text-[#555]">👨‍⚕️ {c.veterinario}</div>
+      ) : null}
     </div>
   );
 }
@@ -185,12 +188,37 @@ export default function PatientDetailPage() {
 
             <section className={cardClass}>
               <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-[#2d6a4f]">
-                Dueño / Contacto
+                Dueños / Contacto
               </h2>
-              <div className="divide-y divide-[#f0ebe4] text-sm">
-                <Row label="Nombre" value={patient.dueno} />
-                {patient.tel ? <Row label="Teléfono" value={patient.tel} /> : null}
-                {patient.dir ? <Row label="Dirección" value={patient.dir} /> : null}
+              <div className="space-y-3 text-sm">
+                <div className="rounded-xl border border-[#ebe6df] bg-[#faf8f5] p-3">
+                  <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[#2d6a4f]">
+                    Responsable 1
+                  </p>
+                  <Row label="Nombre" value={patient.dueños[0].nombre || "—"} />
+                  {patient.dueños[0].tel ? (
+                    <Row label="Teléfono" value={patient.dueños[0].tel} />
+                  ) : null}
+                </div>
+                {(patient.dueños[1].nombre || patient.dueños[1].tel) ? (
+                  <div className="rounded-xl border border-dashed border-[#d4ccc0] p-3">
+                    <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[#888]">
+                      Responsable 2
+                    </p>
+                    <Row
+                      label="Nombre"
+                      value={patient.dueños[1].nombre || "—"}
+                    />
+                    {patient.dueños[1].tel ? (
+                      <Row label="Teléfono" value={patient.dueños[1].tel} />
+                    ) : null}
+                  </div>
+                ) : null}
+                {patient.dir ? (
+                  <div className="border-t border-[#f0ebe4] pt-3">
+                    <Row label="Dirección" value={patient.dir} />
+                  </div>
+                ) : null}
               </div>
             </section>
           </div>

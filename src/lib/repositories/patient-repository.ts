@@ -1,4 +1,4 @@
-import type { Paciente } from "@/types/patient";
+import type { Consulta, DueñoContacto, Paciente } from "@/types/patient";
 
 const STORAGE_KEY = "vetfichas_pacientes";
 
@@ -7,10 +7,53 @@ export interface PatientRepository {
   persist(patients: Paciente[]): void;
 }
 
-function normalizePatient(p: Paciente): Paciente {
+function normalizeConsulta(raw: Consulta): Consulta {
   return {
-    ...p,
-    consultas: Array.isArray(p.consultas) ? p.consultas : [],
+    ...raw,
+    veterinario:
+      typeof raw.veterinario === "string" ? raw.veterinario : "",
+  };
+}
+
+function normalizeDueños(raw: Record<string, unknown>): [DueñoContacto, DueñoContacto] {
+  const vacío: DueñoContacto = { nombre: "", tel: "" };
+  const arr = raw.dueños;
+  if (Array.isArray(arr) && arr.length >= 1) {
+    const a = arr[0] as Record<string, unknown> | undefined;
+    const b = arr[1] as Record<string, unknown> | undefined;
+    return [
+      {
+        nombre: typeof a?.nombre === "string" ? a.nombre : "",
+        tel: typeof a?.tel === "string" ? a.tel : "",
+      },
+      {
+        nombre: typeof b?.nombre === "string" ? b.nombre : "",
+        tel: typeof b?.tel === "string" ? b.tel : "",
+      },
+    ];
+  }
+  const dueno = typeof raw.dueno === "string" ? raw.dueno : "";
+  const tel = typeof raw.tel === "string" ? raw.tel : "";
+  return [{ nombre: dueno, tel }, { ...vacío }];
+}
+
+type StoredPatient = Paciente & { dueno?: string; tel?: string };
+
+function normalizePatient(p: StoredPatient): Paciente {
+  const raw = p as unknown as Record<string, unknown>;
+  const { dueno: _d, tel: _t, ...rest } = p as StoredPatient & {
+    dueno?: string;
+    tel?: string;
+  };
+  return {
+    ...(rest as Omit<Paciente, "dueños">),
+    dueños: normalizeDueños(raw),
+    esExterno: typeof p.esExterno === "boolean" ? p.esExterno : false,
+    esUnicaConsulta:
+      typeof p.esUnicaConsulta === "boolean" ? p.esUnicaConsulta : false,
+    consultas: Array.isArray(p.consultas)
+      ? p.consultas.map((c) => normalizeConsulta(c))
+      : [],
     estudios: Array.isArray(p.estudios) ? p.estudios : [],
   };
 }
@@ -20,7 +63,7 @@ function parsePatients(raw: string | null): Paciente[] {
   try {
     const data = JSON.parse(raw) as unknown;
     if (!Array.isArray(data)) return [];
-    return (data as Paciente[]).map(normalizePatient);
+    return (data as StoredPatient[]).map(normalizePatient);
   } catch {
     return [];
   }

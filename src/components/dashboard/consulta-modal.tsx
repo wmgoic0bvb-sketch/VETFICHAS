@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { FieldError, inputErrorRing } from "@/components/ui/field-error";
 import { Modal } from "@/components/ui/modal";
 import { todayISODate } from "@/lib/date-utils";
+import { VETERINARIOS_OPCIONES } from "@/lib/veterinarios";
 import type { Consulta, ConsultaTipo } from "@/types/patient";
 
 const tipos: ConsultaTipo[] = ["Control", "Vacuna", "Urgencia", "Cirugía"];
@@ -18,6 +19,7 @@ export function ConsultaModal({
   onSave: (data: Omit<Consulta, "id">) => void;
 }) {
   const [motivo, setMotivo] = useState("");
+  const [veterinario, setVeterinario] = useState("");
   const [tipo, setTipo] = useState<ConsultaTipo>("Control");
   const [fecha, setFecha] = useState("");
   const [peso, setPeso] = useState("");
@@ -26,12 +28,14 @@ export function ConsultaModal({
   const [trat, setTrat] = useState("");
   const [meds, setMeds] = useState("");
   const [motivoError, setMotivoError] = useState<string | null>(null);
+  const [vetError, setVetError] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
 
   useEffect(() => {
     if (open) {
       setMotivo("");
+      setVeterinario("");
       setTipo("Control");
       setFecha(todayISODate());
       setPeso("");
@@ -40,6 +44,7 @@ export function ConsultaModal({
       setTrat("");
       setMeds("");
       setMotivoError(null);
+      setVetError(null);
       setHasChanges(false);
       setConfirmCloseOpen(false);
     }
@@ -59,9 +64,15 @@ export function ConsultaModal({
       setMotivoError("Completá el motivo de la consulta.");
       return;
     }
+    if (!veterinario) {
+      setVetError("Elegí el veterinario responsable.");
+      return;
+    }
     setMotivoError(null);
+    setVetError(null);
     onSave({
       motivo: m,
+      veterinario,
       tipo,
       fecha,
       peso,
@@ -121,6 +132,42 @@ export function ConsultaModal({
             <FieldError id="consulta-motivo-err" message={motivoError} />
           ) : null}
         </div>
+
+        <div
+          className="rounded-[14px] border border-[#b7d5c9] bg-[#f0faf5] p-3.5"
+        >
+          <label
+            htmlFor="consulta-vet"
+            className="mb-1.5 block text-[13px] font-semibold text-[#1b4332]"
+          >
+            Veterinario responsable *
+          </label>
+          <select
+            id="consulta-vet"
+            value={veterinario}
+            onChange={(e) => {
+              setVeterinario(e.target.value);
+              setHasChanges(true);
+              if (vetError) setVetError(null);
+            }}
+            aria-invalid={Boolean(vetError)}
+            aria-describedby={vetError ? "consulta-vet-err" : undefined}
+            className={`w-full min-h-[48px] cursor-pointer rounded-xl border-[1.5px] border-[#2d6a4f] bg-white px-3.5 py-2.5 text-sm text-[#1a1a1a] outline-none transition-colors focus:border-[#1b4332] focus:shadow-[0_0_0_3px_rgba(45,106,79,0.2)] ${inputErrorRing(
+              Boolean(vetError),
+            )}`}
+          >
+            <option value="">Elegir veterinario...</option>
+            {VETERINARIOS_OPCIONES.map((v) => (
+              <option key={v} value={v}>
+                {v}
+              </option>
+            ))}
+          </select>
+          {vetError ? (
+            <FieldError id="consulta-vet-err" message={vetError} />
+          ) : null}
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
@@ -201,7 +248,7 @@ export function ConsultaModal({
               setHasChanges(true);
             }}
             rows={2}
-            className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+            className="min-h-[88px] w-full resize-y rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm leading-relaxed outline-none focus:border-[#2d6a4f] focus:bg-white"
             placeholder="Descripción del diagnóstico..."
           />
         </div>
@@ -216,7 +263,7 @@ export function ConsultaModal({
               setHasChanges(true);
             }}
             rows={2}
-            className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+            className="min-h-[88px] w-full resize-y rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm leading-relaxed outline-none focus:border-[#2d6a4f] focus:bg-white"
             placeholder="Tratamiento y observaciones..."
           />
         </div>

@@ -5,6 +5,8 @@ export type ConsultaTipo = "Control" | "Vacuna" | "Urgencia" | "Cirugía";
 export interface Consulta {
   id: string;
   motivo: string;
+  /** Veterinario a cargo; obligatorio en nuevas consultas (histórico puede venir vacío). */
+  veterinario: string;
   tipo: ConsultaTipo;
   fecha: string;
   peso: string;
@@ -33,6 +35,12 @@ export interface Estudio {
   fecha: string;
 }
 
+/** Un dueño o responsable con su teléfono. */
+export interface DueñoContacto {
+  nombre: string;
+  tel: string;
+}
+
 export interface Paciente {
   id: string;
   especie: Especie;
@@ -42,9 +50,13 @@ export interface Paciente {
   fnac: string;
   castrado: string;
   color: string;
-  dueno: string;
-  tel: string;
+  /** [dueño principal, segundo dueño opcional]. */
+  dueños: [DueñoContacto, DueñoContacto];
   dir: string;
+  /** Paciente derivado de otra veterinaria. */
+  esExterno: boolean;
+  /** Seguimiento puntual (sin continuidad habitual en la clínica). */
+  esUnicaConsulta: boolean;
   consultas: Consulta[];
   estudios: Estudio[];
 }

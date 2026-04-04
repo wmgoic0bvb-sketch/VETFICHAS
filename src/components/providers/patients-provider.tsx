@@ -104,9 +104,10 @@ export function PatientsProvider({
                 fnac: data.fnac,
                 castrado: data.castrado,
                 color: data.color,
-                dueno: data.dueno,
-                tel: data.tel,
+                dueños: data.dueños,
                 dir: data.dir,
+                esExterno: data.esExterno,
+                esUnicaConsulta: data.esUnicaConsulta,
               }
             : p,
         );

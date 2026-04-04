@@ -7,9 +7,9 @@ import { ConfirmAlertDialog } from "@/components/ui/confirm-alert-dialog";
 import { FieldError, inputErrorRing } from "@/components/ui/field-error";
 import { Modal } from "@/components/ui/modal";
 import { calcularEdad, formatFecha } from "@/lib/date-utils";
-import type { Paciente } from "@/types/patient";
+import type { DueñoContacto, Paciente } from "@/types/patient";
 
-type FieldKeys = "especie" | "nombre" | "dueno";
+type FieldKeys = "especie" | "nombre" | "dueño1";
 type FieldErrors = Partial<Record<FieldKeys, string>>;
 
 function emoji(especie: Paciente["especie"]) {
@@ -25,9 +25,13 @@ function draftFromPatient(p: Paciente): PacienteEditable {
     fnac: p.fnac,
     castrado: p.castrado,
     color: p.color,
-    dueno: p.dueno,
-    tel: p.tel,
+    dueños: [
+      { ...p.dueños[0] },
+      { ...p.dueños[1] },
+    ] as [DueñoContacto, DueñoContacto],
     dir: p.dir,
+    esExterno: p.esExterno,
+    esUnicaConsulta: p.esUnicaConsulta,
   };
 }
 
@@ -112,11 +116,13 @@ export function PatientDetailModal({
   const saveEdit = () => {
     if (!draft) return;
     const n = draft.nombre.trim();
-    const d = draft.dueno.trim();
+    const d1 = draft.dueños[0].nombre.trim();
     const nextErrors: FieldErrors = {};
     if (!draft.especie) nextErrors.especie = "Elegí si es perro o gato.";
     if (!n) nextErrors.nombre = "Ingresá el nombre de la mascota.";
-    if (!d) nextErrors.dueno = "Ingresá el nombre del dueño o la dueña.";
+    if (!d1)
+      nextErrors.dueño1 =
+        "Ingresá al menos el nombre del primer dueño o responsable.";
     if (Object.keys(nextErrors).length) {
       setFieldErrors(nextErrors);
       return;
@@ -124,11 +130,18 @@ export function PatientDetailModal({
     updatePatient(patient.id, {
       ...draft,
       nombre: n,
-      dueno: d,
       raza: draft.raza.trim(),
       color: draft.color.trim(),
-      tel: draft.tel.trim(),
+      dueños: [
+        { nombre: d1, tel: draft.dueños[0].tel.trim() },
+        {
+          nombre: draft.dueños[1].nombre.trim(),
+          tel: draft.dueños[1].tel.trim(),
+        },
+      ],
       dir: draft.dir.trim(),
+      esExterno: draft.esExterno,
+      esUnicaConsulta: draft.esUnicaConsulta,
     });
     setFieldErrors({});
     setEditing(false);
@@ -201,14 +214,59 @@ export function PatientDetailModal({
             </div>
           </section>
 
+          {(patient.esExterno || patient.esUnicaConsulta) && (
+            <section className="mb-5">
+              <h3 className="mb-2.5 text-xs font-bold uppercase tracking-wider text-[#8b7355]">
+                Clasificación
+              </h3>
+              <div className="flex flex-wrap gap-2 text-sm">
+                {patient.esExterno ? (
+                  <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900">
+                    Otra veterinaria
+                  </span>
+                ) : null}
+                {patient.esUnicaConsulta ? (
+                  <span className="rounded-full bg-stone-200 px-2.5 py-1 text-xs font-semibold text-stone-800">
+                    Única consulta
+                  </span>
+                ) : null}
+              </div>
+            </section>
+          )}
+
           <section className="mb-5">
             <h3 className="mb-2.5 text-xs font-bold uppercase tracking-wider text-[#2d6a4f]">
-              Dueño / Contacto
+              Dueños / Contacto
             </h3>
-            <div className="divide-y divide-[#f0ebe4] text-sm">
-              <Row label="Nombre" value={patient.dueno} />
-              {patient.tel ? <Row label="Teléfono" value={patient.tel} /> : null}
-              {patient.dir ? <Row label="Dirección" value={patient.dir} /> : null}
+            <div className="space-y-4 text-sm">
+              <div className="rounded-xl border border-[#e8e0d8] bg-[#faf9f7] p-3">
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[#2d6a4f]">
+                  Responsable 1
+                </p>
+                <Row label="Nombre" value={patient.dueños[0].nombre || "—"} />
+                {patient.dueños[0].tel ? (
+                  <Row label="Teléfono" value={patient.dueños[0].tel} />
+                ) : null}
+              </div>
+              {(patient.dueños[1].nombre || patient.dueños[1].tel) && (
+                <div className="rounded-xl border border-dashed border-[#d4ccc0] bg-white p-3">
+                  <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[#888]">
+                    Responsable 2
+                  </p>
+                  <Row
+                    label="Nombre"
+                    value={patient.dueños[1].nombre || "—"}
+                  />
+                  {patient.dueños[1].tel ? (
+                    <Row label="Teléfono" value={patient.dueños[1].tel} />
+                  ) : null}
+                </div>
+              )}
+              {patient.dir ? (
+                <div className="py-1">
+                  <Row label="Dirección" value={patient.dir} />
+                </div>
+              ) : null}
             </div>
           </section>
 
@@ -412,54 +470,133 @@ export function PatientDetailModal({
             </div>
 
             <h4 className="pt-1 text-xs font-bold uppercase tracking-wider text-[#2d6a4f]">
-              Dueño / Contacto
+              Dueños / Contacto
             </h4>
 
-            <div>
-              <label
-                htmlFor="edit-dueno"
-                className="mb-1.5 block text-[13px] font-semibold text-[#555]"
-              >
-                Nombre del dueño/a *
-              </label>
-              <input
-                id="edit-dueno"
-                value={draft.dueno}
-                onChange={(e) => {
-                  setDraft((prev) =>
-                    prev ? { ...prev, dueno: e.target.value } : prev,
-                  );
-                  clearFieldError("dueno");
-                }}
-                aria-invalid={Boolean(fieldErrors.dueno)}
-                aria-describedby={
-                  fieldErrors.dueno ? "edit-dueno-err" : undefined
-                }
-                className={`${inputBase} ${inputErrorRing(Boolean(fieldErrors.dueno))}`}
-              />
-              {fieldErrors.dueno ? (
-                <FieldError id="edit-dueno-err" message={fieldErrors.dueno} />
-              ) : null}
+            <div className="rounded-xl border border-[#e8e0d8] bg-[#faf9f7] p-3">
+              <p className="mb-3 text-[11px] font-bold uppercase tracking-wide text-[#2d6a4f]">
+                Responsable 1 *
+              </p>
+              <div className="mb-3">
+                <label
+                  htmlFor="edit-dueno-1"
+                  className="mb-1.5 block text-[13px] font-semibold text-[#555]"
+                >
+                  Nombre *
+                </label>
+                <input
+                  id="edit-dueno-1"
+                  value={draft.dueños[0].nombre}
+                  onChange={(e) => {
+                    setDraft((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            dueños: [
+                              { ...prev.dueños[0], nombre: e.target.value },
+                              prev.dueños[1],
+                            ],
+                          }
+                        : prev,
+                    );
+                    clearFieldError("dueño1");
+                  }}
+                  aria-invalid={Boolean(fieldErrors.dueño1)}
+                  aria-describedby={
+                    fieldErrors.dueño1 ? "edit-dueno-1-err" : undefined
+                  }
+                  className={`${inputBase} ${inputErrorRing(Boolean(fieldErrors.dueño1))}`}
+                />
+                {fieldErrors.dueño1 ? (
+                  <FieldError id="edit-dueno-1-err" message={fieldErrors.dueño1} />
+                ) : null}
+              </div>
+              <div>
+                <label
+                  htmlFor="edit-tel-1"
+                  className="mb-1.5 block text-[13px] font-semibold text-[#555]"
+                >
+                  Teléfono
+                </label>
+                <input
+                  id="edit-tel-1"
+                  type="tel"
+                  value={draft.dueños[0].tel}
+                  onChange={(e) =>
+                    setDraft((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            dueños: [
+                              { ...prev.dueños[0], tel: e.target.value },
+                              prev.dueños[1],
+                            ],
+                          }
+                        : prev,
+                    )
+                  }
+                  className={`${inputBase} border-[#e8e0d8] bg-white focus:border-[#2d6a4f] focus:bg-white`}
+                />
+              </div>
             </div>
 
-            <div>
-              <label
-                htmlFor="edit-tel"
-                className="mb-1.5 block text-[13px] font-semibold text-[#555]"
-              >
-                Teléfono
-              </label>
-              <input
-                id="edit-tel"
-                type="tel"
-                value={draft.tel}
-                onChange={(e) =>
-                  setDraft((prev) =>
-                    prev ? { ...prev, tel: e.target.value } : prev,
-                  )
-                }
-                className={`${inputBase} border-[#e8e0d8] bg-[#faf9f7] focus:border-[#2d6a4f] focus:bg-white`}
-              />
+            <div className="rounded-xl border border-dashed border-[#d4ccc0] bg-white p-3">
+              <p className="mb-3 text-[11px] font-bold uppercase tracking-wide text-[#888]">
+                Responsable 2 (opcional)
+              </p>
+              <div className="mb-3">
+                <label
+                  htmlFor="edit-dueno-2"
+                  className="mb-1.5 block text-[13px] font-semibold text-[#555]"
+                >
+                  Nombre
+                </label>
+                <input
+                  id="edit-dueno-2"
+                  value={draft.dueños[1].nombre}
+                  onChange={(e) =>
+                    setDraft((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            dueños: [
+                              prev.dueños[0],
+                              { ...prev.dueños[1], nombre: e.target.value },
+                            ],
+                          }
+                        : prev,
+                    )
+                  }
+                  className={`${inputBase} border-[#e8e0d8] bg-[#faf9f7] focus:border-[#2d6a4f] focus:bg-white`}
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="edit-tel-2"
+                  className="mb-1.5 block text-[13px] font-semibold text-[#555]"
+                >
+                  Teléfono
+                </label>
+                <input
+                  id="edit-tel-2"
+                  type="tel"
+                  value={draft.dueños[1].tel}
+                  onChange={(e) =>
+                    setDraft((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            dueños: [
+                              prev.dueños[0],
+                              { ...prev.dueños[1], tel: e.target.value },
+                            ],
+                          }
+                        : prev,
+                    )
+                  }
+                  className={`${inputBase} border-[#e8e0d8] bg-[#faf9f7] focus:border-[#2d6a4f] focus:bg-white`}
+                />
+              </div>
             </div>
 
             <div>
@@ -479,6 +616,46 @@ export function PatientDetailModal({
                 }
                 className={`${inputBase} border-[#e8e0d8] bg-[#faf9f7] focus:border-[#2d6a4f] focus:bg-white`}
               />
+            </div>
+
+            <div className="rounded-xl border border-[#e0d9cf] bg-[#faf8f5] p-3.5">
+              <p className="mb-3 text-[13px] font-semibold text-[#555]">
+                Clasificación
+              </p>
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={draft.esExterno}
+                  onChange={(e) =>
+                    setDraft((prev) =>
+                      prev
+                        ? { ...prev, esExterno: e.target.checked }
+                        : prev,
+                    )
+                  }
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#c4bbb0] text-[#2d6a4f] focus:ring-[#2d6a4f]"
+                />
+                <span className="text-sm leading-snug text-[#333]">
+                  Paciente de otra veterinaria
+                </span>
+              </label>
+              <label className="mt-3 flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={draft.esUnicaConsulta}
+                  onChange={(e) =>
+                    setDraft((prev) =>
+                      prev
+                        ? { ...prev, esUnicaConsulta: e.target.checked }
+                        : prev,
+                    )
+                  }
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#c4bbb0] text-[#2d6a4f] focus:ring-[#2d6a4f]"
+                />
+                <span className="text-sm leading-snug text-[#333]">
+                  Única consulta (sin seguimiento habitual acá)
+                </span>
+              </label>
             </div>
 
             <button
