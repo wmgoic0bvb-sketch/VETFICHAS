@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 
 export function DashboardNav({ onNewPatient }: { onNewPatient?: () => void }) {
@@ -8,18 +9,13 @@ export function DashboardNav({ onNewPatient }: { onNewPatient?: () => void }) {
       <div className="flex items-center gap-3">
         <Link
           href="/"
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-[#d9ece2] text-[#2d6a4f] hover:bg-[#f0faf5]"
+          className="flex items-center gap-2 text-xl font-bold text-[#2d6a4f] hover:opacity-80"
           title="Ir al inicio"
           aria-label="Ir al inicio"
         >
-          🏠
-        </Link>
-        <div className="flex items-center gap-2 text-xl font-bold text-[#2d6a4f]">
-          <span className="text-[22px]" aria-hidden>
-            🐾
-          </span>
+          <Image src="/favicon.png" alt="" width={38} height={38} priority />
           VetFichas
-        </div>
+        </Link>
       </div>
       {onNewPatient ? (
         <button
