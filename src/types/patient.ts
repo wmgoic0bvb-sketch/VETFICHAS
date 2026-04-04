@@ -1,6 +1,25 @@
 export type Especie = "Perro" | "Gato";
 
-export type ConsultaTipo = "Control" | "Vacuna" | "Urgencia" | "Cirugía";
+export type ConsultaTipo =
+  | "Consulta"
+  | "Control"
+  | "Vacuna"
+  | "Urgencia"
+  | "Cirugía";
+
+export type AsistenciaProximoControl = "asistio" | "ausente";
+
+/** Recordatorio de próximo control (varios por paciente). */
+export interface ProximoControl {
+  id: string;
+  /** Fecha y hora en texto: DD/MM/AAAA HH:MM (24 h). */
+  fechaHora: string;
+  /** Id de sucursal (lista fija en código). */
+  sucursalId: string;
+  nota?: string;
+  /** Solo cuando la fecha ya pasó: si asistió o se ausentó. */
+  asistencia?: AsistenciaProximoControl | null;
+}
 
 export interface Consulta {
   id: string;
@@ -57,11 +76,17 @@ export interface Paciente {
   esExterno: boolean;
   /** Seguimiento puntual (sin continuidad habitual en la clínica). */
   esUnicaConsulta: boolean;
+  /** Controles programados (varios por paciente). */
+  proximosControles: ProximoControl[];
   consultas: Consulta[];
   estudios: Estudio[];
 }
 
-export type PacienteDraft = Omit<Paciente, "id" | "consultas" | "estudios"> & {
+export type PacienteDraft = Omit<
+  Paciente,
+  "id" | "consultas" | "estudios" | "proximosControles"
+> & {
   consultas?: Consulta[];
   estudios?: Estudio[];
+  proximosControles?: ProximoControl[];
 };

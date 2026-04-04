@@ -6,11 +6,13 @@ import { useParams } from "next/navigation";
 import { ConsultaModal } from "@/components/dashboard/consulta-modal";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { PatientEstudiosSection } from "@/components/dashboard/patient-estudios-section";
+import { ProximosControlesSection } from "@/components/dashboard/proximo-control-section";
 import { usePatients } from "@/components/providers/patients-provider";
 import { calcularEdad, formatFecha } from "@/lib/date-utils";
 import type { Consulta } from "@/types/patient";
 
 const tipoClass: Record<string, string> = {
+  Consulta: "bg-violet-100 text-violet-900",
   Control: "bg-emerald-100 text-emerald-900",
   Urgencia: "bg-red-100 text-red-900",
   "Cirugía": "bg-amber-100 text-amber-900",
@@ -112,7 +114,14 @@ function Row({ label, value }: { label: string; value: string }) {
 export default function PatientDetailPage() {
   const params = useParams<{ id: string | string[] }>();
   const patientId = Array.isArray(params.id) ? params.id[0] : params.id;
-  const { ready, getById, addConsulta } = usePatients();
+  const {
+    ready,
+    getById,
+    addConsulta,
+    addProximoControl,
+    updateProximoControl,
+    removeProximoControl,
+  } = usePatients();
   const [consultaOpen, setConsultaOpen] = useState(false);
 
   const patient = patientId ? getById(patientId) : undefined;
@@ -221,6 +230,17 @@ export default function PatientDetailPage() {
                 ) : null}
               </div>
             </section>
+
+            <ProximosControlesSection
+              patient={patient}
+              onAdd={(data) => addProximoControl(patient.id, data)}
+              onUpdate={(controlId, patch) =>
+                updateProximoControl(patient.id, controlId, patch)
+              }
+              onRemove={(controlId) =>
+                removeProximoControl(patient.id, controlId)
+              }
+            />
           </div>
 
           <div className="flex min-w-0 flex-col gap-6">

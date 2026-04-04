@@ -7,7 +7,13 @@ import { todayISODate } from "@/lib/date-utils";
 import { VETERINARIOS_OPCIONES } from "@/lib/veterinarios";
 import type { Consulta, ConsultaTipo } from "@/types/patient";
 
-const tipos: ConsultaTipo[] = ["Control", "Vacuna", "Urgencia", "Cirugía"];
+const tipos: ConsultaTipo[] = [
+  "Consulta",
+  "Control",
+  "Vacuna",
+  "Urgencia",
+  "Cirugía",
+];
 
 export function ConsultaModal({
   open,
@@ -20,7 +26,7 @@ export function ConsultaModal({
 }) {
   const [motivo, setMotivo] = useState("");
   const [veterinario, setVeterinario] = useState("");
-  const [tipo, setTipo] = useState<ConsultaTipo>("Control");
+  const [tipo, setTipo] = useState<ConsultaTipo>("Consulta");
   const [fecha, setFecha] = useState("");
   const [peso, setPeso] = useState("");
   const [temp, setTemp] = useState("");
@@ -36,7 +42,7 @@ export function ConsultaModal({
     if (open) {
       setMotivo("");
       setVeterinario("");
-      setTipo("Control");
+      setTipo("Consulta");
       setFecha(todayISODate());
       setPeso("");
       setTemp("");

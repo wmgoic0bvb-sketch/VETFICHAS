@@ -1,4 +1,14 @@
-import type { Consulta, DueñoContacto, Paciente } from "@/types/patient";
+import {
+  isoFechaLegacyAFechaHora,
+  isFechaHoraProximoControlValida,
+} from "@/lib/proximo-control-utils";
+import { DEFAULT_SUCURSAL_ID, SUCURSALES } from "@/lib/sucursales";
+import type {
+  Consulta,
+  DueñoContacto,
+  Paciente,
+  ProximoControl,
+} from "@/types/patient";
 
 const STORAGE_KEY = "vetfichas_pacientes";
 
@@ -13,6 +23,99 @@ function normalizeConsulta(raw: Consulta): Consulta {
     veterinario:
       typeof raw.veterinario === "string" ? raw.veterinario : "",
   };
+}
+
+function normalizeSucursalIdProximo(id: string): string {
+  const t = id.trim();
+  if (SUCURSALES.some((s) => s.id === t)) return t;
+  if (t === "principal") return DEFAULT_SUCURSAL_ID;
+  return DEFAULT_SUCURSAL_ID;
+}
+
+function makeProximoId(seed: number): string {
+  return `pc-${Date.now()}-${seed}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function normalizeProximoControlBody(
+  o: Record<string, unknown>,
+): Omit<ProximoControl, "id"> | null {
+  const notaRaw = o.nota;
+  const nota =
+    typeof notaRaw === "string" && notaRaw.trim() ? notaRaw.trim() : undefined;
+
+  const fechaHoraRaw =
+    typeof o.fechaHora === "string" ? o.fechaHora.trim() : "";
+  const sucursalIdRaw =
+    typeof o.sucursalId === "string" ? o.sucursalId.trim() : "";
+
+  const asRaw = o.asistencia;
+  const asistencia: ProximoControl["asistencia"] =
+    asRaw === "asistio" || asRaw === "ausente"
+      ? asRaw
+      : null;
+
+  const build = (
+    fechaHora: string,
+    sid: string,
+  ): Omit<ProximoControl, "id"> => {
+    const base: Omit<ProximoControl, "id"> = {
+      fechaHora,
+      sucursalId: sid,
+      asistencia,
+    };
+    return nota !== undefined ? { ...base, nota } : base;
+  };
+
+  if (fechaHoraRaw && isFechaHoraProximoControlValida(fechaHoraRaw)) {
+    const sid = normalizeSucursalIdProximo(
+      sucursalIdRaw || DEFAULT_SUCURSAL_ID,
+    );
+    return build(fechaHoraRaw, sid);
+  }
+
+  const fechaLegacy = typeof o.fecha === "string" ? o.fecha.trim() : "";
+  if (fechaLegacy) {
+    const fh = isoFechaLegacyAFechaHora(fechaLegacy);
+    if (fh) {
+      const sid = normalizeSucursalIdProximo(
+        sucursalIdRaw || DEFAULT_SUCURSAL_ID,
+      );
+      return build(fh, sid);
+    }
+  }
+
+  return null;
+}
+
+function normalizeProximoControlItem(
+  raw: unknown,
+  index: number,
+): ProximoControl | null {
+  if (raw === null || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  const body = normalizeProximoControlBody(o);
+  if (!body) return null;
+  const id =
+    typeof o.id === "string" && o.id.trim()
+      ? o.id.trim()
+      : makeProximoId(index);
+  return { ...body, id };
+}
+
+function normalizeProximosControles(
+  rawList: unknown,
+  legacySingle: unknown,
+): ProximoControl[] {
+  if (Array.isArray(rawList)) {
+    return rawList
+      .map((item, i) => normalizeProximoControlItem(item, i))
+      .filter((x): x is ProximoControl => x !== null);
+  }
+  if (legacySingle !== null && legacySingle !== undefined) {
+    const one = normalizeProximoControlItem(legacySingle, 0);
+    if (one) return [one];
+  }
+  return [];
 }
 
 function normalizeDueños(raw: Record<string, unknown>): [DueñoContacto, DueñoContacto] {
@@ -37,7 +140,12 @@ function normalizeDueños(raw: Record<string, unknown>): [DueñoContacto, Dueño
   return [{ nombre: dueno, tel }, { ...vacío }];
 }
 
-type StoredPatient = Paciente & { dueno?: string; tel?: string };
+type StoredPatient = Paciente & {
+  dueno?: string;
+  tel?: string;
+  /** Migración: antes era un solo objeto. */
+  proximoControl?: unknown;
+};
 
 function normalizePatient(p: StoredPatient): Paciente {
   const raw = p as unknown as Record<string, unknown>;
@@ -51,6 +159,10 @@ function normalizePatient(p: StoredPatient): Paciente {
     esExterno: typeof p.esExterno === "boolean" ? p.esExterno : false,
     esUnicaConsulta:
       typeof p.esUnicaConsulta === "boolean" ? p.esUnicaConsulta : false,
+    proximosControles: normalizeProximosControles(
+      raw.proximosControles,
+      raw.proximoControl,
+    ),
     consultas: Array.isArray(p.consultas)
       ? p.consultas.map((c) => normalizeConsulta(c))
       : [],

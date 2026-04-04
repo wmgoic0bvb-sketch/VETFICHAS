@@ -18,6 +18,7 @@ import type {
   Estudio,
   Paciente,
   PacienteDraft,
+  ProximoControl,
 } from "@/types/patient";
 
 function createDefaultRepository() {
@@ -32,6 +33,16 @@ interface PatientsContextValue {
   ready: boolean;
   addPatient: (draft: PacienteDraft) => Paciente;
   updatePatient: (id: string, data: PacienteEditable) => void;
+  addProximoControl: (
+    patientId: string,
+    data: Omit<ProximoControl, "id">,
+  ) => void;
+  updateProximoControl: (
+    patientId: string,
+    controlId: string,
+    patch: Partial<Omit<ProximoControl, "id">>,
+  ) => void;
+  removeProximoControl: (patientId: string, controlId: string) => void;
   removePatient: (id: string) => void;
   getById: (id: string) => Paciente | undefined;
   addConsulta: (patientId: string, consulta: Omit<Consulta, "id">) => void;
@@ -68,6 +79,7 @@ export function PatientsProvider({
         id: `${Date.now()}`,
         consultas: draft.consultas ?? [],
         estudios: draft.estudios ?? [],
+        proximosControles: draft.proximosControles ?? [],
       };
       setPatients((prev) => {
         const next = [paciente, ...prev];
@@ -108,6 +120,69 @@ export function PatientsProvider({
                 dir: data.dir,
                 esExterno: data.esExterno,
                 esUnicaConsulta: data.esUnicaConsulta,
+                proximosControles: data.proximosControles ?? [],
+              }
+            : p,
+        );
+        repository.persist(next);
+        return next;
+      });
+    },
+    [repository],
+  );
+
+  const addProximoControl = useCallback(
+    (patientId: string, data: Omit<ProximoControl, "id">) => {
+      const control: ProximoControl = {
+        ...data,
+        id: `pc-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+      };
+      setPatients((prev) => {
+        const next = prev.map((p) =>
+          p.id === patientId
+            ? { ...p, proximosControles: [...p.proximosControles, control] }
+            : p,
+        );
+        repository.persist(next);
+        return next;
+      });
+    },
+    [repository],
+  );
+
+  const updateProximoControl = useCallback(
+    (
+      patientId: string,
+      controlId: string,
+      patch: Partial<Omit<ProximoControl, "id">>,
+    ) => {
+      setPatients((prev) => {
+        const next = prev.map((p) => {
+          if (p.id !== patientId) return p;
+          return {
+            ...p,
+            proximosControles: p.proximosControles.map((c) =>
+              c.id === controlId ? { ...c, ...patch } : c,
+            ),
+          };
+        });
+        repository.persist(next);
+        return next;
+      });
+    },
+    [repository],
+  );
+
+  const removeProximoControl = useCallback(
+    (patientId: string, controlId: string) => {
+      setPatients((prev) => {
+        const next = prev.map((p) =>
+          p.id === patientId
+            ? {
+                ...p,
+                proximosControles: p.proximosControles.filter(
+                  (c) => c.id !== controlId,
+                ),
               }
             : p,
         );
@@ -183,6 +258,9 @@ export function PatientsProvider({
       ready,
       addPatient,
       updatePatient,
+      addProximoControl,
+      updateProximoControl,
+      removeProximoControl,
       removePatient,
       getById,
       addConsulta,
@@ -194,6 +272,9 @@ export function PatientsProvider({
       ready,
       addPatient,
       updatePatient,
+      addProximoControl,
+      updateProximoControl,
+      removeProximoControl,
       removePatient,
       getById,
       addConsulta,

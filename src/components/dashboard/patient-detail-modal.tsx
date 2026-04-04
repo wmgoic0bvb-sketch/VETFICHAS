@@ -32,6 +32,7 @@ function draftFromPatient(p: Paciente): PacienteEditable {
     dir: p.dir,
     esExterno: p.esExterno,
     esUnicaConsulta: p.esUnicaConsulta,
+    proximosControles: [...p.proximosControles],
   };
 }
 
@@ -142,6 +143,7 @@ export function PatientDetailModal({
       dir: draft.dir.trim(),
       esExterno: draft.esExterno,
       esUnicaConsulta: draft.esUnicaConsulta,
+      proximosControles: draft.proximosControles ?? [],
     });
     setFieldErrors({});
     setEditing(false);
