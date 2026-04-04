@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   combinarMaskedAFechaHoraGuardada,
   diasCalendarioHastaFechaHora,
+  esControlFechaPasadaOHoy,
   esControlFechaYaOcurrida,
   esFechaMaskedAnteriorAHoy,
   fechaHoraGuardadaToMaskedInputs,
@@ -37,7 +38,7 @@ function badgeFor(fechaHora: string) {
     );
   }
   return (
-    <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-900">
+    <span className="rounded-full bg-yellow-100 px-2.5 py-0.5 text-[11px] font-semibold text-yellow-900">
       Programado
     </span>
   );
@@ -173,6 +174,7 @@ export function ProximosControlesSection({
       <ul className="space-y-3">
         {ordenados.map((pc) => {
           const yaOcurrio = esControlFechaYaOcurrida(pc.fechaHora);
+          const puedeMarcarAsistencia = esControlFechaPasadaOHoy(pc.fechaHora);
           const vistaFecha = fechaHoraGuardadaToMaskedInputs(pc.fechaHora).fecha;
           return (
             <li
@@ -191,7 +193,7 @@ export function ProximosControlesSection({
                 >
                   {vistaFecha || pc.fechaHora}
                 </span>
-                {yaOcurrio ? (
+                {puedeMarcarAsistencia ? (
                   <button
                     type="button"
                     onClick={() =>
@@ -270,7 +272,7 @@ export function ProximosControlesSection({
           onClick={abrirNuevo}
           className="mt-4 w-full rounded-xl border-2 border-dashed border-[#b7d5c9] bg-transparent py-3 text-sm font-semibold text-[#2d6a4f] hover:bg-[#f0faf5]"
         >
-          + Agregar otro próximo control
+          + Próximo control
         </button>
       ) : null}
 

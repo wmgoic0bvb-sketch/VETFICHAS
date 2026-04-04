@@ -186,6 +186,12 @@ export function esControlFechaYaOcurrida(fechaHora: string): boolean {
   return d !== null && d < 0;
 }
 
+/** Hoy o día anterior (calendario); permite marcar Realizado/Ausente. */
+export function esControlFechaPasadaOHoy(fechaHora: string): boolean {
+  const d = diasCalendarioHastaFechaHora(fechaHora);
+  return d !== null && d <= 0;
+}
+
 /** Orden cronológico por fecha/hora guardada. */
 export function sortProximosControlesPorFecha(
   controles: ProximoControl[],
