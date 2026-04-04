@@ -16,11 +16,7 @@ import {
   getSucursalById,
   SUCURSALES,
 } from "@/lib/sucursales";
-import type {
-  AsistenciaProximoControl,
-  Paciente,
-  ProximoControl,
-} from "@/types/patient";
+import type { Paciente, ProximoControl } from "@/types/patient";
 
 const HORA_DEFECTO_GUARDADO = "09:00";
 const FECHA_COMPLETA_DDMMYYYY = /^\d{2}\/\d{2}\/\d{4}$/;
@@ -32,13 +28,6 @@ const inputClass =
   "w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 font-mono text-[15px] tabular-nums tracking-wide outline-none transition-colors placeholder:text-[#c4bbb0] focus:border-[#2d6a4f] focus:bg-white";
 
 function badgeFor(fechaHora: string) {
-  if (esControlFechaYaOcurrida(fechaHora)) {
-    return (
-      <span className="rounded-full bg-stone-200/90 px-2.5 py-0.5 text-[11px] font-semibold text-stone-600">
-        Realizado
-      </span>
-    );
-  }
   const d = diasCalendarioHastaFechaHora(fechaHora);
   if (d !== null && d >= 0 && d <= 7) {
     return (
@@ -194,7 +183,7 @@ export function ProximosControlesSection({
                   : "border-[#b7d5c9] bg-[#f0faf5] text-[#1a1a1a]"
               }`}
             >
-              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                 <span
                   className={`text-lg font-semibold ${
                     yaOcurrio ? "text-stone-500" : "text-[#1b4332]"
@@ -202,41 +191,33 @@ export function ProximosControlesSection({
                 >
                   {vistaFecha || pc.fechaHora}
                 </span>
-                {badgeFor(pc.fechaHora)}
-              </div>
-
-              {yaOcurrio ? (
-                <div className="mt-3">
-                  <label
-                    htmlFor={`asist-${pc.id}`}
-                    className="mb-1 block text-[12px] font-medium text-stone-600"
-                  >
-                    Asistencia
-                  </label>
-                  <select
-                    id={`asist-${pc.id}`}
-                    value={pc.asistencia ?? ""}
-                    onChange={(e) => {
-                      const v = e.target.value;
+                {yaOcurrio ? (
+                  <button
+                    type="button"
+                    onClick={() =>
                       onUpdate(pc.id, {
                         asistencia:
-                          v === ""
-                            ? null
-                            : (v as AsistenciaProximoControl),
-                      });
-                    }}
-                    className="w-full max-w-xs cursor-pointer rounded-lg border border-stone-300 bg-white px-2.5 py-2 text-sm text-stone-700 outline-none focus:border-[#2d6a4f]"
+                          pc.asistencia === "ausente" ? "asistio" : "ausente",
+                      })
+                    }
+                    className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 ${
+                      pc.asistencia === "ausente"
+                        ? "bg-red-100 text-red-800 ring-red-300 focus-visible:ring-red-400"
+                        : "bg-emerald-100 text-emerald-900 ring-emerald-300 focus-visible:ring-emerald-500"
+                    }`}
                   >
-                    <option value="">Registrar…</option>
-                    <option value="asistio">Asistió</option>
-                    <option value="ausente">Se ausentó</option>
-                  </select>
-                </div>
-              ) : (
+                    {pc.asistencia === "ausente" ? "Ausente" : "Realizado"}
+                  </button>
+                ) : (
+                  badgeFor(pc.fechaHora)
+                )}
+              </div>
+
+              {!yaOcurrio ? (
                 <p className="mt-2 text-sm font-medium text-[#1a1a1a]">
                   📍 {getSucursalById(pc.sucursalId)?.nombre ?? pc.sucursalId}
                 </p>
-              )}
+              ) : null}
 
               {pc.nota ? (
                 <p
