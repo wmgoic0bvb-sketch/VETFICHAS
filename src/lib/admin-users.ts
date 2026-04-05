@@ -16,6 +16,12 @@ export function assertValidPassword(password: string): void {
   if (password.length < 6) {
     throw new Error("La contraseña debe tener al menos 6 caracteres");
   }
+  if (!/[a-zA-Z]/.test(password)) {
+    throw new Error("La contraseña debe contener al menos una letra");
+  }
+  if (!/[0-9]/.test(password)) {
+    throw new Error("La contraseña debe contener al menos un número");
+  }
 }
 
 export async function hashPassword(password: string): Promise<string> {

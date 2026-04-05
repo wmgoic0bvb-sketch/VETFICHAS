@@ -341,24 +341,43 @@ function UserForm({
         />
       </label>
 
-      <label className="block">
-        <span className="mb-1 block text-sm font-medium text-[#444]">
-          {mode === "create" ? "Contraseña" : "Nueva contraseña (opcional)"}
-        </span>
-        <input
-          type="password"
-          autoComplete="new-password"
-          required={mode === "create"}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-xl border border-[#e8e0d8] bg-white px-3 py-2 text-[#333] outline-none ring-[#5c1838]/30 focus:ring-2"
-        />
+      <div>
+        <label className="block">
+          <span className="mb-1 block text-sm font-medium text-[#444]">
+            {mode === "create" ? "Contraseña" : "Nueva contraseña (opcional)"}
+          </span>
+          <input
+            type="password"
+            autoComplete="new-password"
+            required={mode === "create"}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full rounded-xl border border-[#e8e0d8] bg-white px-3 py-2 text-[#333] outline-none ring-[#5c1838]/30 focus:ring-2"
+          />
+        </label>
         {mode === "edit" ? (
           <span className="mt-1 block text-xs text-[#888]">
             Dejá en blanco para no cambiar la contraseña.
           </span>
         ) : null}
-      </label>
+        {password.length > 0 && (
+          <ul className="mt-2 space-y-1">
+            {[
+              { met: password.length >= 6, label: "Mínimo 6 caracteres" },
+              { met: /[a-zA-Z]/.test(password), label: "Al menos una letra" },
+              { met: /[0-9]/.test(password), label: "Al menos un número" },
+            ].map(({ met, label }) => (
+              <li
+                key={label}
+                className={`flex items-center gap-1.5 text-xs ${met ? "text-emerald-600" : "text-[#aaa]"}`}
+              >
+                <span aria-hidden>{met ? "✓" : "○"}</span>
+                {label}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       <label className="block">
         <span className="mb-1 block text-sm font-medium text-[#444]">Rol</span>
