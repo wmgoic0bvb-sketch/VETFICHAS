@@ -15,10 +15,13 @@ import { ProximosControlesSection } from "@/components/dashboard/proximo-control
 import { usePatients } from "@/components/providers/patients-provider";
 import { Modal } from "@/components/ui/modal";
 import { calcularEdad, formatFecha } from "@/lib/date-utils";
+import { exportConsultaPdf } from "@/lib/export-consulta-pdf";
+import { toast } from "sonner";
 import {
   ESTADO_PACIENTE_LABELS,
   esPacienteActivo,
   type Consulta,
+  type Paciente,
 } from "@/types/patient";
 
 const tipoClass: Record<string, string> = {
@@ -53,11 +56,38 @@ function ConsultaHeader({ c }: { c: Consulta }) {
   );
 }
 
-function ConsultaCard({ c }: { c: Consulta }) {
+function ConsultaCard({
+  c,
+  patient,
+}: {
+  c: Consulta;
+  patient: Pick<Paciente, "nombre" | "especie" | "raza">;
+}) {
   const hasDetails = Boolean(c.peso || c.temp || c.diag || c.trat || c.meds);
   const [open, setOpen] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const panelId = `consulta-detail-${c.id}`;
   const triggerId = `consulta-trigger-${c.id}`;
+
+  const handleExportPdf = async () => {
+    setPdfLoading(true);
+    try {
+      await exportConsultaPdf(
+        {
+          nombre: patient.nombre,
+          especie: patient.especie,
+          raza: patient.raza,
+        },
+        c,
+      );
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "No se pudo generar el PDF",
+      );
+    } finally {
+      setPdfLoading(false);
+    }
+  };
 
   return (
     <div className="mb-2.5 overflow-hidden rounded-[14px] border-l-[3px] border-[#2d6a4f]/35 bg-[#f5f0eb] last:mb-0">
@@ -108,6 +138,16 @@ function ConsultaCard({ c }: { c: Consulta }) {
           ) : null}
         </div>
       ) : null}
+      <div className="flex justify-end border-t border-[#e0d9cf]/80 bg-[#faf8f5]/60 px-4 py-2.5">
+        <button
+          type="button"
+          onClick={handleExportPdf}
+          disabled={pdfLoading}
+          className="rounded-lg border border-[#2d6a4f]/35 bg-white px-3 py-1.5 text-xs font-semibold text-[#2d6a4f] shadow-sm transition-colors hover:bg-[#2d6a4f]/10 disabled:pointer-events-none disabled:opacity-50"
+        >
+          {pdfLoading ? "Generando PDF…" : "Exportar PDF"}
+        </button>
+      </div>
     </div>
   );
 }
@@ -298,7 +338,9 @@ export default function PatientDetailPage() {
                   Sin consultas registradas aún
                 </div>
               ) : (
-                consultas.map((c) => <ConsultaCard key={c.id} c={c} />)
+                consultas.map((c) => (
+                  <ConsultaCard key={c.id} c={c} patient={patient} />
+                ))
               )}
             </section>
 
