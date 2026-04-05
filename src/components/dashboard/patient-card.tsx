@@ -1,7 +1,7 @@
 "use client";
 
 import { formatDueñosCorto } from "@/lib/dueños-utils";
-import type { Paciente } from "@/types/patient";
+import { esPacienteActivo, type Paciente } from "@/types/patient";
 
 function emoji(especie: Paciente["especie"]) {
   return especie === "Perro" ? "🐶" : "🐱";
@@ -35,6 +35,13 @@ export function PatientCard({
       <div className="mt-1.5 text-xs font-medium text-[#2d6a4f]">
         👤 {formatDueñosCorto(patient.dueños)}
       </div>
+      {!esPacienteActivo(patient) ? (
+        <div className="mt-2 flex justify-center">
+          <span className="rounded-full bg-stone-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-800">
+            Archivado
+          </span>
+        </div>
+      ) : null}
       {(patient.esExterno || patient.esUnicaConsulta) && (
         <div className="mt-2 flex flex-wrap justify-center gap-1">
           {patient.esExterno ? (

@@ -96,6 +96,7 @@ export function NewPatientWizard({
         },
       ],
       dir: dir.trim(),
+      estado: "activo",
       esExterno,
       esUnicaConsulta: false,
       consultas: [],

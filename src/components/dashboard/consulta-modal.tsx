@@ -66,12 +66,12 @@ export function ConsultaModal({
 
   const guardar = () => {
     const m = motivo.trim();
-    if (!m) {
-      setMotivoError("Completá el motivo de la consulta.");
+    if (!veterinario) {
+      setVetError("Elegí el veterinario.");
       return;
     }
-    if (!veterinario) {
-      setVetError("Elegí el veterinario responsable.");
+    if (!m) {
+      setMotivoError("Completá el motivo de la consulta.");
       return;
     }
     setMotivoError(null);
@@ -110,6 +110,41 @@ export function ConsultaModal({
         Nueva consulta 📋
       </h2>
       <div className="mt-4 space-y-4">
+        <div
+          className="rounded-[14px] border border-[#b7d5c9] bg-[#f0faf5] p-3.5"
+        >
+          <label
+            htmlFor="consulta-vet"
+            className="mb-1.5 block text-[13px] font-semibold text-[#1b4332]"
+          >
+            Veterinario *
+          </label>
+          <select
+            id="consulta-vet"
+            value={veterinario}
+            onChange={(e) => {
+              setVeterinario(e.target.value);
+              setHasChanges(true);
+              if (vetError) setVetError(null);
+            }}
+            aria-invalid={Boolean(vetError)}
+            aria-describedby={vetError ? "consulta-vet-err" : undefined}
+            className={`w-full min-h-[48px] cursor-pointer rounded-xl border-[1.5px] border-[#2d6a4f] bg-white px-3.5 py-2.5 text-sm text-[#1a1a1a] outline-none transition-colors focus:border-[#1b4332] focus:shadow-[0_0_0_3px_rgba(45,106,79,0.2)] ${inputErrorRing(
+              Boolean(vetError),
+            )}`}
+          >
+            <option value="">Elegir veterinario...</option>
+            {VETERINARIOS_OPCIONES.map((v) => (
+              <option key={v} value={v}>
+                {v}
+              </option>
+            ))}
+          </select>
+          {vetError ? (
+            <FieldError id="consulta-vet-err" message={vetError} />
+          ) : null}
+        </div>
+
         <div>
           <label
             htmlFor="consulta-motivo"
@@ -136,41 +171,6 @@ export function ConsultaModal({
           />
           {motivoError ? (
             <FieldError id="consulta-motivo-err" message={motivoError} />
-          ) : null}
-        </div>
-
-        <div
-          className="rounded-[14px] border border-[#b7d5c9] bg-[#f0faf5] p-3.5"
-        >
-          <label
-            htmlFor="consulta-vet"
-            className="mb-1.5 block text-[13px] font-semibold text-[#1b4332]"
-          >
-            Veterinario responsable *
-          </label>
-          <select
-            id="consulta-vet"
-            value={veterinario}
-            onChange={(e) => {
-              setVeterinario(e.target.value);
-              setHasChanges(true);
-              if (vetError) setVetError(null);
-            }}
-            aria-invalid={Boolean(vetError)}
-            aria-describedby={vetError ? "consulta-vet-err" : undefined}
-            className={`w-full min-h-[48px] cursor-pointer rounded-xl border-[1.5px] border-[#2d6a4f] bg-white px-3.5 py-2.5 text-sm text-[#1a1a1a] outline-none transition-colors focus:border-[#1b4332] focus:shadow-[0_0_0_3px_rgba(45,106,79,0.2)] ${inputErrorRing(
-              Boolean(vetError),
-            )}`}
-          >
-            <option value="">Elegir veterinario...</option>
-            {VETERINARIOS_OPCIONES.map((v) => (
-              <option key={v} value={v}>
-                {v}
-              </option>
-            ))}
-          </select>
-          {vetError ? (
-            <FieldError id="consulta-vet-err" message={vetError} />
           ) : null}
         </div>
 

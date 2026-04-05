@@ -76,6 +76,7 @@ export function PatientsProvider({
     (draft: PacienteDraft): Paciente => {
       const paciente: Paciente = {
         ...draft,
+        estado: draft.estado ?? "activo",
         id: `${Date.now()}`,
         consultas: draft.consultas ?? [],
         estudios: draft.estudios ?? [],
@@ -118,6 +119,7 @@ export function PatientsProvider({
                 color: data.color,
                 dueños: data.dueños,
                 dir: data.dir,
+                estado: data.estado ?? "activo",
                 esExterno: data.esExterno,
                 esUnicaConsulta: data.esUnicaConsulta,
                 proximosControles: data.proximosControles ?? [],

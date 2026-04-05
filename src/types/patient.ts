@@ -60,6 +60,14 @@ export interface DueñoContacto {
   tel: string;
 }
 
+/** Seguimiento en listados: activo en dashboard; archivado se oculta del listado principal. */
+export type EstadoPaciente = "activo" | "archivado";
+
+export const ESTADO_PACIENTE_LABELS: Record<EstadoPaciente, string> = {
+  activo: "Activo",
+  archivado: "Archivado",
+};
+
 export interface Paciente {
   id: string;
   especie: Especie;
@@ -72,6 +80,8 @@ export interface Paciente {
   /** [dueño principal, segundo dueño opcional]. */
   dueños: [DueñoContacto, DueñoContacto];
   dir: string;
+  /** No listado en el dashboard principal; el historial se mantiene. */
+  estado: EstadoPaciente;
   /** Paciente derivado de otra veterinaria. */
   esExterno: boolean;
   /** Seguimiento puntual (sin continuidad habitual en la clínica). */
@@ -80,6 +90,10 @@ export interface Paciente {
   proximosControles: ProximoControl[];
   consultas: Consulta[];
   estudios: Estudio[];
+}
+
+export function esPacienteActivo(p: Paciente): boolean {
+  return (p.estado ?? "activo") === "activo";
 }
 
 export type PacienteDraft = Omit<
