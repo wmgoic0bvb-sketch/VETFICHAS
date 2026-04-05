@@ -74,6 +74,60 @@ export async function putBlob(
   return (await res.json()) as PutBlobResult;
 }
 
+export interface BlobItem {
+  url: string;
+  pathname: string;
+  size: number;
+  uploadedAt: string;
+  contentType: string;
+}
+
+interface ListBlobsResponse {
+  blobs: BlobItem[];
+  cursor?: string;
+  hasMore: boolean;
+}
+
+export interface BlobStorageStats {
+  totalSize: number;   // bytes
+  fileCount: number;
+}
+
+export async function getBlobStorageStats(token: string): Promise<BlobStorageStats> {
+  let totalSize = 0;
+  let fileCount = 0;
+  let cursor: string | undefined;
+
+  do {
+    const params = new URLSearchParams({ limit: "1000" });
+    if (cursor) params.set("cursor", cursor);
+
+    const rid = requestIdFromToken(token);
+    const res = await fetch(`${blobApiBase()}/?${params.toString()}`, {
+      headers: {
+        authorization: `Bearer ${token}`,
+        "x-api-version": BLOB_API_VERSION,
+        "x-api-blob-request-id": rid,
+        "x-api-blob-request-attempt": "0",
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Error listando blobs: ${res.status}`);
+    }
+
+    const data = (await res.json()) as ListBlobsResponse;
+    for (const blob of data.blobs) {
+      totalSize += blob.size;
+      fileCount += 1;
+    }
+    cursor = data.cursor;
+    if (!data.hasMore) break;
+  } while (cursor);
+
+  return { totalSize, fileCount };
+}
+
 export async function deleteBlobUrl(blobUrl: string, token: string): Promise<void> {
   const rid = requestIdFromToken(token);
   const res = await fetch(`${blobApiBase()}/delete`, {
