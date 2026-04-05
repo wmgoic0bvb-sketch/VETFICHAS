@@ -1,6 +1,5 @@
 "use client";
 
-import { DbLoadingOverlay } from "@/components/ui/lottie-loading";
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -27,7 +26,7 @@ export function LoginForm() {
         callbackUrl,
       });
       if (res?.error) {
-        setError("DNI o contraseña incorrectos.");
+        setError("Usuario o contraseña incorrectos.");
         return;
       }
       router.push(callbackUrl);
@@ -38,15 +37,13 @@ export function LoginForm() {
   }
 
   return (
-    <>
-      <DbLoadingOverlay show={pending} />
-    <form onSubmit={onSubmit} className="relative flex flex-col gap-4">
+    <form onSubmit={onSubmit} className="flex flex-col gap-4">
       <div>
         <label
           htmlFor="dni"
           className="mb-1 block text-xs font-medium uppercase tracking-wide text-[#555]"
         >
-          DNI
+          Usuario
         </label>
         <input
           id="dni"
@@ -90,6 +87,5 @@ export function LoginForm() {
         {pending ? "Ingresando…" : "Ingresar"}
       </button>
     </form>
-    </>
   );
 }

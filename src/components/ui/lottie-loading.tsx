@@ -14,10 +14,10 @@ export function LottieSpinner({
   return (
     <div
       className={className}
-      style={{ width: size, height: size }}
+      style={{ width: size, height: size, background: "transparent" }}
       aria-hidden
     >
-      <DotLottieReact src={LOTTIE_SRC} loop autoplay />
+      <DotLottieReact src={LOTTIE_SRC} loop autoplay style={{ background: "transparent" }} />
     </div>
   );
 }
