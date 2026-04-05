@@ -218,7 +218,10 @@ export function InternacionSeguimientoView() {
   const d = datos!;
 
   return (
-    <main className="mx-auto w-full max-w-[900px] flex-1 px-4 py-6">
+    <main
+      id="internacion-seguimiento"
+      className="mx-auto w-full max-w-[900px] flex-1 scroll-mt-24 px-4 py-6"
+    >
       <Link
         href="/internaciones"
         className="text-sm font-medium text-[#5c1838] underline"
@@ -231,7 +234,12 @@ export function InternacionSeguimientoView() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-xl font-bold text-[#1a1a1a]">
-              {patient.nombre}
+              <Link
+                href={`/patient/${patient.id}`}
+                className="rounded-sm text-inherit underline-offset-4 outline-none transition-colors hover:text-[#5c1838] hover:underline focus-visible:ring-2 focus-visible:ring-[#5c1838]/35"
+              >
+                {patient.nombre}
+              </Link>
             </h1>
             <p className="mt-1 text-[14px] text-[#555]">
               {patient.especie}

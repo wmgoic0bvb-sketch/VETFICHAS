@@ -266,6 +266,16 @@ export default function PatientDetailPage() {
                 <p className="mt-1 text-sm text-[#888]">
                   {patient.raza || patient.especie} · {calcularEdad(patient.fnac)}
                 </p>
+                {patient.internado ? (
+                  <div className="mt-3 flex justify-center">
+                    <Link
+                      href={`/internaciones/${patient.id}#internacion-seguimiento`}
+                      className="rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-900 transition-colors hover:bg-emerald-200/90"
+                    >
+                      Internado
+                    </Link>
+                  </div>
+                ) : null}
               </div>
             </section>
 
