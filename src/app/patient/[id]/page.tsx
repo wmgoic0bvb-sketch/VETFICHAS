@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { ConsultaModal } from "@/components/dashboard/consulta-modal";
-import { DashboardNav } from "@/components/dashboard/dashboard-nav";
+import { AppShell } from "@/components/layout/app-shell";
 import { PatientDangerZone } from "@/components/dashboard/patient-danger-zone";
 import {
   PatientFichaEditForm,
@@ -206,8 +206,7 @@ export default function PatientDetailPage() {
 
   if (!ready) {
     return (
-      <div className="flex min-h-screen flex-col bg-[#f5f0eb]">
-        <DashboardNav />
+      <AppShell>
         <main
           className={`${mainClass} flex flex-col items-center justify-center gap-3 py-16 text-[#888]`}
           role="status"
@@ -216,14 +215,13 @@ export default function PatientDetailPage() {
           <LottieSpinner size={140} />
           <span className="text-sm">Cargando…</span>
         </main>
-      </div>
+      </AppShell>
     );
   }
 
   if (!patient) {
     return (
-      <div className="flex min-h-screen flex-col bg-[#f5f0eb]">
-        <DashboardNav />
+      <AppShell>
         <main className={mainClass}>
           <Link href="/" className="text-sm font-medium text-[#5c1838] underline">
             ← Volver al dashboard
@@ -232,13 +230,12 @@ export default function PatientDetailPage() {
             No se encontró el paciente.
           </div>
         </main>
-      </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#f5f0eb]">
-      <DashboardNav />
+    <AppShell>
       <main className={mainClass}>
         <Link href="/" className="text-sm font-medium text-[#5c1838] underline">
           ← Volver al dashboard
@@ -441,6 +438,6 @@ export default function PatientDetailPage() {
           />
         </Modal>
       </main>
-    </div>
+    </AppShell>
   );
 }

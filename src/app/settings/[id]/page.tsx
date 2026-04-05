@@ -1,9 +1,9 @@
-import { DashboardNav } from "@/components/dashboard/dashboard-nav";
+import { AppShell } from "@/components/layout/app-shell";
 
 export default function SettingsPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-[#f5f0eb]">
-      <DashboardNav />
-    </div>
+    <AppShell>
+      <main className="flex-1 px-4 py-6" />
+    </AppShell>
   );
 }

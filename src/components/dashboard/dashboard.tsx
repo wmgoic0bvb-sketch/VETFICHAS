@@ -11,7 +11,7 @@ import {
 } from "@/types/patient";
 import { LottieSpinner } from "@/components/ui/lottie-loading";
 import { ConsultaModal } from "./consulta-modal";
-import { DashboardNav } from "./dashboard-nav";
+import { AppShell } from "@/components/layout/app-shell";
 import { NewPatientWizard } from "./new-patient-wizard";
 import { PatientGrid } from "./patient-grid";
 import { PatientSearch } from "./patient-search";
@@ -68,8 +68,7 @@ export function Dashboard() {
 
   if (!ready) {
     return (
-      <div className="flex min-h-screen flex-col bg-[#f5f0eb]">
-        <DashboardNav onNewPatient={() => {}} />
+      <AppShell onNewPatient={() => {}}>
         <div
           className="flex flex-1 flex-col items-center justify-center gap-3 text-[#888]"
           role="status"
@@ -78,14 +77,12 @@ export function Dashboard() {
           <LottieSpinner size={140} />
           <span className="text-sm">Cargando…</span>
         </div>
-      </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#f5f0eb]">
-      <DashboardNav onNewPatient={() => setWizardOpen(true)} />
-
+    <AppShell onNewPatient={() => setWizardOpen(true)}>
       <main className="mx-auto w-full max-w-[900px] flex-1 px-4 py-6">
         <PatientSearch value={query} onChange={setQuery} />
 
@@ -199,6 +196,6 @@ export function Dashboard() {
           }
         }}
       />
-    </div>
+    </AppShell>
   );
 }
