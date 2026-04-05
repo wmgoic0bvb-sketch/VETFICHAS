@@ -38,6 +38,7 @@ export async function putBlob(
   pathname: string,
   file: Blob & { size: number; type: string },
   token: string,
+  access?: BlobAccess,
 ): Promise<PutBlobResult> {
   const params = new URLSearchParams({ pathname });
   const url = `${blobApiBase()}/?${params.toString()}`;
@@ -51,7 +52,7 @@ export async function putBlob(
       "x-api-version": BLOB_API_VERSION,
       "x-api-blob-request-id": rid,
       "x-api-blob-request-attempt": "0",
-      "x-vercel-blob-access": blobAccess(),
+      "x-vercel-blob-access": access ?? blobAccess(),
       "x-content-type": file.type || "application/octet-stream",
       "x-add-random-suffix": "1",
       "x-content-length": String(file.size),

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 
@@ -88,6 +88,33 @@ function EyeIcon({ open }: { open: boolean }) {
   );
 }
 
+function resizeImage(file: File, maxSize: number): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      let w = img.width;
+      let h = img.height;
+      if (w > maxSize || h > maxSize) {
+        if (w > h) { h = Math.round((h * maxSize) / w); w = maxSize; }
+        else { w = Math.round((w * maxSize) / h); h = maxSize; }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error("No se pudo comprimir la imagen"))),
+        "image/jpeg",
+        0.85,
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error("Imagen inválida")); };
+    img.src = objectUrl;
+  });
+}
+
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrador",
   vet: "Veterinario",
@@ -143,18 +170,16 @@ function PasswordInput({
 }
 
 export function SettingsPanel() {
-  const { data: session } = useSession();
+  const { data: session, update } = useSession();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Foto de perfil
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(
-    session?.user?.image ?? null,
-  );
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [savingAvatar, setSavingAvatar] = useState(false);
 
   // Nombre
-  const [name, setName] = useState(session?.user?.name ?? "");
+  const [name, setName] = useState("");
   const [savingName, setSavingName] = useState(false);
 
   // Contraseña
@@ -167,6 +192,13 @@ export function SettingsPanel() {
     confirm?: string;
   }>({});
   const [savingPassword, setSavingPassword] = useState(false);
+
+  // Sincronizar estado local cuando carga la sesión
+  useEffect(() => {
+    if (!session?.user) return;
+    setName((prev) => (prev === "" ? (session.user.name ?? "") : prev));
+    setAvatarPreview((prev) => (prev === null ? (session.user.image ?? null) : prev));
+  }, [session?.user]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -182,11 +214,29 @@ export function SettingsPanel() {
   const handleSaveAvatar = async () => {
     if (!avatarFile) return;
     setSavingAvatar(true);
-    // Mock: simulate upload delay
-    await new Promise((r) => setTimeout(r, 900));
-    setSavingAvatar(false);
-    setAvatarFile(null);
-    toast.success("Foto actualizada correctamente.");
+    try {
+      // Redimensionar a 256×256 en el cliente antes de enviar
+      const resized = await resizeImage(avatarFile, 256);
+      const form = new FormData();
+      form.append("file", resized, "avatar.jpg");
+      const res = await fetch("/api/blob/avatar", { method: "POST", body: form });
+      const data = (await res.json()) as { url?: string; error?: string };
+      if (!res.ok) {
+        toast.error(data.error ?? "No se pudo subir la foto.");
+        return;
+      }
+      setAvatarFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      // Cache-bust para forzar recarga del avatar en el nav
+      const bustUrl = `${data.url}?v=${Date.now()}`;
+      setAvatarPreview(bustUrl);
+      await update({ picture: bustUrl });
+      toast.success("Foto actualizada correctamente.");
+    } catch {
+      toast.error("Error de red al subir la foto.");
+    } finally {
+      setSavingAvatar(false);
+    }
   };
 
   const handleSaveName = async () => {
@@ -195,9 +245,24 @@ export function SettingsPanel() {
       return;
     }
     setSavingName(true);
-    await new Promise((r) => setTimeout(r, 700));
-    setSavingName(false);
-    toast.success("Nombre actualizado correctamente.");
+    try {
+      const res = await fetch("/api/users/me", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: name.trim() }),
+      });
+      const data = (await res.json()) as { name?: string; error?: string };
+      if (!res.ok) {
+        toast.error(data.error ?? "No se pudo actualizar el nombre.");
+        return;
+      }
+      await update({ name: data.name ?? name.trim() });
+      toast.success("Nombre actualizado correctamente.");
+    } catch {
+      toast.error("Error de red al guardar el nombre.");
+    } finally {
+      setSavingName(false);
+    }
   };
 
   const handleSavePassword = async () => {
@@ -216,12 +281,30 @@ export function SettingsPanel() {
     }
     setPasswordErrors({});
     setSavingPassword(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setSavingPassword(false);
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    toast.success("Contraseña actualizada correctamente.");
+    try {
+      const res = await fetch("/api/users/me", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        if (data.error?.toLowerCase().includes("actual")) {
+          setPasswordErrors({ current: data.error });
+        } else {
+          toast.error(data.error ?? "No se pudo cambiar la contraseña.");
+        }
+        return;
+      }
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      toast.success("Contraseña actualizada correctamente.");
+    } catch {
+      toast.error("Error de red al cambiar la contraseña.");
+    } finally {
+      setSavingPassword(false);
+    }
   };
 
   const user = session?.user;
@@ -246,7 +329,7 @@ export function SettingsPanel() {
                   width={80}
                   height={80}
                   className="h-full w-full object-cover"
-                  unoptimized={avatarPreview.startsWith("blob:")}
+                  unoptimized
                 />
               ) : (
                 <UserIcon />

@@ -10,6 +10,7 @@ type UserLean = {
   dni: string | number;
   passwordHash?: string;
   name?: string | null;
+  imageData?: string | null;
   role?: string | null;
 };
 
@@ -111,10 +112,12 @@ export async function authorizeWithDniPassword(
 
   const role = roleFromDb(doc.role ?? undefined);
 
+  const userId = doc._id.toString();
   return {
-    id: doc._id.toString(),
+    id: userId,
     dni: dniOut,
     name: doc.name ?? undefined,
+    image: doc.imageData ? `/api/users/${userId}/avatar` : undefined,
     role,
   };
 }

@@ -33,6 +33,7 @@ function UserAvatarButton({ imageUrl }: { imageUrl?: string | null }) {
         width={36}
         height={36}
         className="h-full w-full object-cover"
+        unoptimized
       />
     );
   }
@@ -117,6 +118,14 @@ export function DashboardNav({ onNewPatient }: { onNewPatient?: () => void }) {
               role="menu"
               className="absolute right-0 top-full z-[110] mt-1 min-w-[180px] rounded-lg border border-[#e8e0d8] bg-white py-1 shadow-md"
             >
+              {session?.user?.name ? (
+                <div className="border-b border-[#f0ebe4] px-3 py-2.5">
+                  <p className="truncate text-sm font-semibold text-[#1a1a1a]">
+                    {session.user.name}
+                  </p>
+                  <p className="truncate text-xs text-[#999]">DNI {session.user.dni}</p>
+                </div>
+              ) : null}
               {isAdmin ? (
                 <Link
                   href="/admin"
