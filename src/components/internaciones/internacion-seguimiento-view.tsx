@@ -4,7 +4,10 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
-import { draftFromPatient } from "@/components/dashboard/patient-ficha-edit-form";
+import {
+  draftFromPatient,
+  PencilIcon,
+} from "@/components/dashboard/patient-ficha-edit-form";
 import { usePatients } from "@/components/providers/patients-provider";
 import { HistorialModificacionesPanel } from "@/components/dashboard/historial-modificaciones-panel";
 import { FieldError, inputErrorRing } from "@/components/ui/field-error";
@@ -49,9 +52,9 @@ export function InternacionSeguimientoView() {
   const [headerFecha, setHeaderFecha] = useState("");
   const [headerMotivo, setHeaderMotivo] = useState("");
   const [headerVet, setHeaderVet] = useState("");
-  const [diagTexto, setDiagTexto] = useState("");
   const [saving, setSaving] = useState<string | null>(null);
 
+  const [diagModalOpen, setDiagModalOpen] = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
   const [evoModalOpen, setEvoModalOpen] = useState(false);
 
@@ -67,7 +70,6 @@ export function InternacionSeguimientoView() {
     setHeaderFecha(d.fechaIngreso || todayISODate());
     setHeaderMotivo(d.motivoIngreso);
     setHeaderVet(d.veterinarioResponsable);
-    setDiagTexto(d.diagnosticoPrincipal);
   }, [patient, patient?.datosInternacion]);
 
   useEffect(() => {
@@ -138,16 +140,6 @@ export function InternacionSeguimientoView() {
       veterinarioResponsable: vetNombre,
     });
     toast.success("Datos de ingreso guardados");
-  };
-
-  const guardarDiagnostico = async () => {
-    if (!patient || !datos) return;
-    await persistDatos({
-      ...datos,
-      diagnosticoPrincipal: diagTexto.trim(),
-      diagnosticoEditadoEn: new Date().toISOString(),
-    });
-    toast.success("Diagnóstico guardado");
   };
 
   const toggleOrdenActiva = async (ordenId: string) => {
@@ -347,37 +339,63 @@ export function InternacionSeguimientoView() {
         ) : null}
       </section>
 
-      {/* Diagnóstico */}
+      {/* Diagnóstico presuntivo */}
       <section className={`${cardClass} mt-5`}>
-        <h2 className="text-xs font-bold uppercase tracking-[0.06em] text-[#5c1838]">
-          Diagnóstico principal
-        </h2>
-        <textarea
-          value={diagTexto}
-          onChange={(e) => setDiagTexto(e.target.value)}
-          disabled={!puedeEditar}
-          rows={5}
-          className="mt-3 w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-white px-3 py-2.5 text-sm leading-relaxed outline-none focus:border-[#5c1838] disabled:bg-[#f5f5f5]"
-          placeholder="Diagnóstico presuntivo o confirmado…"
-        />
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-          <p className="text-[12px] text-[#888]">
-            Última edición:{" "}
-            {d.diagnosticoEditadoEn
-              ? formatFechaHoraDisplay(d.diagnosticoEditadoEn)
-              : "—"}
-          </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="text-xs font-bold uppercase tracking-[0.06em] text-[#5c1838]">
+            Diagnóstico presuntivo
+          </h2>
           {puedeEditar ? (
             <button
               type="button"
-              disabled={saving === "datos"}
-              onClick={() => void guardarDiagnostico()}
-              className="rounded-full bg-[#5c1838] px-4 py-1.5 text-sm font-medium text-white hover:bg-[#401127] disabled:opacity-60"
+              onClick={() => setDiagModalOpen(true)}
+              className="-m-1 flex shrink-0 items-center justify-center rounded-lg p-1 text-[#5c1838] hover:bg-[#f0faf5]"
+              aria-label="Editar diagnóstico presuntivo"
+              title="Editar diagnóstico presuntivo"
             >
-              Guardar
+              <PencilIcon className="h-4 w-4" />
             </button>
           ) : null}
         </div>
+
+        {d.diagnosticoPrincipal.trim() ? (
+          <div className="mt-4 rounded-xl border border-[#ebe6df] bg-[#faf8f5] p-4">
+            <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-[#333]">
+              {d.diagnosticoPrincipal}
+            </p>
+          </div>
+        ) : (
+          <p className="mt-4 text-[14px] text-[#888]">
+            {puedeEditar
+              ? "No hay diagnóstico registrado. Agregalo tocando el lápiz de arriba."
+              : "No hay diagnóstico registrado."}
+          </p>
+        )}
+        <p className="mt-3 text-[12px] text-[#888]">
+          Última edición:{" "}
+          {d.diagnosticoEditadoEn
+            ? formatFechaHoraDisplay(d.diagnosticoEditadoEn)
+            : "—"}
+        </p>
+
+        {puedeEditar ? (
+          <DiagnosticoPresuntivoModal
+            open={diagModalOpen}
+            onClose={() => setDiagModalOpen(false)}
+            initialText={d.diagnosticoPrincipal}
+            saving={saving === "datos"}
+            onSave={async (text) => {
+              if (!patient || !datos) return;
+              await persistDatos({
+                ...datos,
+                diagnosticoPrincipal: text,
+                diagnosticoEditadoEn: new Date().toISOString(),
+              });
+              toast.success("Diagnóstico guardado");
+              setDiagModalOpen(false);
+            }}
+          />
+        ) : null}
       </section>
 
       {/* Plan */}
@@ -468,6 +486,68 @@ export function InternacionSeguimientoView() {
         <HistorialModificacionesPanel items={patient.historialModificaciones} />
       </div>
     </main>
+  );
+}
+
+function DiagnosticoPresuntivoModal({
+  open,
+  onClose,
+  initialText,
+  saving,
+  onSave,
+}: {
+  open: boolean;
+  onClose: () => void;
+  initialText: string;
+  saving: boolean;
+  onSave: (text: string) => void | Promise<void>;
+}) {
+  const [text, setText] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    setText(initialText);
+  }, [open, initialText]);
+
+  const guardar = async () => {
+    await onSave(text.trim());
+  };
+
+  return (
+    <Modal open={open} onClose={onClose} labelledBy="diag-presuntivo-titulo">
+      <h2 id="diag-presuntivo-titulo" className="text-lg font-bold text-[#5c1838]">
+        Diagnóstico presuntivo
+      </h2>
+      <div className="mt-4">
+        <label className="mb-1 block text-[11px] font-bold uppercase text-[#8b7355]">
+          Texto
+        </label>
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={8}
+          className="max-h-[min(60vh,400px)] w-full rounded-xl border border-[#e8e0d8] px-3 py-2.5 text-sm leading-relaxed"
+          placeholder="Diagnóstico presuntivo o confirmado…"
+        />
+      </div>
+      <div className="mt-6 flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-full border border-[#e8e0d8] px-4 py-2 text-sm font-medium text-[#555]"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          disabled={saving}
+          onClick={() => void guardar()}
+          className="rounded-full bg-[#5c1838] px-4 py-2 text-sm font-medium text-white hover:bg-[#401127] disabled:opacity-60"
+        >
+          {saving ? "Guardando…" : "Guardar"}
+        </button>
+      </div>
+    </Modal>
   );
 }
 
