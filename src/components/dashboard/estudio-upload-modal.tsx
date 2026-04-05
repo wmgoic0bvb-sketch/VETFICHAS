@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePatients } from "@/components/providers/patients-provider";
+import { DbLoadingOverlay } from "@/components/ui/lottie-loading";
 import { Modal } from "@/components/ui/modal";
 import type { EstudioCategoria } from "@/types/patient";
 
@@ -67,7 +68,7 @@ export function EstudioUploadModal({
         throw new Error("Respuesta incompleta del servidor");
       }
 
-      addEstudio(patientId, {
+      await addEstudio(patientId, {
         categoria,
         titulo: titulo.trim(),
         url: data.url,
@@ -99,6 +100,11 @@ export function EstudioUploadModal({
       labelledBy="estudio-upload-title"
       overlayClassName="z-[210]"
     >
+      <div className="relative">
+        <DbLoadingOverlay
+          show={uploading}
+          className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-3xl bg-white/85 backdrop-blur-sm"
+        />
       <button
         type="button"
         onClick={requestClose}
@@ -171,9 +177,6 @@ export function EstudioUploadModal({
             Máx. 4 MB. Se guarda en Vercel Blob (requiere token en el servidor).
           </p>
         </div>
-        {uploading ? (
-          <p className="text-[13px] font-medium text-[#2d6a4f]">Subiendo…</p>
-        ) : null}
         {error ? (
           <p className="text-[13px] font-medium text-red-600" role="alert">
             {error}
@@ -189,6 +192,7 @@ export function EstudioUploadModal({
         >
           Cancelar
         </button>
+      </div>
       </div>
     </Modal>
   );

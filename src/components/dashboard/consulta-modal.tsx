@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { FieldError, inputErrorRing } from "@/components/ui/field-error";
+import { DbLoadingOverlay } from "@/components/ui/lottie-loading";
 import { Modal } from "@/components/ui/modal";
 import { todayISODate } from "@/lib/date-utils";
 import type { Consulta, ConsultaTipo } from "@/types/patient";
@@ -21,7 +22,7 @@ export function ConsultaModal({
 }: {
   open: boolean;
   onClose: () => void;
-  onSave: (data: Omit<Consulta, "id">) => void;
+  onSave: (data: Omit<Consulta, "id">) => void | Promise<void>;
 }) {
   const [motivo, setMotivo] = useState("");
   const [veterinario, setVeterinario] = useState("");
@@ -41,6 +42,7 @@ export function ConsultaModal({
   );
   const [vetListLoading, setVetListLoading] = useState(false);
   const [vetListError, setVetListError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -94,15 +96,7 @@ export function ConsultaModal({
     };
   }, [open]);
 
-  const requestClose = () => {
-    if (!hasChanges) {
-      onClose();
-      return;
-    }
-    setConfirmCloseOpen(true);
-  };
-
-  const guardar = () => {
+  const guardar = async () => {
     const m = motivo.trim();
     if (!vetListLoading && vetOpciones.length === 0) {
       setVetError(
@@ -120,19 +114,37 @@ export function ConsultaModal({
     }
     setMotivoError(null);
     setVetError(null);
-    onSave({
-      motivo: m,
-      veterinario,
-      tipo,
-      fecha,
-      peso,
-      temp,
-      diag: diag.trim(),
-      trat: trat.trim(),
-      meds: meds.trim(),
-    });
-    setHasChanges(false);
-    onClose();
+    setSaving(true);
+    try {
+      await Promise.resolve(
+        onSave({
+          motivo: m,
+          veterinario,
+          tipo,
+          fecha,
+          peso,
+          temp,
+          diag: diag.trim(),
+          trat: trat.trim(),
+          meds: meds.trim(),
+        }),
+      );
+      setHasChanges(false);
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const busy = vetListLoading || saving;
+
+  const requestClose = () => {
+    if (busy) return;
+    if (!hasChanges) {
+      onClose();
+      return;
+    }
+    setConfirmCloseOpen(true);
   };
 
   return (
@@ -142,10 +154,16 @@ export function ConsultaModal({
       labelledBy="consulta-title"
       overlayClassName="z-[210]"
     >
+      <div className="relative">
+        <DbLoadingOverlay
+          show={busy}
+          className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-3xl bg-white/85 backdrop-blur-sm"
+        />
       <button
         type="button"
         onClick={requestClose}
-        className="absolute right-[18px] top-4 text-[22px] leading-none text-[#aaa] hover:text-[#333]"
+        disabled={busy}
+        className="absolute right-[18px] top-4 z-[1] text-[22px] leading-none text-[#aaa] hover:text-[#333] disabled:opacity-50"
         aria-label="Cerrar"
       >
         ✕
@@ -345,18 +363,21 @@ export function ConsultaModal({
           <button
             type="button"
             onClick={requestClose}
-            className="flex-1 rounded-xl border-[1.5px] border-[#e8e0d8] bg-transparent py-3 text-[15px] font-medium text-[#555] hover:bg-[#f5f0eb]"
+            disabled={busy}
+            className="flex-1 rounded-xl border-[1.5px] border-[#e8e0d8] bg-transparent py-3 text-[15px] font-medium text-[#555] hover:bg-[#f5f0eb] disabled:opacity-50"
           >
             Cancelar
           </button>
           <button
             type="button"
-            onClick={guardar}
-            className="flex-[2] rounded-xl bg-[#2d6a4f] py-3 text-[15px] font-semibold text-white hover:bg-[#1b4332]"
+            onClick={() => void guardar()}
+            disabled={busy}
+            className="flex-[2] rounded-xl bg-[#2d6a4f] py-3 text-[15px] font-semibold text-white hover:bg-[#1b4332] disabled:opacity-60"
           >
             ✓ Guardar consulta
           </button>
         </div>
+      </div>
       </div>
 
       <Modal

@@ -2,8 +2,10 @@
 
 import { useCallback, useState } from "react";
 import { FieldError, inputErrorRing } from "@/components/ui/field-error";
+import { DbLoadingOverlay } from "@/components/ui/lottie-loading";
 import { Modal } from "@/components/ui/modal";
 import { parDueñosVacío } from "@/lib/dueños-utils";
+import { normalizePhoneInput } from "@/lib/phone-utils";
 import type { Especie, PacienteDraft } from "@/types/patient";
 
 const steps = [1, 2, 3] as const;
@@ -32,6 +34,7 @@ export function NewPatientWizard({
   const [dir, setDir] = useState("");
   const [esExterno, setEsExterno] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [saving, setSaving] = useState(false);
 
   const clearFieldError = (key: FieldKeys) => {
     setFieldErrors((prev) => {
@@ -58,6 +61,7 @@ export function NewPatientWizard({
   }, []);
 
   const handleClose = () => {
+    if (saving) return;
     reset();
     onClose();
   };
@@ -80,6 +84,7 @@ export function NewPatientWizard({
       return;
     }
     setFieldErrors({});
+    setSaving(true);
     try {
       await onSave({
         especie: especie as Especie,
@@ -90,10 +95,10 @@ export function NewPatientWizard({
         castrado,
         color: color.trim(),
         dueños: [
-          { nombre: d1, tel: dueños[0].tel.trim() },
+          { nombre: d1, tel: normalizePhoneInput(dueños[0].tel) },
           {
             nombre: dueños[1].nombre.trim(),
-            tel: dueños[1].tel.trim(),
+            tel: normalizePhoneInput(dueños[1].tel),
           },
         ],
         dir: dir.trim(),
@@ -102,9 +107,12 @@ export function NewPatientWizard({
         esUnicaConsulta: false,
         consultas: [],
       });
-      handleClose();
+      reset();
+      onClose();
     } catch {
       /* onSave puede rechazar si falla el alta en el servidor */
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -116,10 +124,16 @@ export function NewPatientWizard({
 
   return (
     <Modal open={open} onClose={handleClose} labelledBy="wizard-title">
+      <div className="relative">
+        <DbLoadingOverlay
+          show={saving}
+          className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-3xl bg-white/85 backdrop-blur-sm"
+        />
       <button
         type="button"
         onClick={handleClose}
-        className="absolute right-[18px] top-4 text-[22px] leading-none text-[#aaa] hover:text-[#333]"
+        disabled={saving}
+        className="absolute right-[18px] top-4 z-[1] text-[22px] leading-none text-[#aaa] hover:text-[#333] disabled:opacity-50"
         aria-label="Cerrar"
       >
         ✕
@@ -346,15 +360,18 @@ export function NewPatientWizard({
               <input
                 id="wizard-tel-1"
                 type="tel"
+                inputMode="numeric"
+                autoComplete="tel-national"
+                maxLength={10}
                 value={dueños[0].tel}
                 onChange={(e) =>
                   setDueños((prev) => [
-                    { ...prev[0], tel: e.target.value },
+                    { ...prev[0], tel: normalizePhoneInput(e.target.value) },
                     prev[1],
                   ])
                 }
                 className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
-                placeholder="Ej: 2980 123456"
+                placeholder="Ej: 2984868120"
               />
             </div>
           </div>
@@ -393,15 +410,21 @@ export function NewPatientWizard({
               <input
                 id="wizard-tel-2"
                 type="tel"
+                inputMode="numeric"
+                autoComplete="tel-national"
+                maxLength={10}
                 value={dueños[1].tel}
                 onChange={(e) =>
                   setDueños((prev) => [
                     prev[0],
-                    { ...prev[1], tel: e.target.value },
+                    {
+                      ...prev[1],
+                      tel: normalizePhoneInput(e.target.value),
+                    },
                   ])
                 }
                 className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
-                placeholder="Ej: 2980 654321"
+                placeholder="Ej: 2984868120"
               />
             </div>
           </div>
@@ -441,14 +464,16 @@ export function NewPatientWizard({
             </button>
             <button
               type="button"
-              onClick={guardar}
-              className="flex-[2] rounded-xl bg-[#2d6a4f] py-3 text-[15px] font-semibold text-white hover:bg-[#1b4332]"
+              onClick={() => void guardar()}
+              disabled={saving}
+              className="flex-[2] rounded-xl bg-[#2d6a4f] py-3 text-[15px] font-semibold text-white hover:bg-[#1b4332] disabled:opacity-60"
             >
               ✓ Guardar ficha
             </button>
           </div>
         </div>
       )}
+      </div>
     </Modal>
   );
 }

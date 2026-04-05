@@ -8,6 +8,7 @@ import {
 } from "@/components/dashboard/patient-ficha-edit-form";
 import { usePatients } from "@/components/providers/patients-provider";
 import { ConfirmAlertDialog } from "@/components/ui/confirm-alert-dialog";
+import { DbLoadingOverlay } from "@/components/ui/lottie-loading";
 import {
   ESTADO_PACIENTE_LABELS,
   esPacienteActivo,
@@ -24,6 +25,7 @@ export function PatientDangerZone({ patient }: { patient: Paciente }) {
   const [deletePanelOpen, setDeletePanelOpen] = useState(false);
   const [deleteInput, setDeleteInput] = useState("");
   const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false);
+  const [pending, setPending] = useState(false);
 
   const nombreConfirmacion = patient.nombre.trim();
   const puedeEliminar =
@@ -35,19 +37,30 @@ export function PatientDangerZone({ patient }: { patient: Paciente }) {
   }, [patient.id]);
 
   const aplicarEstado = async (estado: EstadoPaciente) => {
-    await updatePatient(patient.id, { ...draftFromPatient(patient), estado });
+    setPending(true);
+    try {
+      await updatePatient(patient.id, { ...draftFromPatient(patient), estado });
+    } finally {
+      setPending(false);
+    }
   };
 
   const eliminarDefinitivo = async () => {
     if (!isAdmin || !puedeEliminar) return;
-    await removePatient(patient.id);
-    router.push("/");
+    setPending(true);
+    try {
+      await removePatient(patient.id);
+      router.push("/");
+    } finally {
+      setPending(false);
+    }
   };
 
   const activo = esPacienteActivo(patient);
 
   return (
     <>
+      <DbLoadingOverlay show={pending} />
       <section
         className="mt-10 overflow-hidden rounded-lg border border-red-200 bg-white shadow-sm"
         aria-labelledby="danger-zone-title"

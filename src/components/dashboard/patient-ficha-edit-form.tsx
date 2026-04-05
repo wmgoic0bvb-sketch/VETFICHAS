@@ -5,6 +5,11 @@ import { usePatients } from "@/components/providers/patients-provider";
 import type { PacienteEditable } from "@/components/providers/patients-provider";
 import { FieldError, inputErrorRing } from "@/components/ui/field-error";
 import {
+  normalizePhoneInput,
+  normalizeStoredPhoneForEdit,
+} from "@/lib/phone-utils";
+import { DbLoadingOverlay } from "@/components/ui/lottie-loading";
+import {
   ESTADO_PACIENTE_LABELS,
   type DueñoContacto,
   type EstadoPaciente,
@@ -23,10 +28,16 @@ export function draftFromPatient(p: Paciente): PacienteEditable {
     fnac: p.fnac,
     castrado: p.castrado,
     color: p.color,
-    dueños: [{ ...p.dueños[0] }, { ...p.dueños[1] }] as [
-      DueñoContacto,
-      DueñoContacto,
-    ],
+    dueños: [
+      {
+        ...p.dueños[0],
+        tel: normalizeStoredPhoneForEdit(p.dueños[0].tel),
+      },
+      {
+        ...p.dueños[1],
+        tel: normalizeStoredPhoneForEdit(p.dueños[1].tel),
+      },
+    ] as [DueñoContacto, DueñoContacto],
     dir: p.dir,
     estado: p.estado ?? "activo",
     esExterno: p.esExterno,
@@ -71,6 +82,7 @@ export function PatientFichaEditForm({
     draftFromPatient(patient),
   );
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const next = draftFromPatient(patient);
@@ -104,33 +116,42 @@ export function PatientFichaEditForm({
       setFieldErrors(nextErrors);
       return;
     }
-    await updatePatient(patient.id, {
-      ...draft,
-      nombre: n,
-      raza: draft.raza.trim(),
-      color: draft.color.trim(),
-      dueños: [
-        { nombre: d1, tel: draft.dueños[0].tel.trim() },
-        {
-          nombre: draft.dueños[1].nombre.trim(),
-          tel: draft.dueños[1].tel.trim(),
-        },
-      ],
-      dir: draft.dir.trim(),
-      estado: draft.estado,
-      esExterno: draft.esExterno,
-      esUnicaConsulta: draft.esUnicaConsulta,
-      proximosControles: draft.proximosControles ?? [],
-    });
-    setFieldErrors({});
-    onSaved?.();
+    setSaving(true);
+    try {
+      await updatePatient(patient.id, {
+        ...draft,
+        nombre: n,
+        raza: draft.raza.trim(),
+        color: draft.color.trim(),
+        dueños: [
+          { nombre: d1, tel: normalizePhoneInput(draft.dueños[0].tel) },
+          {
+            nombre: draft.dueños[1].nombre.trim(),
+            tel: normalizePhoneInput(draft.dueños[1].tel),
+          },
+        ],
+        dir: draft.dir.trim(),
+        estado: draft.estado,
+        esExterno: draft.esExterno,
+        esUnicaConsulta: draft.esUnicaConsulta,
+        proximosControles: draft.proximosControles ?? [],
+      });
+      setFieldErrors({});
+      onSaved?.();
+    } finally {
+      setSaving(false);
+    }
   };
 
   const inputBase =
     "w-full rounded-xl border-[1.5px] px-3.5 py-2.5 text-sm outline-none transition-colors";
 
   return (
-    <section className="mb-5 space-y-4">
+    <section className="relative mb-5 space-y-4">
+      <DbLoadingOverlay
+        show={saving}
+        className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-3xl bg-white/85 backdrop-blur-sm"
+      />
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-xs font-bold uppercase tracking-wider text-[#2d6a4f]">
           Editar datos del paciente
@@ -138,7 +159,8 @@ export function PatientFichaEditForm({
         <button
           type="button"
           onClick={onCancel}
-          className="text-xs font-medium text-[#888] hover:text-[#333]"
+          disabled={saving}
+          className="text-xs font-medium text-[#888] hover:text-[#333] disabled:opacity-50"
         >
           Cancelar
         </button>
@@ -347,12 +369,19 @@ export function PatientFichaEditForm({
           <input
             id={`${fid}-tel-1`}
             type="tel"
+            inputMode="numeric"
+            autoComplete="tel-national"
+            maxLength={10}
+            placeholder="Ej: 2984868120"
             value={draft.dueños[0].tel}
             onChange={(e) =>
               setDraft((prev) => ({
                 ...prev,
                 dueños: [
-                  { ...prev.dueños[0], tel: e.target.value },
+                  {
+                    ...prev.dueños[0],
+                    tel: normalizePhoneInput(e.target.value),
+                  },
                   prev.dueños[1],
                 ],
               }))
@@ -398,13 +427,20 @@ export function PatientFichaEditForm({
           <input
             id={`${fid}-tel-2`}
             type="tel"
+            inputMode="numeric"
+            autoComplete="tel-national"
+            maxLength={10}
+            placeholder="Ej: 2984868120"
             value={draft.dueños[1].tel}
             onChange={(e) =>
               setDraft((prev) => ({
                 ...prev,
                 dueños: [
                   prev.dueños[0],
-                  { ...prev.dueños[1], tel: e.target.value },
+                  {
+                    ...prev.dueños[1],
+                    tel: normalizePhoneInput(e.target.value),
+                  },
                 ],
               }))
             }
@@ -498,8 +534,9 @@ export function PatientFichaEditForm({
 
       <button
         type="button"
-        onClick={saveEdit}
-        className="w-full rounded-xl bg-[#2d6a4f] py-3 text-[15px] font-semibold text-white hover:bg-[#1b4332]"
+        onClick={() => void saveEdit()}
+        disabled={saving}
+        className="w-full rounded-xl bg-[#2d6a4f] py-3 text-[15px] font-semibold text-white hover:bg-[#1b4332] disabled:opacity-60"
       >
         Guardar cambios
       </button>

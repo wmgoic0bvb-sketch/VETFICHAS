@@ -4,6 +4,7 @@ import { useState } from "react";
 import { EstudioUploadModal } from "@/components/dashboard/estudio-upload-modal";
 import { usePatients } from "@/components/providers/patients-provider";
 import { ConfirmAlertDialog } from "@/components/ui/confirm-alert-dialog";
+import { DbLoadingOverlay } from "@/components/ui/lottie-loading";
 import { formatFecha } from "@/lib/date-utils";
 import type { Estudio, EstudioCategoria, Paciente } from "@/types/patient";
 import { toast } from "sonner";
@@ -130,33 +131,40 @@ export function PatientEstudiosSection({ patient }: { patient: Paciente }) {
   const [estudioPendingRemove, setEstudioPendingRemove] = useState<Estudio | null>(
     null,
   );
+  const [removing, setRemoving] = useState(false);
 
   const estudios = [...(patient.estudios ?? [])].sort(
     (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
   );
 
   const executeRemoveEstudio = async (e: Estudio) => {
+    setRemoving(true);
     try {
-      const res = await fetch("/api/blob", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: e.url }),
-      });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(data.error || "No se pudo eliminar el archivo remoto");
+      try {
+        const res = await fetch("/api/blob", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: e.url }),
+        });
+        if (!res.ok) {
+          const data = (await res.json().catch(() => ({}))) as { error?: string };
+          throw new Error(data.error || "No se pudo eliminar el archivo remoto");
+        }
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : "Error al eliminar el estudio.",
+        );
+        return;
       }
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Error al eliminar el estudio.",
-      );
-      return;
+      await removeEstudio(patient.id, e.id);
+    } finally {
+      setRemoving(false);
     }
-    removeEstudio(patient.id, e.id);
   };
 
   return (
-    <section>
+    <section className="relative">
+      <DbLoadingOverlay show={removing} />
       <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-xs font-bold uppercase tracking-wider text-[#2d6a4f]">
           Estudios (PDF / imágenes) ({estudios.length})

@@ -13,9 +13,12 @@ import {
 import { PatientEstudiosSection } from "@/components/dashboard/patient-estudios-section";
 import { ProximosControlesSection } from "@/components/dashboard/proximo-control-section";
 import { usePatients } from "@/components/providers/patients-provider";
+import { LottieSpinner } from "@/components/ui/lottie-loading";
 import { Modal } from "@/components/ui/modal";
+import { WhatsAppIcon } from "@/components/ui/whatsapp-icon";
 import { calcularEdad, formatFecha } from "@/lib/date-utils";
 import { exportConsultaPdf } from "@/lib/export-consulta-pdf";
+import { buildWhatsAppUrl } from "@/lib/phone-utils";
 import { toast } from "sonner";
 import {
   ESTADO_PACIENTE_LABELS,
@@ -181,13 +184,38 @@ export default function PatientDetailPage() {
     [patient?.consultas],
   );
 
+  const whatsapp1Url = useMemo(() => {
+    if (!patient) return null;
+    const tel = patient.dueños[0].tel;
+    if (!tel?.trim()) return null;
+    const nombreDueño = patient.dueños[0].nombre.trim();
+    const mensaje = nombreDueño ? `Hola ${nombreDueño}` : "Hola";
+    return buildWhatsAppUrl(tel, mensaje);
+  }, [patient]);
+
+  const whatsapp2Url = useMemo(() => {
+    if (!patient) return null;
+    const tel = patient.dueños[1].tel;
+    if (!tel?.trim()) return null;
+    const nombreDueño = patient.dueños[1].nombre.trim();
+    const mensaje = nombreDueño ? `Hola ${nombreDueño}` : "Hola";
+    return buildWhatsAppUrl(tel, mensaje);
+  }, [patient]);
+
   const mainClass = "mx-auto w-full max-w-[1200px] px-4 py-6";
 
   if (!ready) {
     return (
       <div className="flex min-h-screen flex-col bg-[#f5f0eb]">
         <DashboardNav />
-        <main className={`${mainClass} text-[#888]`}>Cargando...</main>
+        <main
+          className={`${mainClass} flex flex-col items-center justify-center gap-3 py-16 text-[#888]`}
+          role="status"
+          aria-label="Cargando ficha"
+        >
+          <LottieSpinner size={140} />
+          <span className="text-sm">Cargando…</span>
+        </main>
       </div>
     );
   }
@@ -277,9 +305,23 @@ export default function PatientDetailPage() {
               </h2>
               <div className="space-y-3 text-sm">
                 <div className="rounded-xl border border-[#ebe6df] bg-[#faf8f5] p-3">
-                  <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[#2d6a4f]">
-                    Responsable 1
-                  </p>
+                  <div className="mb-2 flex items-start justify-between gap-2">
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-[#2d6a4f]">
+                      Responsable 1
+                    </p>
+                    {whatsapp1Url ? (
+                      <a
+                        href={whatsapp1Url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[#25D366]/45 bg-[#dcf8c6]/40 px-2 py-1 text-[11px] font-semibold text-[#128C7E] transition-colors hover:bg-[#dcf8c6]/70"
+                        aria-label="Abrir WhatsApp con el responsable 1"
+                      >
+                        <WhatsAppIcon className="shrink-0" />
+                        WhatsApp
+                      </a>
+                    ) : null}
+                  </div>
                   <Row label="Nombre" value={patient.dueños[0].nombre || "—"} />
                   {patient.dueños[0].tel ? (
                     <Row label="Teléfono" value={patient.dueños[0].tel} />
@@ -287,9 +329,23 @@ export default function PatientDetailPage() {
                 </div>
                 {(patient.dueños[1].nombre || patient.dueños[1].tel) ? (
                   <div className="rounded-xl border border-dashed border-[#d4ccc0] p-3">
-                    <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[#888]">
-                      Responsable 2
-                    </p>
+                    <div className="mb-2 flex items-start justify-between gap-2">
+                      <p className="text-[11px] font-bold uppercase tracking-wide text-[#888]">
+                        Responsable 2
+                      </p>
+                      {whatsapp2Url ? (
+                        <a
+                          href={whatsapp2Url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[#25D366]/45 bg-[#dcf8c6]/40 px-2 py-1 text-[11px] font-semibold text-[#128C7E] transition-colors hover:bg-[#dcf8c6]/70"
+                          aria-label="Abrir WhatsApp con el responsable 2"
+                        >
+                          <WhatsAppIcon className="shrink-0" />
+                          WhatsApp
+                        </a>
+                      ) : null}
+                    </div>
                     <Row
                       label="Nombre"
                       value={patient.dueños[1].nombre || "—"}
@@ -355,8 +411,8 @@ export default function PatientDetailPage() {
         <ConsultaModal
           open={consultaOpen}
           onClose={() => setConsultaOpen(false)}
-          onSave={(data) => {
-            addConsulta(patient.id, data);
+          onSave={async (data) => {
+            await addConsulta(patient.id, data);
           }}
         />
 

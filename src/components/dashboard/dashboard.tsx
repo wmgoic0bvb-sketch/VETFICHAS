@@ -9,6 +9,7 @@ import {
   type Consulta,
   type Paciente,
 } from "@/types/patient";
+import { LottieSpinner } from "@/components/ui/lottie-loading";
 import { ConsultaModal } from "./consulta-modal";
 import { DashboardNav } from "./dashboard-nav";
 import { NewPatientWizard } from "./new-patient-wizard";
@@ -69,8 +70,13 @@ export function Dashboard() {
     return (
       <div className="flex min-h-screen flex-col bg-[#f5f0eb]">
         <DashboardNav onNewPatient={() => {}} />
-        <div className="flex flex-1 items-center justify-center text-[#888]">
-          Cargando…
+        <div
+          className="flex flex-1 flex-col items-center justify-center gap-3 text-[#888]"
+          role="status"
+          aria-label="Cargando pacientes"
+        >
+          <LottieSpinner size={140} />
+          <span className="text-sm">Cargando…</span>
         </div>
       </div>
     );
@@ -182,9 +188,9 @@ export function Dashboard() {
           setConsultaOpen(false);
           setDetailAfterConsulta(false);
         }}
-        onSave={(data: Omit<Consulta, "id">) => {
+        onSave={async (data: Omit<Consulta, "id">) => {
           if (!selectedId) return;
-          addConsulta(selectedId, data);
+          await addConsulta(selectedId, data);
           if (detailAfterConsulta) {
             const id = selectedId;
             setDetailAfterConsulta(false);

@@ -1,5 +1,6 @@
 "use client";
 
+import { DbLoadingOverlay } from "@/components/ui/lottie-loading";
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -37,7 +38,9 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4">
+    <>
+      <DbLoadingOverlay show={pending} />
+    <form onSubmit={onSubmit} className="relative flex flex-col gap-4">
       <div>
         <label
           htmlFor="dni"
@@ -87,5 +90,6 @@ export function LoginForm() {
         {pending ? "Ingresando…" : "Ingresar"}
       </button>
     </form>
+    </>
   );
 }

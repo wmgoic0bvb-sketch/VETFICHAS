@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { LottieSpinner } from "@/components/ui/lottie-loading";
 import { toast } from "sonner";
 import type { AdminUserRow } from "@/components/admin/admin-users-panel";
 
@@ -54,7 +55,14 @@ export function AdminVeterinariosPanel() {
 
       <div className="overflow-hidden rounded-2xl border border-[#e8e0d8] bg-white shadow-sm">
         {loading ? (
-          <p className="p-8 text-center text-[#888]">Cargando…</p>
+          <div
+            className="flex flex-col items-center justify-center gap-3 p-10"
+            role="status"
+            aria-label="Cargando veterinarios"
+          >
+            <LottieSpinner size={120} />
+            <span className="text-sm text-[#888]">Cargando…</span>
+          </div>
         ) : vets.length === 0 ? (
           <p className="p-8 text-center text-[#888]">
             No hay usuarios con rol Veterinario. Asigná ese rol en &quot;Administración

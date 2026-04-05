@@ -12,6 +12,7 @@ import {
   maskInputFechaDDMMYYYY,
   sortProximosControlesPorFecha,
 } from "@/lib/proximo-control-utils";
+import { DbLoadingOverlay } from "@/components/ui/lottie-loading";
 import {
   DEFAULT_SUCURSAL_ID,
   getSucursalById,
@@ -53,18 +54,19 @@ export function ProximosControlesSection({
   onRemove,
 }: {
   patient: Paciente;
-  onAdd: (data: Omit<ProximoControl, "id">) => void;
+  onAdd: (data: Omit<ProximoControl, "id">) => void | Promise<void>;
   onUpdate: (
     controlId: string,
     patch: Partial<Omit<ProximoControl, "id">>,
-  ) => void;
-  onRemove: (controlId: string) => void;
+  ) => void | Promise<void>;
+  onRemove: (controlId: string) => void | Promise<void>;
 }) {
   const [formMode, setFormMode] = useState<FormMode>(null);
   const [fechaInput, setFechaInput] = useState("");
   const [sucursalId, setSucursalId] = useState(DEFAULT_SUCURSAL_ID);
   const [nota, setNota] = useState("");
   const [fechaHoraError, setFechaHoraError] = useState<string | null>(null);
+  const [persisting, setPersisting] = useState(false);
 
   const ordenados = useMemo(
     () => sortProximosControlesPorFecha(patient.proximosControles),
@@ -106,7 +108,7 @@ export function ProximosControlesSection({
     setFechaInput(next);
   };
 
-  const guardarForm = () => {
+  const guardarForm = async () => {
     const fecha = fechaInput.trim();
     if (!fecha) {
       setFechaHoraError("Completá la fecha.");
@@ -127,23 +129,28 @@ export function ProximosControlesSection({
     }
     setFechaHoraError(null);
     const notaTrim = nota.trim();
-    if (formMode?.type === "edit") {
-      const prev = patient.proximosControles.find((c) => c.id === formMode.id);
-      onUpdate(formMode.id, {
-        fechaHora: t,
-        sucursalId,
-        nota: notaTrim || undefined,
-        asistencia: prev?.asistencia ?? null,
-      });
-    } else {
-      onAdd({
-        fechaHora: t,
-        sucursalId,
-        nota: notaTrim || undefined,
-        asistencia: null,
-      });
+    setPersisting(true);
+    try {
+      if (formMode?.type === "edit") {
+        const prev = patient.proximosControles.find((c) => c.id === formMode.id);
+        await onUpdate(formMode.id, {
+          fechaHora: t,
+          sucursalId,
+          nota: notaTrim || undefined,
+          asistencia: prev?.asistencia ?? null,
+        });
+      } else {
+        await onAdd({
+          fechaHora: t,
+          sucursalId,
+          nota: notaTrim || undefined,
+          asistencia: null,
+        });
+      }
+      setFormMode(null);
+    } finally {
+      setPersisting(false);
     }
-    setFormMode(null);
   };
 
   const abrirNuevo = () => {
@@ -151,7 +158,8 @@ export function ProximosControlesSection({
   };
 
   return (
-    <section className={shellClass}>
+    <section className={`relative ${shellClass}`}>
+      <DbLoadingOverlay show={persisting} />
       <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-[#2d6a4f]">
         Próximos controles
       </h2>
@@ -196,12 +204,15 @@ export function ProximosControlesSection({
                 {puedeMarcarAsistencia ? (
                   <button
                     type="button"
-                    onClick={() =>
-                      onUpdate(pc.id, {
-                        asistencia:
-                          pc.asistencia === "ausente" ? "asistio" : "ausente",
-                      })
-                    }
+                    onClick={() => {
+                      setPersisting(true);
+                      void Promise.resolve(
+                        onUpdate(pc.id, {
+                          asistencia:
+                            pc.asistencia === "ausente" ? "asistio" : "ausente",
+                        }),
+                      ).finally(() => setPersisting(false));
+                    }}
                     className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 ${
                       pc.asistencia === "ausente"
                         ? "bg-red-100 text-red-800 ring-red-300 focus-visible:ring-red-400"
@@ -251,7 +262,12 @@ export function ProximosControlesSection({
                 </button>
                 <button
                   type="button"
-                  onClick={() => onRemove(pc.id)}
+                  onClick={() => {
+                    setPersisting(true);
+                    void Promise.resolve(onRemove(pc.id)).finally(() =>
+                      setPersisting(false),
+                    );
+                  }}
                   className={`rounded-xl border px-3 py-2 text-sm font-medium ${
                     yaOcurrio
                       ? "border-stone-300 bg-stone-50/80 text-stone-600 hover:bg-stone-100"
@@ -361,8 +377,9 @@ export function ProximosControlesSection({
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={guardarForm}
-              className="rounded-xl bg-[#2d6a4f] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1b4332]"
+              onClick={() => void guardarForm()}
+              disabled={persisting}
+              className="rounded-xl bg-[#2d6a4f] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1b4332] disabled:opacity-60"
             >
               Guardar
             </button>

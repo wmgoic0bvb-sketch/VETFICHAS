@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { Modal } from "@/components/ui/modal";
 import { ConfirmAlertDialog } from "@/components/ui/confirm-alert-dialog";
+import { DbLoadingOverlay, LottieSpinner } from "@/components/ui/lottie-loading";
 
 export type AdminUserRow = {
   id: string;
@@ -22,6 +23,7 @@ export function AdminUsersPanel() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editUser, setEditUser] = useState<AdminUserRow | null>(null);
   const [deleteUser, setDeleteUser] = useState<AdminUserRow | null>(null);
+  const [deleteInProgress, setDeleteInProgress] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -68,7 +70,14 @@ export function AdminUsersPanel() {
 
       <div className="overflow-hidden rounded-2xl border border-[#e8e0d8] bg-white shadow-sm">
         {loading ? (
-          <p className="p-8 text-center text-[#888]">Cargando…</p>
+          <div
+            className="flex flex-col items-center justify-center gap-3 p-10"
+            role="status"
+            aria-label="Cargando usuarios"
+          >
+            <LottieSpinner size={120} />
+            <span className="text-sm text-[#888]">Cargando…</span>
+          </div>
         ) : users.length === 0 ? (
           <p className="p-8 text-center text-[#888]">No hay usuarios.</p>
         ) : (
@@ -200,22 +209,29 @@ export function AdminUsersPanel() {
         onConfirm={() => {
           void (async () => {
             if (!deleteUser) return;
-            const res = await fetch(`/api/admin/users/${deleteUser.id}`, {
-              method: "DELETE",
-            });
-            if (!res.ok) {
-              const j = await res.json().catch(() => ({}));
-              toast.error(
-                typeof j.error === "string" ? j.error : "No se pudo eliminar",
-              );
-              return;
+            setDeleteInProgress(true);
+            try {
+              const res = await fetch(`/api/admin/users/${deleteUser.id}`, {
+                method: "DELETE",
+              });
+              if (!res.ok) {
+                const j = await res.json().catch(() => ({}));
+                toast.error(
+                  typeof j.error === "string" ? j.error : "No se pudo eliminar",
+                );
+                return;
+              }
+              setDeleteUser(null);
+              await load();
+              toast.success("Usuario eliminado");
+            } finally {
+              setDeleteInProgress(false);
             }
-            setDeleteUser(null);
-            await load();
-            toast.success("Usuario eliminado");
           })();
         }}
       />
+
+      <DbLoadingOverlay show={deleteInProgress} />
     </div>
   );
 }
@@ -291,7 +307,9 @@ function UserForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+    <>
+      <DbLoadingOverlay show={submitting} className="fixed inset-0 z-[250] flex flex-col items-center justify-center bg-black/35 backdrop-blur-[1px]" />
+    <form onSubmit={handleSubmit} className="relative mt-5 space-y-4">
       {mode === "create" ? (
         <label className="block">
           <span className="mb-1 block text-sm font-medium text-[#444]">DNI</span>
@@ -381,5 +399,6 @@ function UserForm({
         </button>
       </div>
     </form>
+    </>
   );
 }
