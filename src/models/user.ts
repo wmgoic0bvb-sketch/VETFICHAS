@@ -5,6 +5,11 @@ const userSchema = new Schema(
     dni: { type: String, required: true, unique: true, index: true, trim: true },
     passwordHash: { type: String, required: true },
     name: { type: String, trim: true },
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+    },
   },
   { timestamps: true },
 );

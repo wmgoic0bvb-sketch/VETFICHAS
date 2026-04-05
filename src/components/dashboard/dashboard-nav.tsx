@@ -57,6 +57,7 @@ export function DashboardNav({ onNewPatient }: { onNewPatient?: () => void }) {
 
   const imageUrl = session?.user?.image;
   const userId = session?.user?.id;
+  const isAdmin = session?.user?.role === "admin";
 
   return (
     <header className="sticky top-0 z-[100] flex h-14 shrink-0 items-center justify-between border-b border-[#e8e0d8] bg-white px-5">
@@ -70,6 +71,14 @@ export function DashboardNav({ onNewPatient }: { onNewPatient?: () => void }) {
           <Image src="/favicon.png" alt="" width={38} height={38} priority />
           VetFichas
         </Link>
+        {isAdmin ? (
+          <Link
+            href="/admin"
+            className="hidden text-sm font-medium text-[#555] hover:text-[#2d6a4f] sm:inline"
+          >
+            Administración
+          </Link>
+        ) : null}
       </div>
       <div className="flex items-center gap-2">
         {onNewPatient ? (
@@ -97,6 +106,16 @@ export function DashboardNav({ onNewPatient }: { onNewPatient?: () => void }) {
               role="menu"
               className="absolute right-0 top-full z-[110] mt-1 min-w-[180px] rounded-lg border border-[#e8e0d8] bg-white py-1 shadow-md"
             >
+              {isAdmin ? (
+                <Link
+                  href="/admin"
+                  role="menuitem"
+                  className="flex w-full items-center px-3 py-2 text-left text-sm text-[#333] hover:bg-[#f5f0eb] sm:hidden"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Administración
+                </Link>
+              ) : null}
               {userId ? (
                 <Link
                   href={`/settings/${userId}`}

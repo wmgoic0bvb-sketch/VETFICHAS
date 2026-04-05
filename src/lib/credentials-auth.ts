@@ -9,6 +9,7 @@ type UserLean = {
   dni: string | number;
   passwordHash?: string;
   name?: string | null;
+  role?: "user" | "admin" | null;
 };
 
 function digitsOnlyDni(input: string): string {
@@ -107,9 +108,13 @@ export async function authorizeWithDniPassword(
   const dniOut =
     typeof doc.dni === "string" ? doc.dni : String(doc.dni);
 
+  const role =
+    doc.role === "admin" ? "admin" : ("user" as const);
+
   return {
     id: doc._id.toString(),
     dni: dniOut,
     name: doc.name ?? undefined,
+    role,
   };
 }

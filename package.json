@@ -11,7 +11,8 @@
     "start": "next start",
     "lint": "next lint",
     "hash-password": "node scripts/hash-password.cjs",
-    "auth-secret": "node scripts/generate-auth-secret.cjs"
+    "auth-secret": "node scripts/generate-auth-secret.cjs",
+    "seed-admin": "node scripts/seed-admin.cjs"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",
