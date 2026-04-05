@@ -15,7 +15,7 @@ function UserIcon() {
       strokeWidth="1.75"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="h-[18px] w-[18px] text-[#2d6a4f]"
+      className="h-[18px] w-[18px] text-[#5c1838]"
       aria-hidden
     >
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -64,7 +64,7 @@ export function DashboardNav({ onNewPatient }: { onNewPatient?: () => void }) {
       <div className="flex items-center gap-3">
         <Link
           href="/"
-          className="flex items-center gap-2 text-xl font-bold text-[#2d6a4f] hover:opacity-80"
+          className="flex items-center gap-2 text-xl font-bold text-[#5c1838] hover:opacity-80"
           title="Ir al inicio"
           aria-label="Ir al inicio"
         >
@@ -81,7 +81,7 @@ export function DashboardNav({ onNewPatient }: { onNewPatient?: () => void }) {
         {isAdmin ? (
           <Link
             href="/admin"
-            className="hidden text-sm font-medium text-[#555] hover:text-[#2d6a4f] sm:inline"
+            className="hidden text-sm font-medium text-[#555] hover:text-[#5c1838] sm:inline"
           >
             Administración
           </Link>
@@ -92,9 +92,13 @@ export function DashboardNav({ onNewPatient }: { onNewPatient?: () => void }) {
           <button
             type="button"
             onClick={onNewPatient}
-            className="rounded-full bg-[#2d6a4f] px-[18px] py-2 text-sm font-medium text-white hover:bg-[#1b4332]"
+            aria-label="Nuevo paciente"
+            className="rounded-full bg-[#5c1838] px-3 py-2 text-base font-medium text-white hover:bg-[#401127] sm:px-[18px] sm:text-sm"
           >
-            + Nuevo paciente
+            <span className="sm:hidden" aria-hidden>
+              +
+            </span>
+            <span className="hidden sm:inline">+ Nuevo paciente</span>
           </button>
         ) : null}
         <div className="relative" ref={menuRef}>
@@ -104,7 +108,7 @@ export function DashboardNav({ onNewPatient }: { onNewPatient?: () => void }) {
             aria-expanded={menuOpen}
             aria-haspopup="menu"
             aria-label="Menú de cuenta"
-            className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#e8e0d8] bg-[#f5f0eb] ring-offset-2 transition hover:border-[#ccc] hover:bg-[#efe8e0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2d6a4f]/40"
+            className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#e8e0d8] bg-[#f5f0eb] ring-offset-2 transition hover:border-[#ccc] hover:bg-[#efe8e0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5c1838]/40"
           >
             <UserAvatarButton imageUrl={imageUrl} />
           </button>

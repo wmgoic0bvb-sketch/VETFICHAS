@@ -177,7 +177,7 @@ export function ConsultaModal({
         >
           <label
             htmlFor="consulta-vet"
-            className="mb-1.5 block text-[13px] font-semibold text-[#1b4332]"
+            className="mb-1.5 block text-[13px] font-semibold text-[#401127]"
           >
             Veterinario *
           </label>
@@ -196,7 +196,7 @@ export function ConsultaModal({
                 .filter(Boolean)
                 .join(" ") || undefined
             }
-            className={`w-full min-h-[48px] cursor-pointer rounded-xl border-[1.5px] border-[#2d6a4f] bg-white px-3.5 py-2.5 text-sm text-[#1a1a1a] outline-none transition-colors focus:border-[#1b4332] focus:shadow-[0_0_0_3px_rgba(45,106,79,0.2)] disabled:cursor-wait disabled:opacity-70 ${inputErrorRing(
+            className={`w-full min-h-[48px] cursor-pointer rounded-xl border-[1.5px] border-[#5c1838] bg-white px-3.5 py-2.5 text-sm text-[#1a1a1a] outline-none transition-colors focus:border-[#401127] focus:shadow-[0_0_0_3px_rgba(45,106,79,0.2)] disabled:cursor-wait disabled:opacity-70 ${inputErrorRing(
               Boolean(vetError || vetListError),
             )}`}
           >
@@ -257,7 +257,7 @@ export function ConsultaModal({
                 setTipo(e.target.value as ConsultaTipo);
                 setHasChanges(true);
               }}
-              className="w-full cursor-pointer rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+              className="w-full cursor-pointer rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
             >
               {tipos.map((t) => (
                 <option key={t} value={t}>
@@ -277,7 +277,7 @@ export function ConsultaModal({
                 setFecha(e.target.value);
                 setHasChanges(true);
               }}
-              className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+              className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
             />
           </div>
         </div>
@@ -294,7 +294,7 @@ export function ConsultaModal({
                 setPeso(e.target.value);
                 setHasChanges(true);
               }}
-              className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+              className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
               placeholder="Ej: 12.5"
             />
           </div>
@@ -310,7 +310,7 @@ export function ConsultaModal({
                 setTemp(e.target.value);
                 setHasChanges(true);
               }}
-              className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+              className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
               placeholder="Ej: 38.5"
             />
           </div>
@@ -326,7 +326,7 @@ export function ConsultaModal({
               setHasChanges(true);
             }}
             rows={2}
-            className="min-h-[88px] w-full resize-y rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm leading-relaxed outline-none focus:border-[#2d6a4f] focus:bg-white"
+            className="min-h-[88px] w-full resize-y rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm leading-relaxed outline-none focus:border-[#5c1838] focus:bg-white"
             placeholder="Descripción del diagnóstico..."
           />
         </div>
@@ -341,7 +341,7 @@ export function ConsultaModal({
               setHasChanges(true);
             }}
             rows={2}
-            className="min-h-[88px] w-full resize-y rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm leading-relaxed outline-none focus:border-[#2d6a4f] focus:bg-white"
+            className="min-h-[88px] w-full resize-y rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm leading-relaxed outline-none focus:border-[#5c1838] focus:bg-white"
             placeholder="Tratamiento y observaciones..."
           />
         </div>
@@ -355,7 +355,7 @@ export function ConsultaModal({
               setMeds(e.target.value);
               setHasChanges(true);
             }}
-            className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+            className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
             placeholder="Ej: Amoxicilina 500mg cada 12hs por 7 días"
           />
         </div>
@@ -372,7 +372,7 @@ export function ConsultaModal({
             type="button"
             onClick={() => void guardar()}
             disabled={busy}
-            className="flex-[2] rounded-xl bg-[#2d6a4f] py-3 text-[15px] font-semibold text-white hover:bg-[#1b4332] disabled:opacity-60"
+            className="flex-[2] rounded-xl bg-[#5c1838] py-3 text-[15px] font-semibold text-white hover:bg-[#401127] disabled:opacity-60"
           >
             ✓ Guardar consulta
           </button>

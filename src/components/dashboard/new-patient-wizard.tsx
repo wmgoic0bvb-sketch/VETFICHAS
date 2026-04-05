@@ -117,7 +117,7 @@ export function NewPatientWizard({
   };
 
   const stepClass = (i: number) => {
-    if (i < paso) return "bg-[#2d6a4f]";
+    if (i < paso) return "bg-[#5c1838]";
     if (i === paso) return "bg-[#52b788]";
     return "bg-[#e8e0d8]";
   };
@@ -165,7 +165,7 @@ export function NewPatientWizard({
                 }}
                 className={`flex-1 rounded-2xl border-2 px-2.5 py-4 text-center transition-all hover:border-[#52b788] ${
                   especie === esp
-                    ? "border-[#2d6a4f] bg-[#f0faf5]"
+                    ? "border-[#5c1838] bg-[#f0faf5]"
                     : "border-[#e8e0d8]"
                 }`}
               >
@@ -184,7 +184,7 @@ export function NewPatientWizard({
               type="button"
               disabled={!especie}
               onClick={() => go(2)}
-              className="flex-[2] rounded-xl bg-[#2d6a4f] py-3 text-[15px] font-semibold text-white hover:bg-[#1b4332] disabled:cursor-not-allowed disabled:bg-[#b7d5c9]"
+              className="flex-[2] rounded-xl bg-[#5c1838] py-3 text-[15px] font-semibold text-white hover:bg-[#401127] disabled:cursor-not-allowed disabled:bg-[#b7d5c9]"
             >
               Siguiente →
             </button>
@@ -235,7 +235,7 @@ export function NewPatientWizard({
               <input
                 value={raza}
                 onChange={(e) => setRaza(e.target.value)}
-                className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+                className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
                 placeholder="Ej: Golden, Siamés..."
               />
             </div>
@@ -246,7 +246,7 @@ export function NewPatientWizard({
               <select
                 value={sexo}
                 onChange={(e) => setSexo(e.target.value)}
-                className="w-full cursor-pointer rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+                className="w-full cursor-pointer rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
               >
                 <option value="">Elegir...</option>
                 <option>Macho</option>
@@ -263,7 +263,7 @@ export function NewPatientWizard({
                 type="date"
                 value={fnac}
                 onChange={(e) => setFnac(e.target.value)}
-                className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+                className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
               />
             </div>
             <div>
@@ -273,7 +273,7 @@ export function NewPatientWizard({
               <select
                 value={castrado}
                 onChange={(e) => setCastrado(e.target.value)}
-                className="w-full cursor-pointer rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+                className="w-full cursor-pointer rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
               >
                 <option value="">Elegir...</option>
                 <option>Sí</option>
@@ -288,7 +288,7 @@ export function NewPatientWizard({
             <input
               value={color}
               onChange={(e) => setColor(e.target.value)}
-              className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+              className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
               placeholder="Ej: Negro con pecho blanco"
             />
           </div>
@@ -303,7 +303,7 @@ export function NewPatientWizard({
             <button
               type="button"
               onClick={() => go(3)}
-              className="flex-[2] rounded-xl bg-[#2d6a4f] py-3 text-[15px] font-semibold text-white hover:bg-[#1b4332]"
+              className="flex-[2] rounded-xl bg-[#5c1838] py-3 text-[15px] font-semibold text-white hover:bg-[#401127]"
             >
               Siguiente →
             </button>
@@ -317,7 +317,7 @@ export function NewPatientWizard({
           <p className="mb-5 text-sm text-[#888]">Paso 3 de 3 — Hasta dos responsables</p>
 
           <div className="mb-4 rounded-xl border border-[#e8e0d8] bg-white p-3.5">
-            <p className="mb-3 text-[12px] font-bold uppercase tracking-wide text-[#2d6a4f]">
+            <p className="mb-3 text-[12px] font-bold uppercase tracking-wide text-[#5c1838]">
               Responsable 1 *
             </p>
             <div className="mb-3">
@@ -370,7 +370,7 @@ export function NewPatientWizard({
                     prev[1],
                   ])
                 }
-                className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+                className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
                 placeholder="Ej: 2984868120"
               />
             </div>
@@ -396,7 +396,7 @@ export function NewPatientWizard({
                     { ...prev[1], nombre: e.target.value },
                   ])
                 }
-                className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+                className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
                 placeholder="Ej: Laura Gómez"
               />
             </div>
@@ -423,7 +423,7 @@ export function NewPatientWizard({
                     },
                   ])
                 }
-                className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+                className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
                 placeholder="Ej: 2984868120"
               />
             </div>
@@ -435,7 +435,7 @@ export function NewPatientWizard({
             <input
               value={dir}
               onChange={(e) => setDir(e.target.value)}
-              className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f] focus:bg-white"
+              className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
               placeholder="Ej: Belgrano 450"
             />
           </div>
@@ -446,7 +446,7 @@ export function NewPatientWizard({
                 type="checkbox"
                 checked={esExterno}
                 onChange={(e) => setEsExterno(e.target.checked)}
-                className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#c4bbb0] text-[#2d6a4f] focus:ring-[#2d6a4f]"
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#c4bbb0] text-[#5c1838] focus:ring-[#5c1838]"
               />
               <span className="text-sm leading-snug text-[#333]">
                 Paciente de otra veterinaria
@@ -466,7 +466,7 @@ export function NewPatientWizard({
               type="button"
               onClick={() => void guardar()}
               disabled={saving}
-              className="flex-[2] rounded-xl bg-[#2d6a4f] py-3 text-[15px] font-semibold text-white hover:bg-[#1b4332] disabled:opacity-60"
+              className="flex-[2] rounded-xl bg-[#5c1838] py-3 text-[15px] font-semibold text-white hover:bg-[#401127] disabled:opacity-60"
             >
               ✓ Guardar ficha
             </button>

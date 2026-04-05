@@ -23,7 +23,7 @@ export function PatientCard({
     <button
       type="button"
       onClick={() => onOpen(patient.id)}
-      className="cursor-pointer rounded-[18px] border-2 border-transparent bg-white px-4 py-5 text-center transition-all hover:-translate-y-0.5 hover:border-[#2d6a4f]"
+      className="cursor-pointer rounded-[18px] border-2 border-transparent bg-white px-4 py-5 text-center transition-all hover:-translate-y-0.5 hover:border-[#5c1838]"
     >
       <span className="mb-2 block text-[52px] leading-none" aria-hidden>
         {emoji(patient.especie)}
@@ -32,7 +32,7 @@ export function PatientCard({
       <div className="mt-1 text-xs text-[#888]">
         {patient.raza || patient.especie}
       </div>
-      <div className="mt-1.5 text-xs font-medium text-[#2d6a4f]">
+      <div className="mt-1.5 text-xs font-medium text-[#5c1838]">
         👤 {formatDueñosCorto(patient.dueños)}
       </div>
       {!esPacienteActivo(patient) ? (

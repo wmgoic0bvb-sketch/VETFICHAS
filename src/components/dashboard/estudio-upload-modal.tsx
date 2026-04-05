@@ -91,7 +91,7 @@ export function EstudioUploadModal({
   };
 
   const inputBase =
-    "w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-[#2d6a4f] focus:bg-white";
+    "w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-[#5c1838] focus:bg-white";
 
   return (
     <Modal
@@ -171,7 +171,7 @@ export function EstudioUploadModal({
             accept="application/pdf,image/jpeg,image/png,image/webp,image/gif,.pdf"
             disabled={uploading}
             onChange={(ev) => void handleFile(ev.target.files)}
-            className="block w-full text-sm text-[#555] file:mr-3 file:rounded-lg file:border-0 file:bg-[#2d6a4f] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-[#1b4332] disabled:opacity-60"
+            className="block w-full text-sm text-[#555] file:mr-3 file:rounded-lg file:border-0 file:bg-[#5c1838] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-[#401127] disabled:opacity-60"
           />
           <p className="mt-1 text-[11px] text-[#999]">
             Máx. 4 MB. Se guarda en Vercel Blob (requiere token en el servidor).

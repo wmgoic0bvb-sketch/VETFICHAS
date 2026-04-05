@@ -48,7 +48,7 @@ export function ConfirmAlertDialog({
                 className={`w-full rounded-xl py-2.5 text-sm font-semibold text-white sm:w-auto sm:min-w-[100px] ${
                   destructive
                     ? "bg-red-600 hover:bg-red-700"
-                    : "bg-[#2d6a4f] hover:bg-[#1b4332]"
+                    : "bg-[#5c1838] hover:bg-[#401127]"
                 }`}
               >
                 {confirmLabel}

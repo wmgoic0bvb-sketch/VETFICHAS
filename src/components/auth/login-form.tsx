@@ -55,7 +55,7 @@ export function LoginForm() {
           autoComplete="username"
           value={dni}
           onChange={(e) => setDni(e.target.value)}
-          className="w-full rounded-lg border border-[#ddd] bg-white px-3 py-2 text-[15px] text-[#222] outline-none ring-[#2d6a4f]/30 focus:border-[#2d6a4f] focus:ring-2"
+          className="w-full rounded-lg border border-[#ddd] bg-white px-3 py-2 text-[15px] text-[#222] outline-none ring-[#5c1838]/30 focus:border-[#5c1838] focus:ring-2"
           required
         />
       </div>
@@ -73,7 +73,7 @@ export function LoginForm() {
           autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-lg border border-[#ddd] bg-white px-3 py-2 text-[15px] text-[#222] outline-none ring-[#2d6a4f]/30 focus:border-[#2d6a4f] focus:ring-2"
+          className="w-full rounded-lg border border-[#ddd] bg-white px-3 py-2 text-[15px] text-[#222] outline-none ring-[#5c1838]/30 focus:border-[#5c1838] focus:ring-2"
           required
         />
       </div>
@@ -85,7 +85,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={pending}
-        className="mt-1 rounded-full bg-[#2d6a4f] py-2.5 text-sm font-medium text-white hover:bg-[#1b4332] disabled:opacity-60"
+        className="mt-1 rounded-full bg-[#5c1838] py-2.5 text-sm font-medium text-white hover:bg-[#401127] disabled:opacity-60"
       >
         {pending ? "Ingresando…" : "Ingresar"}
       </button>

@@ -90,7 +90,7 @@ export function Dashboard() {
         <PatientSearch value={query} onChange={setQuery} />
 
         <section className="mb-10">
-          <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.06em] text-[#2d6a4f]">
+          <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.06em] text-[#5c1838]">
             Pacientes
           </h2>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3.5">
@@ -123,7 +123,7 @@ export function Dashboard() {
             <button
               type="button"
               onClick={() => setMostrarArchivados((v) => !v)}
-              className="mb-4 text-left text-[13px] font-semibold text-[#6b5b4a] underline decoration-[#c4bbb0] underline-offset-2 hover:text-[#2d6a4f]"
+              className="mb-4 text-left text-[13px] font-semibold text-[#6b5b4a] underline decoration-[#c4bbb0] underline-offset-2 hover:text-[#5c1838]"
             >
               {mostrarArchivados ? "Ocultar" : "Mostrar"} fichas archivadas (
               {totalArchivados}) — ocultos del listado principal

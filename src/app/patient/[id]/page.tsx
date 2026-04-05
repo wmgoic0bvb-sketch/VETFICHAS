@@ -93,7 +93,7 @@ function ConsultaCard({
   };
 
   return (
-    <div className="mb-2.5 overflow-hidden rounded-[14px] border-l-[3px] border-[#2d6a4f]/35 bg-[#f5f0eb] last:mb-0">
+    <div className="mb-2.5 overflow-hidden rounded-[14px] border-l-[3px] border-[#5c1838]/35 bg-[#f5f0eb] last:mb-0">
       {hasDetails ? (
         <button
           type="button"
@@ -146,7 +146,7 @@ function ConsultaCard({
           type="button"
           onClick={handleExportPdf}
           disabled={pdfLoading}
-          className="rounded-lg border border-[#2d6a4f]/35 bg-white px-3 py-1.5 text-xs font-semibold text-[#2d6a4f] shadow-sm transition-colors hover:bg-[#2d6a4f]/10 disabled:pointer-events-none disabled:opacity-50"
+          className="rounded-lg border border-[#5c1838]/35 bg-white px-3 py-1.5 text-xs font-semibold text-[#5c1838] shadow-sm transition-colors hover:bg-[#5c1838]/10 disabled:pointer-events-none disabled:opacity-50"
         >
           {pdfLoading ? "Generando PDF…" : "Exportar PDF"}
         </button>
@@ -225,7 +225,7 @@ export default function PatientDetailPage() {
       <div className="flex min-h-screen flex-col bg-[#f5f0eb]">
         <DashboardNav />
         <main className={mainClass}>
-          <Link href="/" className="text-sm font-medium text-[#2d6a4f] underline">
+          <Link href="/" className="text-sm font-medium text-[#5c1838] underline">
             ← Volver al dashboard
           </Link>
           <div className={`mt-6 ${cardClass} text-[#555]`}>
@@ -240,7 +240,7 @@ export default function PatientDetailPage() {
     <div className="flex min-h-screen flex-col bg-[#f5f0eb]">
       <DashboardNav />
       <main className={mainClass}>
-        <Link href="/" className="text-sm font-medium text-[#2d6a4f] underline">
+        <Link href="/" className="text-sm font-medium text-[#5c1838] underline">
           ← Volver al dashboard
         </Link>
 
@@ -274,13 +274,13 @@ export default function PatientDetailPage() {
 
             <section className={cardClass}>
               <div className="mb-3 flex items-center gap-2">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-[#2d6a4f]">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-[#5c1838]">
                   Datos del paciente
                 </h2>
                 <button
                   type="button"
                   onClick={() => setEditFichaOpen(true)}
-                  className="-m-1 flex shrink-0 items-center justify-center rounded-lg p-1 text-[#2d6a4f] hover:bg-[#f0faf5]"
+                  className="-m-1 flex shrink-0 items-center justify-center rounded-lg p-1 text-[#5c1838] hover:bg-[#f0faf5]"
                   aria-label="Editar datos del paciente y contacto"
                   title="Editar ficha"
                 >
@@ -300,13 +300,13 @@ export default function PatientDetailPage() {
             </section>
 
             <section className={cardClass}>
-              <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-[#2d6a4f]">
+              <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-[#5c1838]">
                 Dueños / Contacto
               </h2>
               <div className="space-y-3 text-sm">
                 <div className="rounded-xl border border-[#ebe6df] bg-[#faf8f5] p-3">
                   <div className="mb-2 flex items-start justify-between gap-2">
-                    <p className="text-[11px] font-bold uppercase tracking-wide text-[#2d6a4f]">
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-[#5c1838]">
                       Responsable 1
                     </p>
                     {whatsapp1Url ? (
@@ -378,13 +378,13 @@ export default function PatientDetailPage() {
           <div className="flex min-w-0 flex-col gap-6">
             <section className={cardClass}>
               <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-[#2d6a4f]">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-[#5c1838]">
                   Historial de consultas ({patient.consultas?.length ?? 0})
                 </h2>
                 <button
                   type="button"
                   onClick={() => setConsultaOpen(true)}
-                  className="shrink-0 rounded-xl bg-[#2d6a4f] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#1b4332] sm:w-auto sm:self-center"
+                  className="shrink-0 rounded-xl bg-[#5c1838] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#401127] sm:w-auto sm:self-center"
                 >
                   + Agregar consulta
                 </button>

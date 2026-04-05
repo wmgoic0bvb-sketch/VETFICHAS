@@ -62,7 +62,7 @@ export function AdminUsersPanel() {
         <button
           type="button"
           onClick={() => setCreateOpen(true)}
-          className="rounded-full bg-[#2d6a4f] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#1b4332]"
+          className="rounded-full bg-[#5c1838] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#401127]"
         >
           Nuevo usuario
         </button>
@@ -107,7 +107,7 @@ export function AdminUsersPanel() {
                       <span
                         className={
                           u.role === "admin"
-                            ? "rounded-full bg-[#d8f3dc] px-2.5 py-0.5 text-xs font-medium text-[#1b4332]"
+                            ? "rounded-full bg-[#d8f3dc] px-2.5 py-0.5 text-xs font-medium text-[#401127]"
                             : u.role === "vet"
                               ? "rounded-full bg-[#cce5ff] px-2.5 py-0.5 text-xs font-medium text-[#1a4d7a]"
                               : "rounded-full bg-[#e8e0d8] px-2.5 py-0.5 text-xs font-medium text-[#555]"
@@ -124,7 +124,7 @@ export function AdminUsersPanel() {
                       <button
                         type="button"
                         onClick={() => setEditUser(u)}
-                        className="mr-2 text-[#2d6a4f] hover:underline"
+                        className="mr-2 text-[#5c1838] hover:underline"
                       >
                         Editar
                       </button>
@@ -320,7 +320,7 @@ function UserForm({
             required
             value={dni}
             onChange={(e) => setDni(e.target.value)}
-            className="w-full rounded-xl border border-[#e8e0d8] bg-white px-3 py-2 text-[#333] outline-none ring-[#2d6a4f]/30 focus:ring-2"
+            className="w-full rounded-xl border border-[#e8e0d8] bg-white px-3 py-2 text-[#333] outline-none ring-[#5c1838]/30 focus:ring-2"
           />
         </label>
       ) : (
@@ -337,7 +337,7 @@ function UserForm({
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full rounded-xl border border-[#e8e0d8] bg-white px-3 py-2 text-[#333] outline-none ring-[#2d6a4f]/30 focus:ring-2"
+          className="w-full rounded-xl border border-[#e8e0d8] bg-white px-3 py-2 text-[#333] outline-none ring-[#5c1838]/30 focus:ring-2"
         />
       </label>
 
@@ -351,7 +351,7 @@ function UserForm({
           required={mode === "create"}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-xl border border-[#e8e0d8] bg-white px-3 py-2 text-[#333] outline-none ring-[#2d6a4f]/30 focus:ring-2"
+          className="w-full rounded-xl border border-[#e8e0d8] bg-white px-3 py-2 text-[#333] outline-none ring-[#5c1838]/30 focus:ring-2"
         />
         {mode === "edit" ? (
           <span className="mt-1 block text-xs text-[#888]">
@@ -368,7 +368,7 @@ function UserForm({
             const v = e.target.value;
             setRole(v === "admin" ? "admin" : v === "vet" ? "vet" : "user");
           }}
-          className="w-full rounded-xl border border-[#e8e0d8] bg-white px-3 py-2 text-[#333] outline-none ring-[#2d6a4f]/30 focus:ring-2"
+          className="w-full rounded-xl border border-[#e8e0d8] bg-white px-3 py-2 text-[#333] outline-none ring-[#5c1838]/30 focus:ring-2"
         >
           <option value="user">Usuario</option>
           <option value="vet">Veterinario</option>
@@ -393,7 +393,7 @@ function UserForm({
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-full bg-[#2d6a4f] px-5 py-2 text-sm font-medium text-white hover:bg-[#1b4332] disabled:opacity-60"
+          className="rounded-full bg-[#5c1838] px-5 py-2 text-sm font-medium text-white hover:bg-[#401127] disabled:opacity-60"
         >
           {submitting ? "Guardando…" : "Guardar"}
         </button>

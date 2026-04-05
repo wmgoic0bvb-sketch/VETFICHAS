@@ -53,7 +53,7 @@ function EstudioCard({
   const triggerId = `estudio-trigger-${e.id}`;
 
   return (
-    <div className="overflow-hidden rounded-[14px] border-l-[3px] border-[#2d6a4f]/35 bg-[#f5f0eb]">
+    <div className="overflow-hidden rounded-[14px] border-l-[3px] border-[#5c1838]/35 bg-[#f5f0eb]">
       <button
         type="button"
         id={triggerId}
@@ -102,7 +102,7 @@ function EstudioCard({
                   href={toProtectedBlobUrl(e.url)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[13px] font-semibold text-[#2d6a4f] underline"
+                  className="text-[13px] font-semibold text-[#5c1838] underline"
                 >
                   Abrir / descargar
                 </a>
@@ -166,13 +166,13 @@ export function PatientEstudiosSection({ patient }: { patient: Paciente }) {
     <section className="relative">
       <DbLoadingOverlay show={removing} />
       <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-[#2d6a4f]">
+        <h2 className="text-xs font-bold uppercase tracking-wider text-[#5c1838]">
           Estudios (PDF / imágenes) ({estudios.length})
         </h2>
         <button
           type="button"
           onClick={() => setUploadModalOpen(true)}
-          className="shrink-0 rounded-xl bg-[#2d6a4f] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#1b4332] sm:w-auto sm:self-center"
+          className="shrink-0 rounded-xl bg-[#5c1838] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#401127] sm:w-auto sm:self-center"
         >
           + Subir estudio
         </button>

@@ -14,5 +14,5 @@ export function FieldError({ id, message }: { id?: string; message: string }) {
 export function inputErrorRing(hasError: boolean): string {
   return hasError
     ? "border-red-400 focus:border-red-500 bg-red-50/50"
-    : "border-[#e8e0d8] focus:border-[#2d6a4f] bg-[#faf9f7] focus:bg-white";
+    : "border-[#e8e0d8] focus:border-[#5c1838] bg-[#faf9f7] focus:bg-white";
 }

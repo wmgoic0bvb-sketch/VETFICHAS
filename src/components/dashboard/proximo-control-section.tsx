@@ -27,7 +27,7 @@ const shellClass =
   "rounded-2xl border border-[#ebe6df] bg-white p-5 shadow-sm";
 
 const inputClass =
-  "w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 font-mono text-[15px] tabular-nums tracking-wide outline-none transition-colors placeholder:text-[#c4bbb0] focus:border-[#2d6a4f] focus:bg-white";
+  "w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 font-mono text-[15px] tabular-nums tracking-wide outline-none transition-colors placeholder:text-[#c4bbb0] focus:border-[#5c1838] focus:bg-white";
 
 function badgeFor(fechaHora: string) {
   const d = diasCalendarioHastaFechaHora(fechaHora);
@@ -160,7 +160,7 @@ export function ProximosControlesSection({
   return (
     <section className={`relative ${shellClass}`}>
       <DbLoadingOverlay show={persisting} />
-      <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-[#2d6a4f]">
+      <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-[#5c1838]">
         Próximos controles
       </h2>
 
@@ -172,7 +172,7 @@ export function ProximosControlesSection({
           <button
             type="button"
             onClick={abrirNuevo}
-            className="mt-3 rounded-xl bg-[#2d6a4f] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1b4332]"
+            className="mt-3 rounded-xl bg-[#5c1838] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#401127]"
           >
             Programar próximo control
           </button>
@@ -196,7 +196,7 @@ export function ProximosControlesSection({
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                 <span
                   className={`text-lg font-semibold ${
-                    yaOcurrio ? "text-stone-500" : "text-[#1b4332]"
+                    yaOcurrio ? "text-stone-500" : "text-[#401127]"
                   }`}
                 >
                   {vistaFecha || pc.fechaHora}
@@ -255,7 +255,7 @@ export function ProximosControlesSection({
                   className={
                     yaOcurrio
                       ? "cursor-not-allowed rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-sm font-medium text-stone-400"
-                      : "rounded-xl border border-[#2d6a4f] bg-white px-3 py-2 text-sm font-medium text-[#1b4332] hover:bg-[#e8f5ef]"
+                      : "rounded-xl border border-[#5c1838] bg-white px-3 py-2 text-sm font-medium text-[#401127] hover:bg-[#e8f5ef]"
                   }
                 >
                   Editar
@@ -286,15 +286,15 @@ export function ProximosControlesSection({
         <button
           type="button"
           onClick={abrirNuevo}
-          className="mt-4 w-full rounded-xl border-2 border-dashed border-[#b7d5c9] bg-transparent py-3 text-sm font-semibold text-[#2d6a4f] hover:bg-[#f0faf5]"
+          className="mt-4 w-full rounded-xl border-2 border-dashed border-[#b7d5c9] bg-transparent py-3 text-sm font-semibold text-[#5c1838] hover:bg-[#f0faf5]"
         >
           + Próximo control
         </button>
       ) : null}
 
       {formMode ? (
-        <div className="mt-4 space-y-4 rounded-2xl border border-[#2d6a4f]/30 bg-[#f8faf8] p-4">
-          <p className="text-[13px] font-semibold text-[#1b4332]">
+        <div className="mt-4 space-y-4 rounded-2xl border border-[#5c1838]/30 bg-[#f8faf8] p-4">
+          <p className="text-[13px] font-semibold text-[#401127]">
             {formMode.type === "edit"
               ? "Editar control"
               : "Nuevo próximo control"}
@@ -349,7 +349,7 @@ export function ProximosControlesSection({
               id="proximo-sucursal-form"
               value={sucursalId}
               onChange={(e) => setSucursalId(e.target.value)}
-              className="w-full cursor-pointer rounded-xl border-[1.5px] border-[#e8e0d8] bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#2d6a4f]"
+              className="w-full cursor-pointer rounded-xl border-[1.5px] border-[#e8e0d8] bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838]"
             >
               {SUCURSALES.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -371,7 +371,7 @@ export function ProximosControlesSection({
               onChange={(e) => setNota(e.target.value)}
               rows={2}
               placeholder="Ej: traer análisis previos, ayuno..."
-              className="min-h-[72px] w-full resize-y rounded-xl border-[1.5px] border-[#e8e0d8] bg-white px-3.5 py-2.5 text-sm leading-relaxed outline-none focus:border-[#2d6a4f]"
+              className="min-h-[72px] w-full resize-y rounded-xl border-[1.5px] border-[#e8e0d8] bg-white px-3.5 py-2.5 text-sm leading-relaxed outline-none focus:border-[#5c1838]"
             />
           </div>
           <div className="flex flex-wrap gap-2">
@@ -379,7 +379,7 @@ export function ProximosControlesSection({
               type="button"
               onClick={() => void guardarForm()}
               disabled={persisting}
-              className="rounded-xl bg-[#2d6a4f] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1b4332] disabled:opacity-60"
+              className="rounded-xl bg-[#5c1838] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#401127] disabled:opacity-60"
             >
               Guardar
             </button>

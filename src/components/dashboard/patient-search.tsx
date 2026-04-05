@@ -20,7 +20,7 @@ export function PatientSearch({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Buscar por paciente, dueños o teléfonos..."
-        className="w-full rounded-2xl border-[1.5px] border-[#e8e0d8] bg-white py-3.5 pl-11 pr-[18px] text-[15px] outline-none transition-colors focus:border-[#2d6a4f]"
+        className="w-full rounded-2xl border-[1.5px] border-[#e8e0d8] bg-white py-3.5 pl-11 pr-[18px] text-[15px] outline-none transition-colors focus:border-[#5c1838]"
         autoComplete="off"
       />
     </div>

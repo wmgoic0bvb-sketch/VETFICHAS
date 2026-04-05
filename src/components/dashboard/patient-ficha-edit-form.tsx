@@ -153,7 +153,7 @@ export function PatientFichaEditForm({
         className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-3xl bg-white/85 backdrop-blur-sm"
       />
       <div className="flex items-center justify-between gap-2">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-[#2d6a4f]">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-[#5c1838]">
           Editar datos del paciente
         </h3>
         <button
@@ -181,7 +181,7 @@ export function PatientFichaEditForm({
               }}
               className={`flex-1 rounded-2xl border-2 px-2 py-3 text-center text-sm font-semibold transition-all ${
                 draft.especie === esp
-                  ? "border-[#2d6a4f] bg-[#f0faf5] text-[#333]"
+                  ? "border-[#5c1838] bg-[#f0faf5] text-[#333]"
                   : "border-[#e8e0d8] text-[#555] hover:border-[#52b788]"
               }`}
             >
@@ -236,7 +236,7 @@ export function PatientFichaEditForm({
             onChange={(e) =>
               setDraft((prev) => ({ ...prev, raza: e.target.value }))
             }
-            className={`${inputBase} border-[#e8e0d8] bg-[#faf9f7] focus:border-[#2d6a4f] focus:bg-white`}
+            className={`${inputBase} border-[#e8e0d8] bg-[#faf9f7] focus:border-[#5c1838] focus:bg-white`}
           />
         </div>
         <div>
@@ -252,7 +252,7 @@ export function PatientFichaEditForm({
             onChange={(e) =>
               setDraft((prev) => ({ ...prev, sexo: e.target.value }))
             }
-            className={`${inputBase} cursor-pointer border-[#e8e0d8] bg-[#faf9f7] focus:border-[#2d6a4f] focus:bg-white`}
+            className={`${inputBase} cursor-pointer border-[#e8e0d8] bg-[#faf9f7] focus:border-[#5c1838] focus:bg-white`}
           >
             <option value="">Elegir...</option>
             <option>Macho</option>
@@ -276,7 +276,7 @@ export function PatientFichaEditForm({
             onChange={(e) =>
               setDraft((prev) => ({ ...prev, fnac: e.target.value }))
             }
-            className={`${inputBase} border-[#e8e0d8] bg-[#faf9f7] focus:border-[#2d6a4f] focus:bg-white`}
+            className={`${inputBase} border-[#e8e0d8] bg-[#faf9f7] focus:border-[#5c1838] focus:bg-white`}
           />
         </div>
         <div>
@@ -292,7 +292,7 @@ export function PatientFichaEditForm({
             onChange={(e) =>
               setDraft((prev) => ({ ...prev, castrado: e.target.value }))
             }
-            className={`${inputBase} cursor-pointer border-[#e8e0d8] bg-[#faf9f7] focus:border-[#2d6a4f] focus:bg-white`}
+            className={`${inputBase} cursor-pointer border-[#e8e0d8] bg-[#faf9f7] focus:border-[#5c1838] focus:bg-white`}
           >
             <option value="">Elegir...</option>
             <option>Sí</option>
@@ -314,16 +314,16 @@ export function PatientFichaEditForm({
           onChange={(e) =>
             setDraft((prev) => ({ ...prev, color: e.target.value }))
           }
-          className={`${inputBase} border-[#e8e0d8] bg-[#faf9f7] focus:border-[#2d6a4f] focus:bg-white`}
+          className={`${inputBase} border-[#e8e0d8] bg-[#faf9f7] focus:border-[#5c1838] focus:bg-white`}
         />
       </div>
 
-      <h4 className="pt-1 text-xs font-bold uppercase tracking-wider text-[#2d6a4f]">
+      <h4 className="pt-1 text-xs font-bold uppercase tracking-wider text-[#5c1838]">
         Dueños / Contacto
       </h4>
 
       <div className="rounded-xl border border-[#e8e0d8] bg-[#faf9f7] p-3">
-        <p className="mb-3 text-[11px] font-bold uppercase tracking-wide text-[#2d6a4f]">
+        <p className="mb-3 text-[11px] font-bold uppercase tracking-wide text-[#5c1838]">
           Responsable 1 *
         </p>
         <div className="mb-3">
@@ -386,7 +386,7 @@ export function PatientFichaEditForm({
                 ],
               }))
             }
-            className={`${inputBase} border-[#e8e0d8] bg-white focus:border-[#2d6a4f] focus:bg-white`}
+            className={`${inputBase} border-[#e8e0d8] bg-white focus:border-[#5c1838] focus:bg-white`}
           />
         </div>
       </div>
@@ -414,7 +414,7 @@ export function PatientFichaEditForm({
                 ],
               }))
             }
-            className={`${inputBase} border-[#e8e0d8] bg-[#faf9f7] focus:border-[#2d6a4f] focus:bg-white`}
+            className={`${inputBase} border-[#e8e0d8] bg-[#faf9f7] focus:border-[#5c1838] focus:bg-white`}
           />
         </div>
         <div>
@@ -444,7 +444,7 @@ export function PatientFichaEditForm({
                 ],
               }))
             }
-            className={`${inputBase} border-[#e8e0d8] bg-[#faf9f7] focus:border-[#2d6a4f] focus:bg-white`}
+            className={`${inputBase} border-[#e8e0d8] bg-[#faf9f7] focus:border-[#5c1838] focus:bg-white`}
           />
         </div>
       </div>
@@ -462,7 +462,7 @@ export function PatientFichaEditForm({
           onChange={(e) =>
             setDraft((prev) => ({ ...prev, dir: e.target.value }))
           }
-          className={`${inputBase} border-[#e8e0d8] bg-[#faf9f7] focus:border-[#2d6a4f] focus:bg-white`}
+          className={`${inputBase} border-[#e8e0d8] bg-[#faf9f7] focus:border-[#5c1838] focus:bg-white`}
         />
       </div>
 
@@ -482,7 +482,7 @@ export function PatientFichaEditForm({
               estado: e.target.value as EstadoPaciente,
             }))
           }
-          className={`${inputBase} border-[#e8e0d8] bg-[#faf9f7] focus:border-[#2d6a4f] focus:bg-white`}
+          className={`${inputBase} border-[#e8e0d8] bg-[#faf9f7] focus:border-[#5c1838] focus:bg-white`}
         >
           {(Object.keys(ESTADO_PACIENTE_LABELS) as EstadoPaciente[]).map(
             (key) => (
@@ -508,7 +508,7 @@ export function PatientFichaEditForm({
             onChange={(e) =>
               setDraft((prev) => ({ ...prev, esExterno: e.target.checked }))
             }
-            className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#c4bbb0] text-[#2d6a4f] focus:ring-[#2d6a4f]"
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#c4bbb0] text-[#5c1838] focus:ring-[#5c1838]"
           />
           <span className="text-sm leading-snug text-[#333]">
             Paciente de otra veterinaria
@@ -524,7 +524,7 @@ export function PatientFichaEditForm({
                 esUnicaConsulta: e.target.checked,
               }))
             }
-            className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#c4bbb0] text-[#2d6a4f] focus:ring-[#2d6a4f]"
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#c4bbb0] text-[#5c1838] focus:ring-[#5c1838]"
           />
           <span className="text-sm leading-snug text-[#333]">
             Única consulta (sin seguimiento habitual acá)
@@ -536,7 +536,7 @@ export function PatientFichaEditForm({
         type="button"
         onClick={() => void saveEdit()}
         disabled={saving}
-        className="w-full rounded-xl bg-[#2d6a4f] py-3 text-[15px] font-semibold text-white hover:bg-[#1b4332] disabled:opacity-60"
+        className="w-full rounded-xl bg-[#5c1838] py-3 text-[15px] font-semibold text-white hover:bg-[#401127] disabled:opacity-60"
       >
         Guardar cambios
       </button>
