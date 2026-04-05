@@ -5,11 +5,21 @@ import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { ConsultaModal } from "@/components/dashboard/consulta-modal";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
+import { PatientDangerZone } from "@/components/dashboard/patient-danger-zone";
+import {
+  PatientFichaEditForm,
+  PencilIcon,
+} from "@/components/dashboard/patient-ficha-edit-form";
 import { PatientEstudiosSection } from "@/components/dashboard/patient-estudios-section";
 import { ProximosControlesSection } from "@/components/dashboard/proximo-control-section";
 import { usePatients } from "@/components/providers/patients-provider";
+import { Modal } from "@/components/ui/modal";
 import { calcularEdad, formatFecha } from "@/lib/date-utils";
-import type { Consulta } from "@/types/patient";
+import {
+  ESTADO_PACIENTE_LABELS,
+  esPacienteActivo,
+  type Consulta,
+} from "@/types/patient";
 
 const tipoClass: Record<string, string> = {
   Consulta: "bg-violet-100 text-violet-900",
@@ -123,6 +133,7 @@ export default function PatientDetailPage() {
     removeProximoControl,
   } = usePatients();
   const [consultaOpen, setConsultaOpen] = useState(false);
+  const [editFichaOpen, setEditFichaOpen] = useState(false);
 
   const patient = patientId ? getById(patientId) : undefined;
   const consultas = useMemo(
@@ -165,6 +176,20 @@ export default function PatientDetailPage() {
           ← Volver al dashboard
         </Link>
 
+        {!esPacienteActivo(patient) ? (
+          <div
+            className="mt-4 rounded-xl border border-amber-200/90 bg-amber-50 px-4 py-3 text-[14px] leading-snug text-amber-950"
+            role="status"
+          >
+            Esta ficha no aparece en el listado principal:{" "}
+            <strong>
+              {ESTADO_PACIENTE_LABELS[patient.estado ?? "activo"]}
+            </strong>
+            . El historial se conserva; podés reactivarla desde la zona de riesgo
+            al final de la página o desde Editar ficha.
+          </div>
+        ) : null}
+
         <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(280px,380px)_1fr] lg:items-start">
           <div className="flex flex-col gap-6">
             <section className={cardClass}>
@@ -180,9 +205,20 @@ export default function PatientDetailPage() {
             </section>
 
             <section className={cardClass}>
-              <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-[#2d6a4f]">
-                Datos del paciente
-              </h2>
+              <div className="mb-3 flex items-center gap-2">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-[#2d6a4f]">
+                  Datos del paciente
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setEditFichaOpen(true)}
+                  className="-m-1 flex shrink-0 items-center justify-center rounded-lg p-1 text-[#2d6a4f] hover:bg-[#f0faf5]"
+                  aria-label="Editar datos del paciente y contacto"
+                  title="Editar ficha"
+                >
+                  <PencilIcon className="h-4 w-4" />
+                </button>
+              </div>
               <div className="divide-y divide-[#f0ebe4] text-sm">
                 <Row label="Especie" value={patient.especie} />
                 {patient.raza ? <Row label="Raza" value={patient.raza} /> : null}
@@ -272,6 +308,8 @@ export default function PatientDetailPage() {
           </div>
         </div>
 
+        <PatientDangerZone patient={patient} />
+
         <ConsultaModal
           open={consultaOpen}
           onClose={() => setConsultaOpen(false)}
@@ -279,6 +317,31 @@ export default function PatientDetailPage() {
             addConsulta(patient.id, data);
           }}
         />
+
+        <Modal
+          open={editFichaOpen}
+          onClose={() => setEditFichaOpen(false)}
+          labelledBy="editar-ficha-titulo"
+          overlayClassName="z-[210]"
+        >
+          <button
+            type="button"
+            onClick={() => setEditFichaOpen(false)}
+            className="absolute right-[18px] top-4 text-[22px] leading-none text-[#aaa] hover:text-[#333]"
+            aria-label="Cerrar"
+          >
+            ✕
+          </button>
+          <h2 id="editar-ficha-titulo" className="sr-only">
+            Editar ficha del paciente
+          </h2>
+          <PatientFichaEditForm
+            key={patient.id}
+            patient={patient}
+            onCancel={() => setEditFichaOpen(false)}
+            onSaved={() => setEditFichaOpen(false)}
+          />
+        </Modal>
       </main>
     </div>
   );

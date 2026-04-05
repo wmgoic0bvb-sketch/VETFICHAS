@@ -6,6 +6,7 @@ import { DEFAULT_SUCURSAL_ID, SUCURSALES } from "@/lib/sucursales";
 import type {
   Consulta,
   DueñoContacto,
+  EstadoPaciente,
   Paciente,
   ProximoControl,
 } from "@/types/patient";
@@ -118,6 +119,17 @@ function normalizeProximosControles(
   return [];
 }
 
+function normalizeEstado(raw: unknown): EstadoPaciente {
+  if (raw === "activo" || raw === "archivado") {
+    return raw;
+  }
+  /** Datos viejos: inactivo / fallecido → unificado como archivado */
+  if (raw === "inactivo" || raw === "fallecido") {
+    return "archivado";
+  }
+  return "activo";
+}
+
 function normalizeDueños(raw: Record<string, unknown>): [DueñoContacto, DueñoContacto] {
   const vacío: DueñoContacto = { nombre: "", tel: "" };
   const arr = raw.dueños;
@@ -154,8 +166,9 @@ function normalizePatient(p: StoredPatient): Paciente {
     tel?: string;
   };
   return {
-    ...(rest as Omit<Paciente, "dueños">),
+    ...(rest as Omit<Paciente, "dueños" | "estado">),
     dueños: normalizeDueños(raw),
+    estado: normalizeEstado(raw.estado),
     esExterno: typeof p.esExterno === "boolean" ? p.esExterno : false,
     esUnicaConsulta:
       typeof p.esUnicaConsulta === "boolean" ? p.esUnicaConsulta : false,

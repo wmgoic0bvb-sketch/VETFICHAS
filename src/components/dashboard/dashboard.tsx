@@ -4,24 +4,34 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePatients } from "@/components/providers/patients-provider";
 import { dueñosParaBusqueda } from "@/lib/dueños-utils";
-import type { Consulta, Paciente } from "@/types/patient";
+import {
+  esPacienteActivo,
+  type Consulta,
+  type Paciente,
+} from "@/types/patient";
 import { ConsultaModal } from "./consulta-modal";
 import { DashboardNav } from "./dashboard-nav";
 import { NewPatientWizard } from "./new-patient-wizard";
-import { PatientDetailModal } from "./patient-detail-modal";
 import { PatientGrid } from "./patient-grid";
 import { PatientSearch } from "./patient-search";
 
 export function Dashboard() {
   const router = useRouter();
-  const { patients, ready, addPatient, removePatient, getById, addConsulta } =
-    usePatients();
+  const { patients, ready, addPatient, addConsulta } = usePatients();
   const [query, setQuery] = useState("");
   const [wizardOpen, setWizardOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [consultaOpen, setConsultaOpen] = useState(false);
+  const [detailAfterConsulta, setDetailAfterConsulta] = useState(false);
+  const [mostrarArchivados, setMostrarArchivados] = useState(false);
 
-  const { principales, externosOUnica } = useMemo(() => {
+  const {
+    principales,
+    externosOUnica,
+    archivPrincipales,
+    archivExternos,
+    totalArchivados,
+  } = useMemo(() => {
     const term = query.toLowerCase().trim();
     const match = (p: Paciente) =>
       !term ||
@@ -29,16 +39,31 @@ export function Dashboard() {
       dueñosParaBusqueda(p).toLowerCase().includes(term) ||
       (p.raza || "").toLowerCase().includes(term);
 
-    const filtered = patients.filter(match);
+    const activos = patients.filter(esPacienteActivo);
+    const archiv = patients.filter((p) => !esPacienteActivo(p));
+
+    const filteredActivos = activos.filter(match);
+    const filteredArch = archiv.filter(match);
     return {
-      principales: filtered.filter((p) => !p.esExterno && !p.esUnicaConsulta),
-      externosOUnica: filtered.filter((p) => p.esExterno || p.esUnicaConsulta),
+      principales: filteredActivos.filter(
+        (p) => !p.esExterno && !p.esUnicaConsulta,
+      ),
+      externosOUnica: filteredActivos.filter(
+        (p) => p.esExterno || p.esUnicaConsulta,
+      ),
+      archivPrincipales: filteredArch.filter(
+        (p) => !p.esExterno && !p.esUnicaConsulta,
+      ),
+      archivExternos: filteredArch.filter(
+        (p) => p.esExterno || p.esUnicaConsulta,
+      ),
+      totalArchivados: archiv.length,
     };
   }, [patients, query]);
 
-  const selected = selectedId ? getById(selectedId) : null;
-
-  const openFicha = (id: string) => setSelectedId(id);
+  const openFicha = (id: string) => {
+    router.push(`/patient/${id}`);
+  };
 
   if (!ready) {
     return (
@@ -86,6 +111,58 @@ export function Dashboard() {
             />
           </div>
         </section>
+
+        {totalArchivados > 0 ? (
+          <section className="mt-10 border-t border-[#e8e0d8] pt-8">
+            <button
+              type="button"
+              onClick={() => setMostrarArchivados((v) => !v)}
+              className="mb-4 text-left text-[13px] font-semibold text-[#6b5b4a] underline decoration-[#c4bbb0] underline-offset-2 hover:text-[#2d6a4f]"
+            >
+              {mostrarArchivados ? "Ocultar" : "Mostrar"} fichas archivadas (
+              {totalArchivados}) — ocultos del listado principal
+            </button>
+            {mostrarArchivados ? (
+              <>
+                <section className="mb-10">
+                  <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.06em] text-[#6b5b4a]">
+                    Archivados — pacientes
+                  </h2>
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3.5">
+                    <PatientGrid
+                      patients={archivPrincipales}
+                      onOpen={openFicha}
+                      emptyMessage={
+                        <p className="text-[15px]">
+                          Ninguno en esta categoría con el filtro actual.
+                        </p>
+                      }
+                    />
+                  </div>
+                </section>
+                <section>
+                  <h2 className="mb-1 text-xs font-bold uppercase tracking-[0.06em] text-[#6b5b4a]">
+                    Archivados — externos y única consulta
+                  </h2>
+                  <p className="mb-3 text-[13px] text-[#888]">
+                    Mismo criterio que arriba, pero ya no en seguimiento activo.
+                  </p>
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3.5">
+                    <PatientGrid
+                      patients={archivExternos}
+                      onOpen={openFicha}
+                      emptyMessage={
+                        <p className="text-[15px]">
+                          Ninguno en esta categoría con el filtro actual.
+                        </p>
+                      }
+                    />
+                  </div>
+                </section>
+              </>
+            ) : null}
+          </section>
+        ) : null}
       </main>
 
       <NewPatientWizard
@@ -94,27 +171,26 @@ export function Dashboard() {
         onSave={(draft) => {
           const p = addPatient(draft);
           setSelectedId(p.id);
+          setDetailAfterConsulta(true);
           setConsultaOpen(true);
-        }}
-      />
-
-      <PatientDetailModal
-        patient={selected ?? null}
-        open={Boolean(selectedId && selected)}
-        onClose={() => setSelectedId(null)}
-        onDelete={removePatient}
-        onAddConsulta={() => setConsultaOpen(true)}
-        onOpenDetails={(id) => {
-          setSelectedId(null);
-          router.push(`/patient/${id}`);
         }}
       />
 
       <ConsultaModal
         open={consultaOpen}
-        onClose={() => setConsultaOpen(false)}
+        onClose={() => {
+          setConsultaOpen(false);
+          setDetailAfterConsulta(false);
+        }}
         onSave={(data: Omit<Consulta, "id">) => {
-          if (selectedId) addConsulta(selectedId, data);
+          if (!selectedId) return;
+          addConsulta(selectedId, data);
+          if (detailAfterConsulta) {
+            const id = selectedId;
+            setDetailAfterConsulta(false);
+            setSelectedId(null);
+            router.push(`/patient/${id}`);
+          }
         }}
       />
     </div>
