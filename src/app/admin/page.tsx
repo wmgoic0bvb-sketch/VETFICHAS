@@ -1,5 +1,6 @@
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { AdminUsersPanel } from "@/components/admin/admin-users-panel";
+import { AdminVeterinariosPanel } from "@/components/admin/admin-veterinarios-panel";
 
 export default function AdminPage() {
   return (
@@ -7,6 +8,9 @@ export default function AdminPage() {
       <DashboardNav />
       <main className="flex-1">
         <AdminUsersPanel />
+        <div className="border-t border-[#e8e0d8] bg-[#faf8f5]">
+          <AdminVeterinariosPanel />
+        </div>
       </main>
     </div>
   );

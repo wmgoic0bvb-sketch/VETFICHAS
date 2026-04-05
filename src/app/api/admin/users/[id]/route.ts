@@ -6,6 +6,8 @@ import {
   assertValidPassword,
   hashPassword,
   isValidRole,
+  roleFromDb,
+  type AppRole,
 } from "@/lib/admin-users";
 import { User } from "@/models/user";
 import mongoose from "mongoose";
@@ -50,7 +52,7 @@ export async function PATCH(request: NextRequest, context: Ctx) {
   const updates: {
     name?: string | null;
     passwordHash?: string;
-    role?: "user" | "admin";
+    role?: AppRole;
   } = {};
 
   if (name !== undefined) {
@@ -88,7 +90,11 @@ export async function PATCH(request: NextRequest, context: Ctx) {
       return NextResponse.json({ error: "No encontrado" }, { status: 404 });
     }
 
-    if (updates.role === "user" && target.role === "admin") {
+    if (
+      updates.role !== undefined &&
+      target.role === "admin" &&
+      updates.role !== "admin"
+    ) {
       const adminCount = await User.countDocuments({ role: "admin" });
       if (adminCount <= 1) {
         return NextResponse.json(
@@ -96,13 +102,12 @@ export async function PATCH(request: NextRequest, context: Ctx) {
           { status: 400 },
         );
       }
-    }
-
-    if (updates.role === "user" && id === sessionUserId) {
-      return NextResponse.json(
-        { error: "No podés quitarte el rol de administrador a vos mismo" },
-        { status: 400 },
-      );
+      if (id === sessionUserId) {
+        return NextResponse.json(
+          { error: "No podés quitarte el rol de administrador a vos mismo" },
+          { status: 400 },
+        );
+      }
     }
 
     Object.assign(target, updates);
@@ -113,7 +118,7 @@ export async function PATCH(request: NextRequest, context: Ctx) {
         id: target._id.toString(),
         dni: typeof target.dni === "string" ? target.dni : String(target.dni),
         name: target.name ?? null,
-        role: target.role === "admin" ? "admin" : "user",
+        role: roleFromDb(target.role),
         createdAt: target.createdAt?.toISOString() ?? null,
         updatedAt: target.updatedAt?.toISOString() ?? null,
       },

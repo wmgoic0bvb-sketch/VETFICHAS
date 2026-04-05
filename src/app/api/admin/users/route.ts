@@ -7,6 +7,7 @@ import {
   hashPassword,
   isValidRole,
   normalizeDniForStorage,
+  roleFromDb,
 } from "@/lib/admin-users";
 import type { Types } from "mongoose";
 import { User } from "@/models/user";
@@ -31,7 +32,11 @@ export const GET = auth(async (req: NextAuthRequest) => {
 
   try {
     await connectMongo();
-    const rows = (await User.find()
+    const roleFilter = req.nextUrl.searchParams.get("role");
+    const query =
+      roleFilter === "vet" ? { role: "vet" as const } : {};
+
+    const rows = (await User.find(query)
       .select("dni name role createdAt updatedAt")
       .sort({ createdAt: -1 })
       .lean()
@@ -41,7 +46,7 @@ export const GET = auth(async (req: NextAuthRequest) => {
       id: u._id.toString(),
       dni: typeof u.dni === "string" ? u.dni : String(u.dni),
       name: u.name ?? null,
-      role: u.role === "admin" ? "admin" : "user",
+      role: roleFromDb(u.role),
       createdAt: u.createdAt?.toISOString() ?? null,
       updatedAt: u.updatedAt?.toISOString() ?? null,
     }));
@@ -111,7 +116,7 @@ export const POST = auth(async (req: NextAuthRequest) => {
         id: doc._id.toString(),
         dni: String(doc.dni),
         name: doc.name ?? null,
-        role: doc.role === "admin" ? "admin" : "user",
+        role: roleFromDb(doc.role),
         createdAt: doc.createdAt?.toISOString() ?? null,
         updatedAt: doc.updatedAt?.toISOString() ?? null,
       },

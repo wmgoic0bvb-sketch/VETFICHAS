@@ -1,5 +1,8 @@
 import bcrypt from "bcryptjs";
 
+export type { AppRole } from "./user-role";
+export { isValidRole, roleFromDb, vetDisplayName } from "./user-role";
+
 export function normalizeDniForStorage(input: string): string {
   const trimmed = input.trim();
   const digits = trimmed.replace(/\D/g, "");
@@ -17,10 +20,4 @@ export function assertValidPassword(password: string): void {
 
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 10);
-}
-
-export function isValidRole(
-  r: unknown,
-): r is "user" | "admin" {
-  return r === "user" || r === "admin";
 }

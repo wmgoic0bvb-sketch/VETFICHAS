@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import type { Types } from "mongoose";
 import type { User } from "next-auth";
 import { connectMongo } from "@/lib/mongodb";
+import { roleFromDb } from "@/lib/user-role";
 import { User as UserModel } from "@/models/user";
 
 type UserLean = {
@@ -9,7 +10,7 @@ type UserLean = {
   dni: string | number;
   passwordHash?: string;
   name?: string | null;
-  role?: "user" | "admin" | null;
+  role?: string | null;
 };
 
 function digitsOnlyDni(input: string): string {
@@ -108,8 +109,7 @@ export async function authorizeWithDniPassword(
   const dniOut =
     typeof doc.dni === "string" ? doc.dni : String(doc.dni);
 
-  const role =
-    doc.role === "admin" ? "admin" : ("user" as const);
+  const role = roleFromDb(doc.role ?? undefined);
 
   return {
     id: doc._id.toString(),

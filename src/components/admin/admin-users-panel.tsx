@@ -10,7 +10,7 @@ export type AdminUserRow = {
   id: string;
   dni: string;
   name: string | null;
-  role: "user" | "admin";
+  role: "user" | "admin" | "vet";
   createdAt: string | null;
   updatedAt: string | null;
 };
@@ -99,10 +99,16 @@ export function AdminUsersPanel() {
                         className={
                           u.role === "admin"
                             ? "rounded-full bg-[#d8f3dc] px-2.5 py-0.5 text-xs font-medium text-[#1b4332]"
-                            : "rounded-full bg-[#e8e0d8] px-2.5 py-0.5 text-xs font-medium text-[#555]"
+                            : u.role === "vet"
+                              ? "rounded-full bg-[#cce5ff] px-2.5 py-0.5 text-xs font-medium text-[#1a4d7a]"
+                              : "rounded-full bg-[#e8e0d8] px-2.5 py-0.5 text-xs font-medium text-[#555]"
                         }
                       >
-                        {u.role === "admin" ? "Admin" : "Usuario"}
+                        {u.role === "admin"
+                          ? "Admin"
+                          : u.role === "vet"
+                            ? "Veterinario"
+                            : "Usuario"}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -228,7 +234,9 @@ function UserForm({
   const [dni, setDni] = useState(initial?.dni ?? "");
   const [name, setName] = useState(initial?.name ?? "");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"user" | "admin">(initial?.role ?? "user");
+  const [role, setRole] = useState<"user" | "admin" | "vet">(
+    initial?.role ?? "user",
+  );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -338,12 +346,14 @@ function UserForm({
         <span className="mb-1 block text-sm font-medium text-[#444]">Rol</span>
         <select
           value={role}
-          onChange={(e) =>
-            setRole(e.target.value === "admin" ? "admin" : "user")
-          }
+          onChange={(e) => {
+            const v = e.target.value;
+            setRole(v === "admin" ? "admin" : v === "vet" ? "vet" : "user");
+          }}
           className="w-full rounded-xl border border-[#e8e0d8] bg-white px-3 py-2 text-[#333] outline-none ring-[#2d6a4f]/30 focus:ring-2"
         >
           <option value="user">Usuario</option>
+          <option value="vet">Veterinario</option>
           <option value="admin">Administrador</option>
         </select>
       </label>

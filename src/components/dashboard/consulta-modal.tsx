@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { FieldError, inputErrorRing } from "@/components/ui/field-error";
 import { Modal } from "@/components/ui/modal";
 import { todayISODate } from "@/lib/date-utils";
-import { VETERINARIOS_OPCIONES } from "@/lib/veterinarios";
 import type { Consulta, ConsultaTipo } from "@/types/patient";
 
 const tipos: ConsultaTipo[] = [
@@ -37,6 +36,11 @@ export function ConsultaModal({
   const [vetError, setVetError] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
+  const [vetOpciones, setVetOpciones] = useState<{ id: string; nombre: string }[]>(
+    [],
+  );
+  const [vetListLoading, setVetListLoading] = useState(false);
+  const [vetListError, setVetListError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -56,6 +60,40 @@ export function ConsultaModal({
     }
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setVetListLoading(true);
+    setVetListError(null);
+    void (async () => {
+      try {
+        const res = await fetch("/api/veterinarios");
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}));
+          throw new Error(
+            typeof j.error === "string" ? j.error : "No se pudo cargar la lista",
+          );
+        }
+        const data = (await res.json()) as {
+          veterinarios: { id: string; nombre: string }[];
+        };
+        if (!cancelled) {
+          setVetOpciones(data.veterinarios);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setVetListError(e instanceof Error ? e.message : "Error al cargar");
+          setVetOpciones([]);
+        }
+      } finally {
+        if (!cancelled) setVetListLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
   const requestClose = () => {
     if (!hasChanges) {
       onClose();
@@ -66,6 +104,12 @@ export function ConsultaModal({
 
   const guardar = () => {
     const m = motivo.trim();
+    if (!vetListLoading && vetOpciones.length === 0) {
+      setVetError(
+        "No hay veterinarios activos. Un administrador puede cargarlos en Administración.",
+      );
+      return;
+    }
     if (!veterinario) {
       setVetError("Elegí el veterinario.");
       return;
@@ -122,24 +166,34 @@ export function ConsultaModal({
           <select
             id="consulta-vet"
             value={veterinario}
+            disabled={vetListLoading}
             onChange={(e) => {
               setVeterinario(e.target.value);
               setHasChanges(true);
               if (vetError) setVetError(null);
             }}
-            aria-invalid={Boolean(vetError)}
-            aria-describedby={vetError ? "consulta-vet-err" : undefined}
-            className={`w-full min-h-[48px] cursor-pointer rounded-xl border-[1.5px] border-[#2d6a4f] bg-white px-3.5 py-2.5 text-sm text-[#1a1a1a] outline-none transition-colors focus:border-[#1b4332] focus:shadow-[0_0_0_3px_rgba(45,106,79,0.2)] ${inputErrorRing(
-              Boolean(vetError),
+            aria-invalid={Boolean(vetError || vetListError)}
+            aria-describedby={
+              [vetListError && "consulta-vet-list-err", vetError && "consulta-vet-err"]
+                .filter(Boolean)
+                .join(" ") || undefined
+            }
+            className={`w-full min-h-[48px] cursor-pointer rounded-xl border-[1.5px] border-[#2d6a4f] bg-white px-3.5 py-2.5 text-sm text-[#1a1a1a] outline-none transition-colors focus:border-[#1b4332] focus:shadow-[0_0_0_3px_rgba(45,106,79,0.2)] disabled:cursor-wait disabled:opacity-70 ${inputErrorRing(
+              Boolean(vetError || vetListError),
             )}`}
           >
-            <option value="">Elegir veterinario...</option>
-            {VETERINARIOS_OPCIONES.map((v) => (
-              <option key={v} value={v}>
-                {v}
+            <option value="">
+              {vetListLoading ? "Cargando veterinarios…" : "Elegir veterinario..."}
+            </option>
+            {vetOpciones.map((v) => (
+              <option key={v.id} value={v.nombre}>
+                {v.nombre}
               </option>
             ))}
           </select>
+          {vetListError ? (
+            <FieldError id="consulta-vet-list-err" message={vetListError} />
+          ) : null}
           {vetError ? (
             <FieldError id="consulta-vet-err" message={vetError} />
           ) : null}
