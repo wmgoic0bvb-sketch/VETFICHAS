@@ -165,6 +165,7 @@ export function normalizePatient(p: StoredPatient): Paciente {
     esExterno: typeof p.esExterno === "boolean" ? p.esExterno : false,
     esUnicaConsulta:
       typeof p.esUnicaConsulta === "boolean" ? p.esUnicaConsulta : false,
+    internado: typeof p.internado === "boolean" ? p.internado : false,
     proximosControles: normalizeProximosControles(
       raw.proximosControles,
       raw.proximoControl,

@@ -81,6 +81,7 @@ const patientSchema = new Schema(
     },
     esExterno: { type: Boolean, default: false },
     esUnicaConsulta: { type: Boolean, default: false },
+    internado: { type: Boolean, default: false },
     proximosControles: { type: [proximoControlSchema], default: [] },
     consultas: { type: [consultaSchema], default: [] },
     estudios: { type: [estudioSchema], default: [] },

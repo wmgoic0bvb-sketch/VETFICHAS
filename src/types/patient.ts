@@ -86,6 +86,8 @@ export interface Paciente {
   esExterno: boolean;
   /** Seguimiento puntual (sin continuidad habitual en la clínica). */
   esUnicaConsulta: boolean;
+  /** Paciente actualmente en internación / hospitalización. */
+  internado: boolean;
   /** Controles programados (varios por paciente). */
   proximosControles: ProximoControl[];
   consultas: Consulta[];

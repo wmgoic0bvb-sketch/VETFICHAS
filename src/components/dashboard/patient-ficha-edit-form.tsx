@@ -42,6 +42,7 @@ export function draftFromPatient(p: Paciente): PacienteEditable {
     estado: p.estado ?? "activo",
     esExterno: p.esExterno,
     esUnicaConsulta: p.esUnicaConsulta,
+    internado: p.internado ?? false,
     proximosControles: [...p.proximosControles],
   };
 }
@@ -134,6 +135,7 @@ export function PatientFichaEditForm({
         estado: draft.estado,
         esExterno: draft.esExterno,
         esUnicaConsulta: draft.esUnicaConsulta,
+        internado: draft.internado,
         proximosControles: draft.proximosControles ?? [],
       });
       setFieldErrors({});

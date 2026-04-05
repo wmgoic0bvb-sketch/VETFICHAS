@@ -105,6 +105,7 @@ export function NewPatientWizard({
         estado: "activo",
         esExterno,
         esUnicaConsulta: false,
+        internado: false,
         consultas: [],
       });
       reset();

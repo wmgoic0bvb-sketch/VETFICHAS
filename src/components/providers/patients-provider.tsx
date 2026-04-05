@@ -147,6 +147,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
           estado: data.estado ?? "activo",
           esExterno: data.esExterno,
           esUnicaConsulta: data.esUnicaConsulta,
+          internado: data.internado,
           proximosControles: data.proximosControles ?? [],
           consultas: cur.consultas,
           estudios: cur.estudios,

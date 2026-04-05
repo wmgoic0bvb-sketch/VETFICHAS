@@ -83,6 +83,7 @@ export const POST = auth(async (req: NextAuthRequest) => {
       estado: draft.estado === "archivado" ? "archivado" : "activo",
       esExterno: Boolean(draft.esExterno),
       esUnicaConsulta: Boolean(draft.esUnicaConsulta),
+      internado: Boolean(draft.internado),
       proximosControles: Array.isArray(draft.proximosControles)
         ? draft.proximosControles
         : [],
