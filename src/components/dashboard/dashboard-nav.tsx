@@ -68,7 +68,14 @@ export function DashboardNav({ onNewPatient }: { onNewPatient?: () => void }) {
           title="Ir al inicio"
           aria-label="Ir al inicio"
         >
-          <Image src="/favicon.png" alt="" width={38} height={38} priority />
+          <Image
+            src="/only_logo_png.png"
+            alt=""
+            width={38}
+            height={38}
+            className="object-contain"
+            priority
+          />
           VetFichas
         </Link>
         {isAdmin ? (

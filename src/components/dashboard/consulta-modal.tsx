@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { FieldError, inputErrorRing } from "@/components/ui/field-error";
+import { DbLoadingOverlay } from "@/components/ui/lottie-loading";
 import { Modal } from "@/components/ui/modal";
 import { todayISODate } from "@/lib/date-utils";
-import { VETERINARIOS_OPCIONES } from "@/lib/veterinarios";
 import type { Consulta, ConsultaTipo } from "@/types/patient";
 
 const tipos: ConsultaTipo[] = [
@@ -22,7 +22,7 @@ export function ConsultaModal({
 }: {
   open: boolean;
   onClose: () => void;
-  onSave: (data: Omit<Consulta, "id">) => void;
+  onSave: (data: Omit<Consulta, "id">) => void | Promise<void>;
 }) {
   const [motivo, setMotivo] = useState("");
   const [veterinario, setVeterinario] = useState("");
@@ -37,6 +37,12 @@ export function ConsultaModal({
   const [vetError, setVetError] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
+  const [vetOpciones, setVetOpciones] = useState<{ id: string; nombre: string }[]>(
+    [],
+  );
+  const [vetListLoading, setVetListLoading] = useState(false);
+  const [vetListError, setVetListError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -56,16 +62,48 @@ export function ConsultaModal({
     }
   }, [open]);
 
-  const requestClose = () => {
-    if (!hasChanges) {
-      onClose();
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setVetListLoading(true);
+    setVetListError(null);
+    void (async () => {
+      try {
+        const res = await fetch("/api/veterinarios");
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}));
+          throw new Error(
+            typeof j.error === "string" ? j.error : "No se pudo cargar la lista",
+          );
+        }
+        const data = (await res.json()) as {
+          veterinarios: { id: string; nombre: string }[];
+        };
+        if (!cancelled) {
+          setVetOpciones(data.veterinarios);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setVetListError(e instanceof Error ? e.message : "Error al cargar");
+          setVetOpciones([]);
+        }
+      } finally {
+        if (!cancelled) setVetListLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  const guardar = async () => {
+    const m = motivo.trim();
+    if (!vetListLoading && vetOpciones.length === 0) {
+      setVetError(
+        "No hay veterinarios activos. Un administrador puede cargarlos en Administración.",
+      );
       return;
     }
-    setConfirmCloseOpen(true);
-  };
-
-  const guardar = () => {
-    const m = motivo.trim();
     if (!veterinario) {
       setVetError("Elegí el veterinario.");
       return;
@@ -76,19 +114,37 @@ export function ConsultaModal({
     }
     setMotivoError(null);
     setVetError(null);
-    onSave({
-      motivo: m,
-      veterinario,
-      tipo,
-      fecha,
-      peso,
-      temp,
-      diag: diag.trim(),
-      trat: trat.trim(),
-      meds: meds.trim(),
-    });
-    setHasChanges(false);
-    onClose();
+    setSaving(true);
+    try {
+      await Promise.resolve(
+        onSave({
+          motivo: m,
+          veterinario,
+          tipo,
+          fecha,
+          peso,
+          temp,
+          diag: diag.trim(),
+          trat: trat.trim(),
+          meds: meds.trim(),
+        }),
+      );
+      setHasChanges(false);
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const busy = vetListLoading || saving;
+
+  const requestClose = () => {
+    if (busy) return;
+    if (!hasChanges) {
+      onClose();
+      return;
+    }
+    setConfirmCloseOpen(true);
   };
 
   return (
@@ -98,10 +154,16 @@ export function ConsultaModal({
       labelledBy="consulta-title"
       overlayClassName="z-[210]"
     >
+      <div className="relative">
+        <DbLoadingOverlay
+          show={busy}
+          className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-3xl bg-white/85 backdrop-blur-sm"
+        />
       <button
         type="button"
         onClick={requestClose}
-        className="absolute right-[18px] top-4 text-[22px] leading-none text-[#aaa] hover:text-[#333]"
+        disabled={busy}
+        className="absolute right-[18px] top-4 z-[1] text-[22px] leading-none text-[#aaa] hover:text-[#333] disabled:opacity-50"
         aria-label="Cerrar"
       >
         ✕
@@ -122,24 +184,34 @@ export function ConsultaModal({
           <select
             id="consulta-vet"
             value={veterinario}
+            disabled={vetListLoading}
             onChange={(e) => {
               setVeterinario(e.target.value);
               setHasChanges(true);
               if (vetError) setVetError(null);
             }}
-            aria-invalid={Boolean(vetError)}
-            aria-describedby={vetError ? "consulta-vet-err" : undefined}
-            className={`w-full min-h-[48px] cursor-pointer rounded-xl border-[1.5px] border-[#2d6a4f] bg-white px-3.5 py-2.5 text-sm text-[#1a1a1a] outline-none transition-colors focus:border-[#1b4332] focus:shadow-[0_0_0_3px_rgba(45,106,79,0.2)] ${inputErrorRing(
-              Boolean(vetError),
+            aria-invalid={Boolean(vetError || vetListError)}
+            aria-describedby={
+              [vetListError && "consulta-vet-list-err", vetError && "consulta-vet-err"]
+                .filter(Boolean)
+                .join(" ") || undefined
+            }
+            className={`w-full min-h-[48px] cursor-pointer rounded-xl border-[1.5px] border-[#2d6a4f] bg-white px-3.5 py-2.5 text-sm text-[#1a1a1a] outline-none transition-colors focus:border-[#1b4332] focus:shadow-[0_0_0_3px_rgba(45,106,79,0.2)] disabled:cursor-wait disabled:opacity-70 ${inputErrorRing(
+              Boolean(vetError || vetListError),
             )}`}
           >
-            <option value="">Elegir veterinario...</option>
-            {VETERINARIOS_OPCIONES.map((v) => (
-              <option key={v} value={v}>
-                {v}
+            <option value="">
+              {vetListLoading ? "Cargando veterinarios…" : "Elegir veterinario..."}
+            </option>
+            {vetOpciones.map((v) => (
+              <option key={v.id} value={v.nombre}>
+                {v.nombre}
               </option>
             ))}
           </select>
+          {vetListError ? (
+            <FieldError id="consulta-vet-list-err" message={vetListError} />
+          ) : null}
           {vetError ? (
             <FieldError id="consulta-vet-err" message={vetError} />
           ) : null}
@@ -291,18 +363,21 @@ export function ConsultaModal({
           <button
             type="button"
             onClick={requestClose}
-            className="flex-1 rounded-xl border-[1.5px] border-[#e8e0d8] bg-transparent py-3 text-[15px] font-medium text-[#555] hover:bg-[#f5f0eb]"
+            disabled={busy}
+            className="flex-1 rounded-xl border-[1.5px] border-[#e8e0d8] bg-transparent py-3 text-[15px] font-medium text-[#555] hover:bg-[#f5f0eb] disabled:opacity-50"
           >
             Cancelar
           </button>
           <button
             type="button"
-            onClick={guardar}
-            className="flex-[2] rounded-xl bg-[#2d6a4f] py-3 text-[15px] font-semibold text-white hover:bg-[#1b4332]"
+            onClick={() => void guardar()}
+            disabled={busy}
+            className="flex-[2] rounded-xl bg-[#2d6a4f] py-3 text-[15px] font-semibold text-white hover:bg-[#1b4332] disabled:opacity-60"
           >
             ✓ Guardar consulta
           </button>
         </div>
+      </div>
       </div>
 
       <Modal

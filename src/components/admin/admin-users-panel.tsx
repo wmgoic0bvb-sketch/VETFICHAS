@@ -5,12 +5,13 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { Modal } from "@/components/ui/modal";
 import { ConfirmAlertDialog } from "@/components/ui/confirm-alert-dialog";
+import { DbLoadingOverlay, LottieSpinner } from "@/components/ui/lottie-loading";
 
 export type AdminUserRow = {
   id: string;
   dni: string;
   name: string | null;
-  role: "user" | "admin";
+  role: "user" | "admin" | "vet";
   createdAt: string | null;
   updatedAt: string | null;
 };
@@ -22,6 +23,7 @@ export function AdminUsersPanel() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editUser, setEditUser] = useState<AdminUserRow | null>(null);
   const [deleteUser, setDeleteUser] = useState<AdminUserRow | null>(null);
+  const [deleteInProgress, setDeleteInProgress] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -68,7 +70,14 @@ export function AdminUsersPanel() {
 
       <div className="overflow-hidden rounded-2xl border border-[#e8e0d8] bg-white shadow-sm">
         {loading ? (
-          <p className="p-8 text-center text-[#888]">Cargando…</p>
+          <div
+            className="flex flex-col items-center justify-center gap-3 p-10"
+            role="status"
+            aria-label="Cargando usuarios"
+          >
+            <LottieSpinner size={120} />
+            <span className="text-sm text-[#888]">Cargando…</span>
+          </div>
         ) : users.length === 0 ? (
           <p className="p-8 text-center text-[#888]">No hay usuarios.</p>
         ) : (
@@ -99,10 +108,16 @@ export function AdminUsersPanel() {
                         className={
                           u.role === "admin"
                             ? "rounded-full bg-[#d8f3dc] px-2.5 py-0.5 text-xs font-medium text-[#1b4332]"
-                            : "rounded-full bg-[#e8e0d8] px-2.5 py-0.5 text-xs font-medium text-[#555]"
+                            : u.role === "vet"
+                              ? "rounded-full bg-[#cce5ff] px-2.5 py-0.5 text-xs font-medium text-[#1a4d7a]"
+                              : "rounded-full bg-[#e8e0d8] px-2.5 py-0.5 text-xs font-medium text-[#555]"
                         }
                       >
-                        {u.role === "admin" ? "Admin" : "Usuario"}
+                        {u.role === "admin"
+                          ? "Admin"
+                          : u.role === "vet"
+                            ? "Veterinario"
+                            : "Usuario"}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -194,22 +209,29 @@ export function AdminUsersPanel() {
         onConfirm={() => {
           void (async () => {
             if (!deleteUser) return;
-            const res = await fetch(`/api/admin/users/${deleteUser.id}`, {
-              method: "DELETE",
-            });
-            if (!res.ok) {
-              const j = await res.json().catch(() => ({}));
-              toast.error(
-                typeof j.error === "string" ? j.error : "No se pudo eliminar",
-              );
-              return;
+            setDeleteInProgress(true);
+            try {
+              const res = await fetch(`/api/admin/users/${deleteUser.id}`, {
+                method: "DELETE",
+              });
+              if (!res.ok) {
+                const j = await res.json().catch(() => ({}));
+                toast.error(
+                  typeof j.error === "string" ? j.error : "No se pudo eliminar",
+                );
+                return;
+              }
+              setDeleteUser(null);
+              await load();
+              toast.success("Usuario eliminado");
+            } finally {
+              setDeleteInProgress(false);
             }
-            setDeleteUser(null);
-            await load();
-            toast.success("Usuario eliminado");
           })();
         }}
       />
+
+      <DbLoadingOverlay show={deleteInProgress} />
     </div>
   );
 }
@@ -228,7 +250,9 @@ function UserForm({
   const [dni, setDni] = useState(initial?.dni ?? "");
   const [name, setName] = useState(initial?.name ?? "");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"user" | "admin">(initial?.role ?? "user");
+  const [role, setRole] = useState<"user" | "admin" | "vet">(
+    initial?.role ?? "user",
+  );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -283,7 +307,9 @@ function UserForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+    <>
+      <DbLoadingOverlay show={submitting} className="fixed inset-0 z-[250] flex flex-col items-center justify-center bg-black/35 backdrop-blur-[1px]" />
+    <form onSubmit={handleSubmit} className="relative mt-5 space-y-4">
       {mode === "create" ? (
         <label className="block">
           <span className="mb-1 block text-sm font-medium text-[#444]">DNI</span>
@@ -338,12 +364,14 @@ function UserForm({
         <span className="mb-1 block text-sm font-medium text-[#444]">Rol</span>
         <select
           value={role}
-          onChange={(e) =>
-            setRole(e.target.value === "admin" ? "admin" : "user")
-          }
+          onChange={(e) => {
+            const v = e.target.value;
+            setRole(v === "admin" ? "admin" : v === "vet" ? "vet" : "user");
+          }}
           className="w-full rounded-xl border border-[#e8e0d8] bg-white px-3 py-2 text-[#333] outline-none ring-[#2d6a4f]/30 focus:ring-2"
         >
           <option value="user">Usuario</option>
+          <option value="vet">Veterinario</option>
           <option value="admin">Administrador</option>
         </select>
       </label>
@@ -371,5 +399,6 @@ function UserForm({
         </button>
       </div>
     </form>
+    </>
   );
 }

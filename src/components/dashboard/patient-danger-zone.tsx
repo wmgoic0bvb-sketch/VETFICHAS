@@ -8,6 +8,7 @@ import {
 } from "@/components/dashboard/patient-ficha-edit-form";
 import { usePatients } from "@/components/providers/patients-provider";
 import { ConfirmAlertDialog } from "@/components/ui/confirm-alert-dialog";
+import { DbLoadingOverlay } from "@/components/ui/lottie-loading";
 import {
   ESTADO_PACIENTE_LABELS,
   esPacienteActivo,
@@ -24,6 +25,7 @@ export function PatientDangerZone({ patient }: { patient: Paciente }) {
   const [deletePanelOpen, setDeletePanelOpen] = useState(false);
   const [deleteInput, setDeleteInput] = useState("");
   const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false);
+  const [pending, setPending] = useState(false);
 
   const nombreConfirmacion = patient.nombre.trim();
   const puedeEliminar =
@@ -34,20 +36,31 @@ export function PatientDangerZone({ patient }: { patient: Paciente }) {
     setDeleteInput("");
   }, [patient.id]);
 
-  const aplicarEstado = (estado: EstadoPaciente) => {
-    updatePatient(patient.id, { ...draftFromPatient(patient), estado });
+  const aplicarEstado = async (estado: EstadoPaciente) => {
+    setPending(true);
+    try {
+      await updatePatient(patient.id, { ...draftFromPatient(patient), estado });
+    } finally {
+      setPending(false);
+    }
   };
 
-  const eliminarDefinitivo = () => {
+  const eliminarDefinitivo = async () => {
     if (!isAdmin || !puedeEliminar) return;
-    removePatient(patient.id);
-    router.push("/");
+    setPending(true);
+    try {
+      await removePatient(patient.id);
+      router.push("/");
+    } finally {
+      setPending(false);
+    }
   };
 
   const activo = esPacienteActivo(patient);
 
   return (
     <>
+      <DbLoadingOverlay show={pending} />
       <section
         className="mt-10 overflow-hidden rounded-lg border border-red-200 bg-white shadow-sm"
         aria-labelledby="danger-zone-title"
@@ -60,8 +73,8 @@ export function PatientDangerZone({ patient }: { patient: Paciente }) {
             Zona de riesgo
           </h2>
           <p className="mt-1 text-[13px] leading-snug text-red-800/90">
-            Acciones que ocultan la ficha del listado o la borran del
-            dispositivo. Revisá bien antes de continuar.
+            Acciones que ocultan la ficha del listado o la borran de la base de
+            datos. Revisá bien antes de continuar.
           </p>
         </div>
 
@@ -101,7 +114,7 @@ export function PatientDangerZone({ patient }: { patient: Paciente }) {
               </div>
               <button
                 type="button"
-                onClick={() => aplicarEstado("activo")}
+                onClick={() => void aplicarEstado("activo")}
                 className="shrink-0 rounded-md border border-red-200 bg-white px-4 py-2 text-[13px] font-semibold text-red-700 shadow-sm transition-colors hover:bg-red-50"
               >
                 Reactivar
@@ -117,8 +130,8 @@ export function PatientDangerZone({ patient }: { patient: Paciente }) {
                     Eliminar esta ficha
                   </h3>
                   <p className="mt-1 text-[13px] leading-relaxed text-[#555]">
-                    Se borran todos los datos de este paciente en este
-                    dispositivo. Esta acción no se puede deshacer.
+                    Se borran todos los datos de este paciente en el servidor.
+                    Esta acción no se puede deshacer.
                   </p>
                 </div>
                 <button
@@ -213,8 +226,9 @@ export function PatientDangerZone({ patient }: { patient: Paciente }) {
         confirmLabel="Archivar"
         cancelLabel="Cancelar"
         onConfirm={() => {
-          aplicarEstado("archivado");
-          setArchiveConfirmOpen(false);
+          void aplicarEstado("archivado").finally(() =>
+            setArchiveConfirmOpen(false),
+          );
         }}
       />
     </>
