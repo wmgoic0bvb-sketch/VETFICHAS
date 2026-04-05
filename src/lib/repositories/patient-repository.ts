@@ -1,3 +1,4 @@
+import { mergeDatosInternacion } from "@/lib/internacion-utils";
 import {
   isoFechaLegacyAFechaHora,
   isFechaHoraProximoControlValida,
@@ -7,6 +8,7 @@ import type {
   Consulta,
   DueñoContacto,
   EstadoPaciente,
+  ModificacionPaciente,
   Paciente,
   ProximoControl,
 } from "@/types/patient";
@@ -112,6 +114,42 @@ function normalizeProximosControles(
   return [];
 }
 
+function normalizeHistorialModificaciones(
+  raw: unknown,
+): ModificacionPaciente[] {
+  if (!Array.isArray(raw)) return [];
+  const out: ModificacionPaciente[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const o = item as Record<string, unknown>;
+    const id = typeof o.id === "string" && o.id.trim() ? o.id.trim() : "";
+    const fechaHora =
+      typeof o.fechaHora === "string" && o.fechaHora.trim()
+        ? o.fechaHora.trim()
+        : "";
+    if (!id || !fechaHora) continue;
+    const usuarioId = typeof o.usuarioId === "string" ? o.usuarioId : "";
+    const resumen = typeof o.resumen === "string" ? o.resumen : "";
+    const usuarioDni =
+      typeof o.usuarioDni === "string" && o.usuarioDni.trim()
+        ? o.usuarioDni.trim()
+        : undefined;
+    const usuarioNombre =
+      typeof o.usuarioNombre === "string" && o.usuarioNombre.trim()
+        ? o.usuarioNombre.trim()
+        : undefined;
+    out.push({
+      id,
+      fechaHora,
+      usuarioId,
+      usuarioDni,
+      usuarioNombre,
+      resumen,
+    });
+  }
+  return out;
+}
+
 function normalizeEstado(raw: unknown): EstadoPaciente {
   if (raw === "activo" || raw === "archivado") {
     return raw;
@@ -158,14 +196,22 @@ export function normalizePatient(p: StoredPatient): Paciente {
     dueno?: string;
     tel?: string;
   };
+  const internadoFlag = typeof p.internado === "boolean" ? p.internado : false;
   return {
-    ...(rest as Omit<Paciente, "dueños" | "estado">),
+    ...(rest as Omit<
+      Paciente,
+      "dueños" | "estado" | "datosInternacion" | "historialModificaciones"
+    >),
     dueños: normalizeDueños(raw),
     estado: normalizeEstado(raw.estado),
     esExterno: typeof p.esExterno === "boolean" ? p.esExterno : false,
     esUnicaConsulta:
       typeof p.esUnicaConsulta === "boolean" ? p.esUnicaConsulta : false,
-    internado: typeof p.internado === "boolean" ? p.internado : false,
+    internado: internadoFlag,
+    datosInternacion: mergeDatosInternacion(
+      raw.datosInternacion,
+      internadoFlag,
+    ),
     proximosControles: normalizeProximosControles(
       raw.proximosControles,
       raw.proximoControl,
@@ -174,6 +220,9 @@ export function normalizePatient(p: StoredPatient): Paciente {
       ? p.consultas.map((c) => normalizeConsulta(c))
       : [],
     estudios: Array.isArray(p.estudios) ? p.estudios : [],
+    historialModificaciones: normalizeHistorialModificaciones(
+      raw.historialModificaciones,
+    ),
   };
 }
 

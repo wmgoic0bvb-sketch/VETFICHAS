@@ -148,9 +148,14 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
           esExterno: data.esExterno,
           esUnicaConsulta: data.esUnicaConsulta,
           internado: data.internado,
+          datosInternacion:
+            data.datosInternacion !== undefined
+              ? data.datosInternacion
+              : cur.datosInternacion,
           proximosControles: data.proximosControles ?? [],
           consultas: cur.consultas,
           estudios: cur.estudios,
+          historialModificaciones: cur.historialModificaciones,
         };
         return prev.map((p) => (p.id === id ? merged! : p));
       });

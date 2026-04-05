@@ -48,6 +48,65 @@ const estudioSchema = new Schema(
   { _id: false },
 );
 
+const ordenTratamientoInternacionSchema = new Schema(
+  {
+    id: { type: String, required: true },
+    medicamentoOProcedimiento: { type: String, default: "" },
+    viaAdministracion: { type: String, default: "" },
+    dosis: { type: String, default: "" },
+    frecuencia: { type: String, default: "" },
+    fechaInicio: { type: String, default: "" },
+    fechaFin: { type: String },
+    activa: { type: Boolean, default: true },
+  },
+  { _id: false },
+);
+
+const evolucionRondaInternacionSchema = new Schema(
+  {
+    id: { type: String, required: true },
+    fechaHora: { type: String, required: true },
+    veterinario: { type: String, default: "" },
+    temperatura: { type: String, default: "" },
+    frecuenciaCardiaca: { type: String, default: "" },
+    frecuenciaRespiratoria: { type: String, default: "" },
+    peso: { type: String },
+    estadoGeneral: {
+      type: String,
+      enum: ["Estable", "Regular", "Crítico"],
+      default: "Estable",
+    },
+    observaciones: { type: String, default: "" },
+  },
+  { _id: false },
+);
+
+const modificacionPacienteSchema = new Schema(
+  {
+    id: { type: String, required: true },
+    fechaHora: { type: String, required: true },
+    usuarioId: { type: String, required: true },
+    usuarioDni: { type: String },
+    usuarioNombre: { type: String },
+    resumen: { type: String, required: true },
+  },
+  { _id: false },
+);
+
+const datosInternacionSchema = new Schema(
+  {
+    fechaIngreso: { type: String, default: "" },
+    fechaAlta: { type: String },
+    motivoIngreso: { type: String, default: "" },
+    veterinarioResponsable: { type: String, default: "" },
+    diagnosticoPrincipal: { type: String, default: "" },
+    diagnosticoEditadoEn: { type: String },
+    ordenes: { type: [ordenTratamientoInternacionSchema], default: [] },
+    evoluciones: { type: [evolucionRondaInternacionSchema], default: [] },
+  },
+  { _id: false },
+);
+
 const patientSchema = new Schema(
   {
     especie: { type: String, enum: ["Perro", "Gato"], required: true },
@@ -82,9 +141,14 @@ const patientSchema = new Schema(
     esExterno: { type: Boolean, default: false },
     esUnicaConsulta: { type: Boolean, default: false },
     internado: { type: Boolean, default: false },
+    datosInternacion: { type: datosInternacionSchema, required: false },
     proximosControles: { type: [proximoControlSchema], default: [] },
     consultas: { type: [consultaSchema], default: [] },
     estudios: { type: [estudioSchema], default: [] },
+    historialModificaciones: {
+      type: [modificacionPacienteSchema],
+      default: [],
+    },
   },
   { timestamps: true },
 );

@@ -8,6 +8,7 @@ import {
   normalizePhoneInput,
   normalizeStoredPhoneForEdit,
 } from "@/lib/phone-utils";
+import { HistorialModificacionesPanel } from "@/components/dashboard/historial-modificaciones-panel";
 import { DbLoadingOverlay } from "@/components/ui/lottie-loading";
 import {
   ESTADO_PACIENTE_LABELS,
@@ -43,6 +44,7 @@ export function draftFromPatient(p: Paciente): PacienteEditable {
     esExterno: p.esExterno,
     esUnicaConsulta: p.esUnicaConsulta,
     internado: p.internado ?? false,
+    datosInternacion: p.datosInternacion,
     proximosControles: [...p.proximosControles],
   };
 }
@@ -85,10 +87,14 @@ export function PatientFichaEditForm({
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [saving, setSaving] = useState(false);
 
+  // Sincronizar el borrador solo al cambiar de paciente. Incluir `patient` en las
+  // dependencias volvería a resetear el formulario en cada actualización del mismo
+  // registro desde el provider y borraría ediciones en curso.
   useEffect(() => {
     const next = draftFromPatient(patient);
     setDraft(next);
     setFieldErrors({});
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- dependencia deliberada: patient.id
   }, [patient.id]);
 
   useEffect(() => {
@@ -136,6 +142,7 @@ export function PatientFichaEditForm({
         esExterno: draft.esExterno,
         esUnicaConsulta: draft.esUnicaConsulta,
         internado: draft.internado,
+        datosInternacion: draft.datosInternacion,
         proximosControles: draft.proximosControles ?? [],
       });
       setFieldErrors({});
@@ -533,6 +540,11 @@ export function PatientFichaEditForm({
           </span>
         </label>
       </div>
+
+      <HistorialModificacionesPanel
+        className="mt-2"
+        items={patient.historialModificaciones}
+      />
 
       <button
         type="button"

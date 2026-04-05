@@ -42,8 +42,15 @@ export function PatientCard({
           </span>
         </div>
       ) : null}
-      {(patient.esExterno || patient.esUnicaConsulta) && (
+      {(patient.internado ||
+        patient.esExterno ||
+        patient.esUnicaConsulta) && (
         <div className="mt-2 flex flex-wrap justify-center gap-1">
+          {patient.internado ? (
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-900">
+              Internado
+            </span>
+          ) : null}
           {patient.esExterno ? (
             <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900">
               Externo

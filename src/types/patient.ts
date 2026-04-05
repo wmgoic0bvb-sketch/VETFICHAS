@@ -68,6 +68,68 @@ export const ESTADO_PACIENTE_LABELS: Record<EstadoPaciente, string> = {
   archivado: "Archivado",
 };
 
+/** Estado general en una ronda de evolución de internación. */
+export type EstadoGeneralEvolucion = "Estable" | "Regular" | "Crítico";
+
+export const ESTADO_GENERAL_EVOLUCION: EstadoGeneralEvolucion[] = [
+  "Estable",
+  "Regular",
+  "Crítico",
+];
+
+/** Orden del plan de tratamiento durante la internación. */
+export interface OrdenTratamientoInternacion {
+  id: string;
+  medicamentoOProcedimiento: string;
+  viaAdministracion: string;
+  dosis: string;
+  frecuencia: string;
+  fechaInicio: string;
+  fechaFin?: string;
+  activa: boolean;
+}
+
+/** Registro de evolución por ronda (no editable tras guardar). */
+export interface EvolucionRondaInternacion {
+  id: string;
+  /** ISO 8601 (fecha y hora). */
+  fechaHora: string;
+  veterinario: string;
+  temperatura: string;
+  frecuenciaCardiaca: string;
+  frecuenciaRespiratoria: string;
+  peso?: string;
+  estadoGeneral: EstadoGeneralEvolucion;
+  observaciones: string;
+}
+
+/** Entrada de auditoría: cambios en la ficha (servidor). */
+export interface ModificacionPaciente {
+  id: string;
+  /** ISO 8601 */
+  fechaHora: string;
+  usuarioId: string;
+  usuarioDni?: string;
+  usuarioNombre?: string;
+  /** Áreas tocadas (p. ej. "Datos generales; Consultas"). */
+  resumen: string;
+}
+
+/** Datos clínicos del seguimiento de internación (persistidos en el paciente). */
+export interface DatosInternacion {
+  /** Fecha de ingreso (YYYY-MM-DD). */
+  fechaIngreso: string;
+  /** Fecha/hora de alta (ISO); set al finalizar internación. */
+  fechaAlta?: string;
+  motivoIngreso: string;
+  veterinarioResponsable: string;
+  diagnosticoPrincipal: string;
+  /** ISO 8601 de última edición del diagnóstico. */
+  diagnosticoEditadoEn?: string;
+  ordenes: OrdenTratamientoInternacion[];
+  evoluciones: EvolucionRondaInternacion[];
+}
+
 export interface Paciente {
   id: string;
   especie: Especie;
@@ -88,10 +150,14 @@ export interface Paciente {
   esUnicaConsulta: boolean;
   /** Paciente actualmente en internación / hospitalización. */
   internado: boolean;
+  /** Seguimiento de internación (ingreso, plan, evoluciones). Opcional si nunca internó. */
+  datosInternacion?: DatosInternacion;
   /** Controles programados (varios por paciente). */
   proximosControles: ProximoControl[];
   consultas: Consulta[];
   estudios: Estudio[];
+  /** Historial de modificaciones (solo servidor; no enviar desde el cliente). */
+  historialModificaciones?: ModificacionPaciente[];
 }
 
 export function esPacienteActivo(p: Paciente): boolean {

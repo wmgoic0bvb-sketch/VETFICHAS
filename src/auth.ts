@@ -28,6 +28,7 @@ const authConfig = {
         token.id = user.id;
         token.dni = user.dni;
         token.role = user.role ?? "user";
+        token.name = user.name ?? "";
       }
       return token;
     },
@@ -36,6 +37,8 @@ const authConfig = {
         session.user.id = (token.id as string) ?? token.sub ?? "";
         session.user.dni = token.dni as string;
         session.user.role = token.role ?? "user";
+        session.user.name =
+          typeof token.name === "string" ? token.name : "";
       }
       return session;
     },

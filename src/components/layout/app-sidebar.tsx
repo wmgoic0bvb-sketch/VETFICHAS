@@ -51,7 +51,8 @@ const activeClass = `${itemClass} bg-[#5c1838]/10 text-[#5c1838]`;
 
 export function AppSidebar() {
   const pathname = usePathname() ?? "";
-  const internacionesActive = pathname === "/internaciones";
+  const internacionesActive =
+    pathname === "/internaciones" || pathname.startsWith("/internaciones/");
   const pacientesActive =
     pathname === "/" || pathname.startsWith("/patient/");
 

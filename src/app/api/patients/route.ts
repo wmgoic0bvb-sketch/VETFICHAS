@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextAuthRequest } from "next-auth";
 import { auth } from "@/auth";
 import { pacienteFromMongoLean } from "@/lib/mongodb-patient";
+import { pacienteParaRespuestaApi } from "@/lib/patient-change-log";
 import { connectMongo } from "@/lib/mongodb";
 import { Patient } from "@/models/patient";
 import type { PacienteDraft } from "@/types/patient";
@@ -20,7 +21,10 @@ export const GET = auth(async (_req: NextAuthRequest) => {
   try {
     await connectMongo();
     const rows = await Patient.find().sort({ createdAt: -1 }).lean().exec();
-    const patients = rows.map((doc) => pacienteFromMongoLean(doc));
+    const role = _req.auth.user.role;
+    const patients = rows.map((doc) =>
+      pacienteParaRespuestaApi(pacienteFromMongoLean(doc), role),
+    );
     return NextResponse.json({ patients });
   } catch (e) {
     return NextResponse.json(
@@ -84,6 +88,9 @@ export const POST = auth(async (req: NextAuthRequest) => {
       esExterno: Boolean(draft.esExterno),
       esUnicaConsulta: Boolean(draft.esUnicaConsulta),
       internado: Boolean(draft.internado),
+      ...(draft.datosInternacion != null
+        ? { datosInternacion: draft.datosInternacion }
+        : {}),
       proximosControles: Array.isArray(draft.proximosControles)
         ? draft.proximosControles
         : [],
@@ -92,7 +99,9 @@ export const POST = auth(async (req: NextAuthRequest) => {
     });
 
     const patient = pacienteFromMongoLean(doc.toObject());
-    return NextResponse.json({ patient });
+    return NextResponse.json({
+      patient: pacienteParaRespuestaApi(patient, req.auth.user.role),
+    });
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : String(e) },

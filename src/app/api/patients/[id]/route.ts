@@ -3,12 +3,20 @@ import type { NextAuthRequest } from "next-auth";
 import mongoose from "mongoose";
 import { auth } from "@/auth";
 import { pacienteFromMongoLean } from "@/lib/mongodb-patient";
+import {
+  describePatientChanges,
+  hasPatientClinicalChanges,
+  mergeHistorialTrasGuardado,
+  nuevoIdModificacionPaciente,
+  pacienteParaRespuestaApi,
+} from "@/lib/patient-change-log";
 import { connectMongo } from "@/lib/mongodb";
 import {
   normalizePatient,
   type StoredPatient,
 } from "@/lib/repositories/patient-repository";
 import { Patient } from "@/models/patient";
+import type { ModificacionPaciente } from "@/types/patient";
 
 export const runtime = "nodejs";
 
@@ -38,7 +46,9 @@ export const GET = auth(async (req: NextAuthRequest, ctx) => {
       return NextResponse.json({ error: "No encontrado" }, { status: 404 });
     }
     const patient = pacienteFromMongoLean(doc);
-    return NextResponse.json({ patient });
+    return NextResponse.json({
+      patient: pacienteParaRespuestaApi(patient, req.auth.user.role),
+    });
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : String(e) },
@@ -68,7 +78,10 @@ export const PUT = auth(async (req: NextAuthRequest, ctx) => {
     return NextResponse.json({ error: "Cuerpo inválido" }, { status: 400 });
   }
 
-  const patient = normalizePatient({ ...(body as object), id } as StoredPatient);
+  const bodyClean = { ...(body as Record<string, unknown>) };
+  delete bodyClean.historialModificaciones;
+
+  const patient = normalizePatient({ ...bodyClean, id } as StoredPatient);
 
   if (patient.id !== id) {
     return NextResponse.json({ error: "El id no coincide" }, { status: 400 });
@@ -76,6 +89,36 @@ export const PUT = auth(async (req: NextAuthRequest, ctx) => {
 
   try {
     await connectMongo();
+    const prevDoc = await Patient.findById(id).lean().exec();
+    if (!prevDoc) {
+      return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+    }
+
+    const pacientePrev = pacienteFromMongoLean(prevDoc);
+
+    const sessionUser = req.auth!.user!;
+    let historialModificaciones: ModificacionPaciente[] =
+      pacientePrev.historialModificaciones ?? [];
+
+    if (hasPatientClinicalChanges(pacientePrev, patient)) {
+      const usuarioNombre =
+        typeof sessionUser.name === "string" && sessionUser.name.trim()
+          ? sessionUser.name.trim()
+          : undefined;
+      const nueva: ModificacionPaciente = {
+        id: nuevoIdModificacionPaciente(),
+        fechaHora: new Date().toISOString(),
+        usuarioId: sessionUser.id,
+        usuarioDni: sessionUser.dni,
+        usuarioNombre,
+        resumen: describePatientChanges(pacientePrev, patient),
+      };
+      historialModificaciones = mergeHistorialTrasGuardado(
+        historialModificaciones,
+        nueva,
+      );
+    }
+
     const updated = await Patient.findByIdAndUpdate(
       id,
       {
@@ -93,9 +136,11 @@ export const PUT = auth(async (req: NextAuthRequest, ctx) => {
           esExterno: patient.esExterno,
           esUnicaConsulta: patient.esUnicaConsulta,
           internado: patient.internado,
+          datosInternacion: patient.datosInternacion,
           proximosControles: patient.proximosControles,
           consultas: patient.consultas,
           estudios: patient.estudios,
+          historialModificaciones,
         },
       },
       { new: true, runValidators: true },
@@ -108,7 +153,9 @@ export const PUT = auth(async (req: NextAuthRequest, ctx) => {
     }
 
     const out = pacienteFromMongoLean(updated);
-    return NextResponse.json({ patient: out });
+    return NextResponse.json({
+      patient: pacienteParaRespuestaApi(out, req.auth.user.role),
+    });
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : String(e) },

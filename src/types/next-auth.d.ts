@@ -11,6 +11,7 @@ declare module "next-auth" {
       id: string;
       dni: string;
       role: "user" | "admin" | "vet";
+      name: string;
     };
   }
 }
@@ -20,5 +21,6 @@ declare module "next-auth/jwt" {
     id?: string;
     dni?: string;
     role?: "user" | "admin" | "vet";
+    name?: string;
   }
 }
