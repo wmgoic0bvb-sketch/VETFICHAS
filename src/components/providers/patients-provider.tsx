@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import {
   createPatient,
@@ -58,6 +59,7 @@ interface PatientsContextValue {
 const PatientsContext = createContext<PatientsContextValue | null>(null);
 
 export function PatientsProvider({ children }: { children: ReactNode }) {
+  const { status } = useSession();
   const [patients, setPatients] = useState<Paciente[]>([]);
   const [ready, setReady] = useState(false);
 
@@ -67,6 +69,15 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (status === "loading") {
+      return;
+    }
+    if (status === "unauthenticated") {
+      setPatients([]);
+      setReady(true);
+      return;
+    }
+
     let cancelled = false;
     (async () => {
       try {
@@ -85,7 +96,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [status]);
 
   const addPatient = useCallback(async (draft: PacienteDraft): Promise<Paciente> => {
     try {
