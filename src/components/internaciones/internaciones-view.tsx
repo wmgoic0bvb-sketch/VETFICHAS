@@ -1,13 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { draftFromPatient } from "@/components/dashboard/patient-ficha-edit-form";
 import { PatientCard } from "@/components/dashboard/patient-card";
 import { PatientSearch } from "@/components/dashboard/patient-search";
 import { usePatients } from "@/components/providers/patients-provider";
-import { LottieSpinner } from "@/components/ui/lottie-loading";
+import { DbLoadingOverlay, LottieSpinner } from "@/components/ui/lottie-loading";
+import { usePendingNavigation } from "@/lib/use-pending-navigation";
 import { defaultDatosInternacion } from "@/lib/internacion-utils";
 import {
   dueñosParaBusqueda,
@@ -26,7 +26,7 @@ function matchPaciente(query: string, p: Paciente): boolean {
 }
 
 export function InternacionesView() {
-  const router = useRouter();
+  const { push, isPending } = usePendingNavigation();
   const { patients, ready, updatePatient } = usePatients();
   const [query, setQuery] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -174,7 +174,7 @@ export function InternacionesView() {
               <div key={p.id} className="flex flex-col">
                 <PatientCard
                   patient={p}
-                  onOpen={(id) => router.push(`/internaciones/${id}`)}
+                  onOpen={(id) => push(`/internaciones/${id}`)}
                 />
                 <button
                   type="button"
@@ -195,6 +195,8 @@ export function InternacionesView() {
           )}
         </div>
       </section>
+
+      <DbLoadingOverlay show={isPending} label="Cargando internación…" />
     </main>
   );
 }

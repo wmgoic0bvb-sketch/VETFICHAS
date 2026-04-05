@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { usePatients } from "@/components/providers/patients-provider";
 import { dueñosParaBusqueda } from "@/lib/dueños-utils";
 import {
@@ -9,7 +8,8 @@ import {
   type Consulta,
   type Paciente,
 } from "@/types/patient";
-import { LottieSpinner } from "@/components/ui/lottie-loading";
+import { DbLoadingOverlay, LottieSpinner } from "@/components/ui/lottie-loading";
+import { usePendingNavigation } from "@/lib/use-pending-navigation";
 import { ConsultaModal } from "./consulta-modal";
 import { AppShell } from "@/components/layout/app-shell";
 import { NewPatientWizard } from "./new-patient-wizard";
@@ -17,7 +17,7 @@ import { PatientGrid } from "./patient-grid";
 import { PatientSearch } from "./patient-search";
 
 export function Dashboard() {
-  const router = useRouter();
+  const { push, isPending } = usePendingNavigation();
   const { patients, ready, addPatient, addConsulta } = usePatients();
   const [query, setQuery] = useState("");
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -63,7 +63,7 @@ export function Dashboard() {
   }, [patients, query]);
 
   const openFicha = (id: string) => {
-    router.push(`/patient/${id}`);
+    push(`/patient/${id}`);
   };
 
   if (!ready) {
@@ -192,10 +192,12 @@ export function Dashboard() {
             const id = selectedId;
             setDetailAfterConsulta(false);
             setSelectedId(null);
-            router.push(`/patient/${id}`);
+            push(`/patient/${id}`);
           }
         }}
       />
+
+      <DbLoadingOverlay show={isPending} label="Cargando ficha…" />
     </AppShell>
   );
 }
