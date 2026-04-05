@@ -115,6 +115,15 @@ function resizeImage(file: File, maxSize: number): Promise<Blob> {
   });
 }
 
+function PasswordRule({ met, label }: { met: boolean; label: string }) {
+  return (
+    <li className={`flex items-center gap-1.5 text-xs ${met ? "text-emerald-600" : "text-[#aaa]"}`}>
+      <span aria-hidden>{met ? "✓" : "○"}</span>
+      {label}
+    </li>
+  );
+}
+
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrador",
   vet: "Veterinario",
@@ -271,6 +280,8 @@ export function SettingsPanel() {
     if (!newPassword) errors.new = "Ingresá la nueva contraseña.";
     else if (newPassword.length < 6)
       errors.new = "Debe tener al menos 6 caracteres.";
+    else if (!/[a-zA-Z]/.test(newPassword) || !/[0-9]/.test(newPassword))
+      errors.new = "Debe contener letras y números.";
     if (!confirmPassword) errors.confirm = "Confirmá la nueva contraseña.";
     else if (newPassword !== confirmPassword)
       errors.confirm = "Las contraseñas no coinciden.";
@@ -455,18 +466,27 @@ export function SettingsPanel() {
             autoComplete="current-password"
             error={passwordErrors.current}
           />
-          <PasswordInput
-            id="settings-new-password"
-            label="Nueva contraseña"
-            value={newPassword}
-            onChange={(v) => {
-              setNewPassword(v);
-              if (passwordErrors.new)
-                setPasswordErrors((e) => ({ ...e, new: undefined }));
-            }}
-            autoComplete="new-password"
-            error={passwordErrors.new}
-          />
+          <div>
+            <PasswordInput
+              id="settings-new-password"
+              label="Nueva contraseña"
+              value={newPassword}
+              onChange={(v) => {
+                setNewPassword(v);
+                if (passwordErrors.new)
+                  setPasswordErrors((e) => ({ ...e, new: undefined }));
+              }}
+              autoComplete="new-password"
+              error={passwordErrors.new}
+            />
+            {newPassword.length > 0 && (
+              <ul className="mt-2 space-y-1">
+                <PasswordRule met={newPassword.length >= 6} label="Mínimo 6 caracteres" />
+                <PasswordRule met={/[a-zA-Z]/.test(newPassword)} label="Al menos una letra" />
+                <PasswordRule met={/[0-9]/.test(newPassword)} label="Al menos un número" />
+              </ul>
+            )}
+          </div>
           <PasswordInput
             id="settings-confirm-password"
             label="Confirmar nueva contraseña"
