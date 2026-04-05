@@ -1,0 +1,413 @@
+"use client";
+
+import Image from "next/image";
+import { useRef, useState } from "react";
+import { useSession } from "next-auth/react";
+import { toast } from "sonner";
+
+const cardClass = "rounded-2xl border border-[#ebe6df] bg-white p-6 shadow-sm";
+const inputClass =
+  "w-full rounded-lg border border-[#ddd] bg-white px-3 py-2 text-[15px] text-[#222] outline-none ring-[#5c1838]/30 focus:border-[#5c1838] focus:ring-2 disabled:bg-[#f5f2ee] disabled:text-[#999]";
+const labelClass =
+  "mb-1 block text-xs font-medium uppercase tracking-wide text-[#555]";
+const sectionTitle =
+  "mb-4 text-xs font-bold uppercase tracking-wider text-[#5c1838]";
+
+function UserIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-12 w-12 text-[#bbb]"
+      aria-hidden
+    >
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+
+function CameraIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-4 w-4"
+      aria-hidden
+    >
+      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+      <circle cx="12" cy="13" r="4" />
+    </svg>
+  );
+}
+
+function EyeIcon({ open }: { open: boolean }) {
+  if (open) {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-[18px] w-[18px]"
+        aria-hidden
+      >
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+    );
+  }
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-[18px] w-[18px]"
+      aria-hidden
+    >
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  );
+}
+
+const ROLE_LABELS: Record<string, string> = {
+  admin: "Administrador",
+  vet: "Veterinario",
+  user: "Usuario",
+};
+
+function PasswordInput({
+  id,
+  label,
+  value,
+  onChange,
+  autoComplete,
+  error,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  autoComplete?: string;
+  error?: string;
+}) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div>
+      <label htmlFor={id} className={labelClass}>
+        {label}
+      </label>
+      <div className="relative">
+        <input
+          id={id}
+          type={visible ? "text" : "password"}
+          autoComplete={autoComplete}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={`${inputClass} pr-10 ${error ? "border-red-400 ring-red-200 focus:border-red-500" : ""}`}
+        />
+        <button
+          type="button"
+          onClick={() => setVisible((v) => !v)}
+          aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"}
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#aaa] hover:text-[#555]"
+        >
+          <EyeIcon open={visible} />
+        </button>
+      </div>
+      {error ? (
+        <p className="mt-1 text-xs text-red-600" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+export function SettingsPanel() {
+  const { data: session } = useSession();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Foto de perfil
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(
+    session?.user?.image ?? null,
+  );
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [savingAvatar, setSavingAvatar] = useState(false);
+
+  // Nombre
+  const [name, setName] = useState(session?.user?.name ?? "");
+  const [savingName, setSavingName] = useState(false);
+
+  // Contraseña
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordErrors, setPasswordErrors] = useState<{
+    current?: string;
+    new?: string;
+    confirm?: string;
+  }>({});
+  const [savingPassword, setSavingPassword] = useState(false);
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 4 * 1024 * 1024) {
+      toast.error("La imagen no puede superar los 4 MB.");
+      return;
+    }
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  };
+
+  const handleSaveAvatar = async () => {
+    if (!avatarFile) return;
+    setSavingAvatar(true);
+    // Mock: simulate upload delay
+    await new Promise((r) => setTimeout(r, 900));
+    setSavingAvatar(false);
+    setAvatarFile(null);
+    toast.success("Foto actualizada correctamente.");
+  };
+
+  const handleSaveName = async () => {
+    if (!name.trim()) {
+      toast.error("El nombre no puede estar vacío.");
+      return;
+    }
+    setSavingName(true);
+    await new Promise((r) => setTimeout(r, 700));
+    setSavingName(false);
+    toast.success("Nombre actualizado correctamente.");
+  };
+
+  const handleSavePassword = async () => {
+    const errors: typeof passwordErrors = {};
+    if (!currentPassword) errors.current = "Ingresá tu contraseña actual.";
+    if (!newPassword) errors.new = "Ingresá la nueva contraseña.";
+    else if (newPassword.length < 6)
+      errors.new = "Debe tener al menos 6 caracteres.";
+    if (!confirmPassword) errors.confirm = "Confirmá la nueva contraseña.";
+    else if (newPassword !== confirmPassword)
+      errors.confirm = "Las contraseñas no coinciden.";
+
+    if (Object.keys(errors).length > 0) {
+      setPasswordErrors(errors);
+      return;
+    }
+    setPasswordErrors({});
+    setSavingPassword(true);
+    await new Promise((r) => setTimeout(r, 800));
+    setSavingPassword(false);
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    toast.success("Contraseña actualizada correctamente.");
+  };
+
+  const user = session?.user;
+  const roleLabel = user?.role ? (ROLE_LABELS[user.role] ?? user.role) : null;
+
+  return (
+    <div className="mx-auto w-full max-w-[560px] space-y-5 px-4 py-8">
+      <h1 className="text-2xl font-bold text-[#1a1a1a]">Configuración de usuario</h1>
+
+      {/* Foto de perfil */}
+      <section className={cardClass} aria-labelledby="settings-foto-title">
+        <h2 id="settings-foto-title" className={sectionTitle}>
+          Foto de perfil
+        </h2>
+        <div className="flex items-center gap-5">
+          <div className="relative shrink-0">
+            <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-2 border-[#e8e0d8] bg-[#f5f0eb]">
+              {avatarPreview ? (
+                <Image
+                  src={avatarPreview}
+                  alt="Foto de perfil"
+                  width={80}
+                  height={80}
+                  className="h-full w-full object-cover"
+                  unoptimized={avatarPreview.startsWith("blob:")}
+                />
+              ) : (
+                <UserIcon />
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              aria-label="Cambiar foto de perfil"
+              className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border border-[#e8e0d8] bg-white shadow-sm hover:bg-[#f5f0eb] text-[#5c1838]"
+            >
+              <CameraIcon />
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarChange}
+              aria-label="Seleccionar imagen de perfil"
+            />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm text-[#555]">
+              Subí una foto JPG, PNG o WebP de hasta 4 MB.
+            </p>
+            {avatarFile ? (
+              <div className="mt-3 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleSaveAvatar}
+                  disabled={savingAvatar}
+                  className="rounded-lg bg-[#5c1838] px-4 py-1.5 text-sm font-semibold text-white hover:bg-[#401127] disabled:opacity-60"
+                >
+                  {savingAvatar ? "Guardando…" : "Guardar foto"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAvatarFile(null);
+                    setAvatarPreview(session?.user?.image ?? null);
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                  }}
+                  className="rounded-lg border border-[#ddd] px-4 py-1.5 text-sm font-medium text-[#555] hover:bg-[#f5f0eb]"
+                >
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="mt-2 rounded-lg border border-[#ddd] px-4 py-1.5 text-sm font-medium text-[#333] hover:bg-[#f5f0eb]"
+              >
+                Elegir imagen
+              </button>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Datos personales */}
+      <section className={cardClass} aria-labelledby="settings-perfil-title">
+        <h2 id="settings-perfil-title" className={sectionTitle}>
+          Datos personales
+        </h2>
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="settings-name" className={labelClass}>
+              Nombre
+            </label>
+            <input
+              id="settings-name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className={inputClass}
+              autoComplete="name"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className={labelClass}>DNI</p>
+              <p className="rounded-lg border border-[#ddd] bg-[#f5f2ee] px-3 py-2 text-[15px] text-[#999]">
+                {user?.dni ?? "—"}
+              </p>
+            </div>
+            <div>
+              <p className={labelClass}>Rol</p>
+              <p className="rounded-lg border border-[#ddd] bg-[#f5f2ee] px-3 py-2 text-[15px] text-[#999]">
+                {roleLabel ?? "—"}
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end pt-1">
+            <button
+              type="button"
+              onClick={handleSaveName}
+              disabled={savingName || !name.trim()}
+              className="rounded-lg bg-[#5c1838] px-5 py-2 text-sm font-semibold text-white hover:bg-[#401127] disabled:opacity-60"
+            >
+              {savingName ? "Guardando…" : "Guardar nombre"}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Cambiar contraseña */}
+      <section className={cardClass} aria-labelledby="settings-password-title">
+        <h2 id="settings-password-title" className={sectionTitle}>
+          Cambiar contraseña
+        </h2>
+        <div className="space-y-4">
+          <PasswordInput
+            id="settings-current-password"
+            label="Contraseña actual"
+            value={currentPassword}
+            onChange={(v) => {
+              setCurrentPassword(v);
+              if (passwordErrors.current)
+                setPasswordErrors((e) => ({ ...e, current: undefined }));
+            }}
+            autoComplete="current-password"
+            error={passwordErrors.current}
+          />
+          <PasswordInput
+            id="settings-new-password"
+            label="Nueva contraseña"
+            value={newPassword}
+            onChange={(v) => {
+              setNewPassword(v);
+              if (passwordErrors.new)
+                setPasswordErrors((e) => ({ ...e, new: undefined }));
+            }}
+            autoComplete="new-password"
+            error={passwordErrors.new}
+          />
+          <PasswordInput
+            id="settings-confirm-password"
+            label="Confirmar nueva contraseña"
+            value={confirmPassword}
+            onChange={(v) => {
+              setConfirmPassword(v);
+              if (passwordErrors.confirm)
+                setPasswordErrors((e) => ({ ...e, confirm: undefined }));
+            }}
+            autoComplete="new-password"
+            error={passwordErrors.confirm}
+          />
+          <div className="flex justify-end pt-1">
+            <button
+              type="button"
+              onClick={handleSavePassword}
+              disabled={savingPassword}
+              className="rounded-lg bg-[#5c1838] px-5 py-2 text-sm font-semibold text-white hover:bg-[#401127] disabled:opacity-60"
+            >
+              {savingPassword ? "Guardando…" : "Cambiar contraseña"}
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
