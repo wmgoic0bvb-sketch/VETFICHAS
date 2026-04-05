@@ -11,13 +11,6 @@ import type {
   ProximoControl,
 } from "@/types/patient";
 
-const STORAGE_KEY = "vetfichas_pacientes";
-
-export interface PatientRepository {
-  load(): Paciente[];
-  persist(patients: Paciente[]): void;
-}
-
 function normalizeConsulta(raw: Consulta): Consulta {
   return {
     ...raw,
@@ -152,14 +145,14 @@ function normalizeDueños(raw: Record<string, unknown>): [DueñoContacto, Dueño
   return [{ nombre: dueno, tel }, { ...vacío }];
 }
 
-type StoredPatient = Paciente & {
+export type StoredPatient = Paciente & {
   dueno?: string;
   tel?: string;
   /** Migración: antes era un solo objeto. */
   proximoControl?: unknown;
 };
 
-function normalizePatient(p: StoredPatient): Paciente {
+export function normalizePatient(p: StoredPatient): Paciente {
   const raw = p as unknown as Record<string, unknown>;
   const { dueno: _d, tel: _t, ...rest } = p as StoredPatient & {
     dueno?: string;
@@ -183,26 +176,3 @@ function normalizePatient(p: StoredPatient): Paciente {
   };
 }
 
-function parsePatients(raw: string | null): Paciente[] {
-  if (!raw) return [];
-  try {
-    const data = JSON.parse(raw) as unknown;
-    if (!Array.isArray(data)) return [];
-    return (data as StoredPatient[]).map(normalizePatient);
-  } catch {
-    return [];
-  }
-}
-
-/** Persistencia local; puede sustituirse por una implementación API sin cambiar el resto de la app. */
-export class LocalStoragePatientRepository implements PatientRepository {
-  load(): Paciente[] {
-    if (typeof window === "undefined") return [];
-    return parsePatients(window.localStorage.getItem(STORAGE_KEY));
-  }
-
-  persist(patients: Paciente[]): void {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(patients));
-  }
-}

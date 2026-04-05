@@ -168,8 +168,8 @@ export function Dashboard() {
       <NewPatientWizard
         open={wizardOpen}
         onClose={() => setWizardOpen(false)}
-        onSave={(draft) => {
-          const p = addPatient(draft);
+        onSave={async (draft) => {
+          const p = await addPatient(draft);
           setSelectedId(p.id);
           setDetailAfterConsulta(true);
           setConsultaOpen(true);

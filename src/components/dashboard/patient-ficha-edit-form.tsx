@@ -91,7 +91,7 @@ export function PatientFichaEditForm({
     });
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     const n = draft.nombre.trim();
     const d1 = draft.dueños[0].nombre.trim();
     const nextErrors: FieldErrors = {};
@@ -104,7 +104,7 @@ export function PatientFichaEditForm({
       setFieldErrors(nextErrors);
       return;
     }
-    updatePatient(patient.id, {
+    await updatePatient(patient.id, {
       ...draft,
       nombre: n,
       raza: draft.raza.trim(),

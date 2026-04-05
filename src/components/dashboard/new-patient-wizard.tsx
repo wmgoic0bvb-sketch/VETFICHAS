@@ -18,7 +18,7 @@ export function NewPatientWizard({
 }: {
   open: boolean;
   onClose: () => void;
-  onSave: (draft: PacienteDraft) => void;
+  onSave: (draft: PacienteDraft) => void | Promise<void>;
 }) {
   const [paso, setPaso] = useState(1);
   const [especie, setEspecie] = useState<Especie | "">("");
@@ -64,7 +64,7 @@ export function NewPatientWizard({
 
   const go = (n: number) => setPaso(n);
 
-  const guardar = () => {
+  const guardar = async () => {
     const n = nombre.trim();
     const d1 = dueños[0].nombre.trim();
     const nextErrors: FieldErrors = {};
@@ -80,28 +80,32 @@ export function NewPatientWizard({
       return;
     }
     setFieldErrors({});
-    onSave({
-      especie: especie as Especie,
-      nombre: n,
-      raza: raza.trim(),
-      sexo,
-      fnac,
-      castrado,
-      color: color.trim(),
-      dueños: [
-        { nombre: d1, tel: dueños[0].tel.trim() },
-        {
-          nombre: dueños[1].nombre.trim(),
-          tel: dueños[1].tel.trim(),
-        },
-      ],
-      dir: dir.trim(),
-      estado: "activo",
-      esExterno,
-      esUnicaConsulta: false,
-      consultas: [],
-    });
-    handleClose();
+    try {
+      await onSave({
+        especie: especie as Especie,
+        nombre: n,
+        raza: raza.trim(),
+        sexo,
+        fnac,
+        castrado,
+        color: color.trim(),
+        dueños: [
+          { nombre: d1, tel: dueños[0].tel.trim() },
+          {
+            nombre: dueños[1].nombre.trim(),
+            tel: dueños[1].tel.trim(),
+          },
+        ],
+        dir: dir.trim(),
+        estado: "activo",
+        esExterno,
+        esUnicaConsulta: false,
+        consultas: [],
+      });
+      handleClose();
+    } catch {
+      /* onSave puede rechazar si falla el alta en el servidor */
+    }
   };
 
   const stepClass = (i: number) => {

@@ -9,10 +9,13 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { toast } from "sonner";
 import {
-  LocalStoragePatientRepository,
-  type PatientRepository,
-} from "@/lib/repositories/patient-repository";
+  createPatient,
+  deletePatient as deletePatientApi,
+  fetchPatients,
+  replacePatient,
+} from "@/lib/patients-api";
 import type {
   Consulta,
   Estudio,
@@ -21,178 +24,230 @@ import type {
   ProximoControl,
 } from "@/types/patient";
 
-function createDefaultRepository() {
-  return new LocalStoragePatientRepository();
-}
-
 /** Campos editables de la ficha (sin id ni historial de consultas). */
 export type PacienteEditable = Omit<PacienteDraft, "consultas">;
 
 interface PatientsContextValue {
   patients: Paciente[];
   ready: boolean;
-  addPatient: (draft: PacienteDraft) => Paciente;
-  updatePatient: (id: string, data: PacienteEditable) => void;
+  addPatient: (draft: PacienteDraft) => Promise<Paciente>;
+  updatePatient: (id: string, data: PacienteEditable) => Promise<void>;
   addProximoControl: (
     patientId: string,
     data: Omit<ProximoControl, "id">,
-  ) => void;
+  ) => Promise<void>;
   updateProximoControl: (
     patientId: string,
     controlId: string,
     patch: Partial<Omit<ProximoControl, "id">>,
-  ) => void;
-  removeProximoControl: (patientId: string, controlId: string) => void;
-  removePatient: (id: string) => void;
+  ) => Promise<void>;
+  removeProximoControl: (patientId: string, controlId: string) => Promise<void>;
+  removePatient: (id: string) => Promise<void>;
   getById: (id: string) => Paciente | undefined;
-  addConsulta: (patientId: string, consulta: Omit<Consulta, "id">) => void;
-  addEstudio: (patientId: string, estudio: Omit<Estudio, "id" | "fecha">) => void;
-  removeEstudio: (patientId: string, estudioId: string) => void;
+  addConsulta: (
+    patientId: string,
+    consulta: Omit<Consulta, "id">,
+  ) => Promise<void>;
+  addEstudio: (
+    patientId: string,
+    estudio: Omit<Estudio, "id" | "fecha">,
+  ) => Promise<void>;
+  removeEstudio: (patientId: string, estudioId: string) => Promise<void>;
 }
 
 const PatientsContext = createContext<PatientsContextValue | null>(null);
 
-export function PatientsProvider({
-  children,
-  repository: repositoryProp,
-}: {
-  children: ReactNode;
-  repository?: PatientRepository;
-}) {
-  const repository = useMemo(
-    () => repositoryProp ?? createDefaultRepository(),
-    [repositoryProp],
-  );
-
+export function PatientsProvider({ children }: { children: ReactNode }) {
   const [patients, setPatients] = useState<Paciente[]>([]);
   const [ready, setReady] = useState(false);
 
+  const reloadFromServer = useCallback(async () => {
+    const list = await fetchPatients();
+    setPatients(list);
+  }, []);
+
   useEffect(() => {
-    setPatients(repository.load());
-    setReady(true);
-  }, [repository]);
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await fetchPatients();
+        if (!cancelled) setPatients(list);
+      } catch (e) {
+        toast.error(
+          e instanceof Error
+            ? e.message
+            : "No se pudieron cargar los pacientes desde el servidor.",
+        );
+      } finally {
+        if (!cancelled) setReady(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  const addPatient = useCallback(
-    (draft: PacienteDraft): Paciente => {
-      const paciente: Paciente = {
-        ...draft,
-        estado: draft.estado ?? "activo",
-        id: `${Date.now()}`,
-        consultas: draft.consultas ?? [],
-        estudios: draft.estudios ?? [],
-        proximosControles: draft.proximosControles ?? [],
-      };
-      setPatients((prev) => {
-        const next = [paciente, ...prev];
-        repository.persist(next);
-        return next;
-      });
-      return paciente;
-    },
-    [repository],
-  );
+  const addPatient = useCallback(async (draft: PacienteDraft): Promise<Paciente> => {
+    try {
+      const patient = await createPatient(draft);
+      setPatients((prev) => [patient, ...prev]);
+      return patient;
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "No se pudo crear el paciente.",
+      );
+      throw e;
+    }
+  }, []);
 
-  const removePatient = useCallback(
-    (id: string) => {
-      setPatients((prev) => {
-        const next = prev.filter((p) => p.id !== id);
-        repository.persist(next);
-        return next;
-      });
-    },
-    [repository],
-  );
+  const removePatient = useCallback(async (id: string) => {
+    try {
+      await deletePatientApi(id);
+      setPatients((prev) => prev.filter((p) => p.id !== id));
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "No se pudo eliminar el paciente.",
+      );
+      try {
+        await reloadFromServer();
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [reloadFromServer]);
 
   const updatePatient = useCallback(
-    (id: string, data: PacienteEditable) => {
+    async (id: string, data: PacienteEditable) => {
+      let merged: Paciente | undefined;
       setPatients((prev) => {
-        const next = prev.map((p) =>
-          p.id === id
-            ? {
-                ...p,
-                especie: data.especie,
-                nombre: data.nombre,
-                raza: data.raza,
-                sexo: data.sexo,
-                fnac: data.fnac,
-                castrado: data.castrado,
-                color: data.color,
-                dueños: data.dueños,
-                dir: data.dir,
-                estado: data.estado ?? "activo",
-                esExterno: data.esExterno,
-                esUnicaConsulta: data.esUnicaConsulta,
-                proximosControles: data.proximosControles ?? [],
-              }
-            : p,
-        );
-        repository.persist(next);
-        return next;
+        const cur = prev.find((p) => p.id === id);
+        if (!cur) return prev;
+        merged = {
+          ...cur,
+          especie: data.especie,
+          nombre: data.nombre,
+          raza: data.raza,
+          sexo: data.sexo,
+          fnac: data.fnac,
+          castrado: data.castrado,
+          color: data.color,
+          dueños: data.dueños,
+          dir: data.dir,
+          estado: data.estado ?? "activo",
+          esExterno: data.esExterno,
+          esUnicaConsulta: data.esUnicaConsulta,
+          proximosControles: data.proximosControles ?? [],
+          consultas: cur.consultas,
+          estudios: cur.estudios,
+        };
+        return prev.map((p) => (p.id === id ? merged! : p));
       });
+      if (!merged) return;
+      try {
+        const saved = await replacePatient(merged);
+        setPatients((prev) => prev.map((p) => (p.id === id ? saved : p)));
+      } catch (e) {
+        toast.error(
+          e instanceof Error ? e.message : "No se pudo guardar la ficha.",
+        );
+        try {
+          await reloadFromServer();
+        } catch {
+          /* ignore */
+        }
+      }
     },
-    [repository],
+    [reloadFromServer],
+  );
+
+  const persistOne = useCallback(
+    async (next: Paciente) => {
+      try {
+        const saved = await replacePatient(next);
+        setPatients((prev) =>
+          prev.map((p) => (p.id === saved.id ? saved : p)),
+        );
+      } catch (e) {
+        toast.error(
+          e instanceof Error ? e.message : "No se pudieron guardar los cambios.",
+        );
+        try {
+          await reloadFromServer();
+        } catch {
+          /* ignore */
+        }
+      }
+    },
+    [reloadFromServer],
   );
 
   const addProximoControl = useCallback(
-    (patientId: string, data: Omit<ProximoControl, "id">) => {
+    async (patientId: string, data: Omit<ProximoControl, "id">) => {
       const control: ProximoControl = {
         ...data,
         id: `pc-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
       };
+      let nextPatient: Paciente | undefined;
       setPatients((prev) => {
-        const next = prev.map((p) =>
-          p.id === patientId
-            ? { ...p, proximosControles: [...p.proximosControles, control] }
-            : p,
+        const cur = prev.find((p) => p.id === patientId);
+        if (!cur) return prev;
+        nextPatient = {
+          ...cur,
+          proximosControles: [...cur.proximosControles, control],
+        };
+        return prev.map((p) =>
+          p.id === patientId ? nextPatient! : p,
         );
-        repository.persist(next);
-        return next;
       });
+      if (nextPatient) await persistOne(nextPatient);
     },
-    [repository],
+    [persistOne],
   );
 
   const updateProximoControl = useCallback(
-    (
+    async (
       patientId: string,
       controlId: string,
       patch: Partial<Omit<ProximoControl, "id">>,
     ) => {
+      let nextPatient: Paciente | undefined;
       setPatients((prev) => {
-        const next = prev.map((p) => {
-          if (p.id !== patientId) return p;
-          return {
-            ...p,
-            proximosControles: p.proximosControles.map((c) =>
-              c.id === controlId ? { ...c, ...patch } : c,
-            ),
-          };
-        });
-        repository.persist(next);
-        return next;
+        const cur = prev.find((p) => p.id === patientId);
+        if (!cur) return prev;
+        nextPatient = {
+          ...cur,
+          proximosControles: cur.proximosControles.map((c) =>
+            c.id === controlId ? { ...c, ...patch } : c,
+          ),
+        };
+        return prev.map((p) =>
+          p.id === patientId ? nextPatient! : p,
+        );
       });
+      if (nextPatient) await persistOne(nextPatient);
     },
-    [repository],
+    [persistOne],
   );
 
   const removeProximoControl = useCallback(
-    (patientId: string, controlId: string) => {
+    async (patientId: string, controlId: string) => {
+      let nextPatient: Paciente | undefined;
       setPatients((prev) => {
-        const next = prev.map((p) =>
-          p.id === patientId
-            ? {
-                ...p,
-                proximosControles: p.proximosControles.filter(
-                  (c) => c.id !== controlId,
-                ),
-              }
-            : p,
+        const cur = prev.find((p) => p.id === patientId);
+        if (!cur) return prev;
+        nextPatient = {
+          ...cur,
+          proximosControles: cur.proximosControles.filter(
+            (c) => c.id !== controlId,
+          ),
+        };
+        return prev.map((p) =>
+          p.id === patientId ? nextPatient! : p,
         );
-        repository.persist(next);
-        return next;
       });
+      if (nextPatient) await persistOne(nextPatient);
     },
-    [repository],
+    [persistOne],
   );
 
   const getById = useCallback(
@@ -201,57 +256,66 @@ export function PatientsProvider({
   );
 
   const addConsulta = useCallback(
-    (patientId: string, data: Omit<Consulta, "id">) => {
+    async (patientId: string, data: Omit<Consulta, "id">) => {
       const consulta: Consulta = { ...data, id: `${Date.now()}` };
+      let nextPatient: Paciente | undefined;
       setPatients((prev) => {
-        const next = prev.map((p) =>
-          p.id === patientId
-            ? { ...p, consultas: [...(p.consultas ?? []), consulta] }
-            : p,
+        const cur = prev.find((p) => p.id === patientId);
+        if (!cur) return prev;
+        nextPatient = {
+          ...cur,
+          consultas: [...(cur.consultas ?? []), consulta],
+        };
+        return prev.map((p) =>
+          p.id === patientId ? nextPatient! : p,
         );
-        repository.persist(next);
-        return next;
       });
+      if (nextPatient) await persistOne(nextPatient);
     },
-    [repository],
+    [persistOne],
   );
 
   const addEstudio = useCallback(
-    (patientId: string, data: Omit<Estudio, "id" | "fecha">) => {
+    async (patientId: string, data: Omit<Estudio, "id" | "fecha">) => {
       const estudio: Estudio = {
         ...data,
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
         fecha: new Date().toISOString(),
       };
+      let nextPatient: Paciente | undefined;
       setPatients((prev) => {
-        const next = prev.map((p) =>
-          p.id === patientId
-            ? { ...p, estudios: [...(p.estudios ?? []), estudio] }
-            : p,
+        const cur = prev.find((p) => p.id === patientId);
+        if (!cur) return prev;
+        nextPatient = {
+          ...cur,
+          estudios: [...(cur.estudios ?? []), estudio],
+        };
+        return prev.map((p) =>
+          p.id === patientId ? nextPatient! : p,
         );
-        repository.persist(next);
-        return next;
       });
+      if (nextPatient) await persistOne(nextPatient);
     },
-    [repository],
+    [persistOne],
   );
 
   const removeEstudio = useCallback(
-    (patientId: string, estudioId: string) => {
+    async (patientId: string, estudioId: string) => {
+      let nextPatient: Paciente | undefined;
       setPatients((prev) => {
-        const next = prev.map((p) =>
-          p.id === patientId
-            ? {
-                ...p,
-                estudios: (p.estudios ?? []).filter((e) => e.id !== estudioId),
-              }
-            : p,
+        const cur = prev.find((p) => p.id === patientId);
+        if (!cur) return prev;
+        nextPatient = {
+          ...cur,
+          estudios: (cur.estudios ?? []).filter((e) => e.id !== estudioId),
+        };
+        return prev.map((p) =>
+          p.id === patientId ? nextPatient! : p,
         );
-        repository.persist(next);
-        return next;
       });
+      if (nextPatient) await persistOne(nextPatient);
     },
-    [repository],
+    [persistOne],
   );
 
   const value = useMemo(
