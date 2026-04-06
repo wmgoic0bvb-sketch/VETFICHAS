@@ -40,7 +40,33 @@ function UserAvatarButton({ imageUrl }: { imageUrl?: string | null }) {
   return <UserIcon />;
 }
 
-export function DashboardNav({ onNewPatient }: { onNewPatient?: () => void }) {
+function MenuIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  );
+}
+
+export function DashboardNav({
+  onNewPatient,
+  mobileNavOpen,
+  onMobileNavToggle,
+}: {
+  onNewPatient?: () => void;
+  mobileNavOpen?: boolean;
+  onMobileNavToggle?: () => void;
+}) {
   const { data: session } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -62,10 +88,26 @@ export function DashboardNav({ onNewPatient }: { onNewPatient?: () => void }) {
 
   return (
     <header className="sticky top-0 z-[100] flex h-14 shrink-0 items-center justify-between border-b border-[#e8e0d8] bg-white px-5">
-      <div className="flex items-center gap-3">
+      <div className="flex min-w-0 shrink-0 items-center gap-1 sm:gap-3">
+        {onMobileNavToggle ? (
+          <button
+            type="button"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[#5c1838] hover:bg-[#efe8e0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5c1838]/40 md:hidden"
+            aria-expanded={mobileNavOpen ?? false}
+            aria-controls="app-sidebar-nav"
+            aria-label={
+              mobileNavOpen
+                ? "Cerrar menú de navegación"
+                : "Abrir menú de navegación"
+            }
+            onClick={onMobileNavToggle}
+          >
+            <MenuIcon className="h-6 w-6" />
+          </button>
+        ) : null}
         <Link
           href="/"
-          className="flex items-center gap-2 text-xl font-bold text-[#5c1838] hover:opacity-80"
+          className="flex min-w-0 items-center gap-2 text-xl font-bold text-[#5c1838] hover:opacity-80"
           title="Ir al inicio"
           aria-label="Ir al inicio"
         >
@@ -88,7 +130,7 @@ export function DashboardNav({ onNewPatient }: { onNewPatient?: () => void }) {
           </Link>
         ) : null}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2">
         {onNewPatient ? (
           <button
             type="button"

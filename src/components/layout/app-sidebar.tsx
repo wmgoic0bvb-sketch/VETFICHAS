@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 
 function InternacionesIcon({ className }: { className?: string }) {
   return (
@@ -45,42 +46,76 @@ function PacientesIcon({ className }: { className?: string }) {
 }
 
 const itemClass =
-  "flex items-center justify-center gap-3 rounded-xl px-2.5 py-2.5 text-[13px] font-medium transition-colors md:justify-start";
+  "flex items-center justify-start gap-3 rounded-xl px-2.5 py-2.5 text-[13px] font-medium transition-colors";
 const inactiveClass = `${itemClass} text-[#555] hover:bg-[#efe8e0] hover:text-[#5c1838]`;
 const activeClass = `${itemClass} bg-[#5c1838]/10 text-[#5c1838]`;
 
-export function AppSidebar() {
+export function AppSidebar({
+  mobileOpen,
+  onClose,
+}: {
+  mobileOpen: boolean;
+  onClose: () => void;
+}) {
   const pathname = usePathname() ?? "";
   const internacionesActive =
     pathname === "/internaciones" || pathname.startsWith("/internaciones/");
   const pacientesActive =
     pathname === "/" || pathname.startsWith("/patient/");
 
+  useEffect(() => {
+    onClose();
+  }, [pathname, onClose]);
+
   return (
-    <aside
-      className="flex w-[72px] shrink-0 flex-col border-r border-[#e8e0d8] bg-white pt-3 md:w-[200px] md:px-2"
-      aria-label="Navegación principal"
-    >
-      <nav className="flex flex-col gap-1 px-1.5">
-        <Link
-          href="/internaciones"
-          className={internacionesActive ? activeClass : inactiveClass}
-          title="Internaciones"
-          aria-current={internacionesActive ? "page" : undefined}
+    <>
+      {mobileOpen ? (
+        <button
+          type="button"
+          className="fixed inset-0 z-[80] bg-black/35 md:hidden"
+          aria-label="Cerrar menú"
+          onClick={onClose}
+        />
+      ) : null}
+      <aside
+        id="app-sidebar"
+        className={[
+          "flex w-[200px] shrink-0 flex-col border-r border-[#e8e0d8] bg-white px-2 pt-3",
+          "fixed left-0 top-14 z-[90] h-[calc(100dvh-3.5rem)] transition-transform duration-200 ease-out",
+          "md:relative md:top-0 md:z-auto md:h-auto md:min-h-0 md:w-[200px] md:translate-x-0 md:transition-none",
+          mobileOpen
+            ? "translate-x-0"
+            : "-translate-x-full pointer-events-none md:pointer-events-auto md:translate-x-0",
+        ].join(" ")}
+        aria-label="Navegación principal"
+      >
+        <nav
+          id="app-sidebar-nav"
+          className="flex flex-col gap-1 px-0.5"
+          aria-label="Secciones"
         >
-          <InternacionesIcon className="h-[22px] w-[22px] shrink-0" />
-          <span className="hidden min-w-0 truncate md:inline">Internaciones</span>
-        </Link>
-        <Link
-          href="/"
-          className={pacientesActive ? activeClass : inactiveClass}
-          title="Pacientes"
-          aria-current={pacientesActive ? "page" : undefined}
-        >
-          <PacientesIcon className="h-[22px] w-[22px] shrink-0" />
-          <span className="hidden min-w-0 truncate md:inline">Pacientes</span>
-        </Link>
-      </nav>
-    </aside>
+          <Link
+            href="/internaciones"
+            className={internacionesActive ? activeClass : inactiveClass}
+            title="Internaciones"
+            aria-current={internacionesActive ? "page" : undefined}
+            onClick={() => onClose()}
+          >
+            <InternacionesIcon className="h-[22px] w-[22px] shrink-0" />
+            <span className="min-w-0 truncate">Internaciones</span>
+          </Link>
+          <Link
+            href="/"
+            className={pacientesActive ? activeClass : inactiveClass}
+            title="Pacientes"
+            aria-current={pacientesActive ? "page" : undefined}
+            onClick={() => onClose()}
+          >
+            <PacientesIcon className="h-[22px] w-[22px] shrink-0" />
+            <span className="min-w-0 truncate">Pacientes</span>
+          </Link>
+        </nav>
+      </aside>
+    </>
   );
 }
