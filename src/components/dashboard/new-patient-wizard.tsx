@@ -119,7 +119,7 @@ export function NewPatientWizard({
 
   const stepClass = (i: number) => {
     if (i < paso) return "bg-[#5c1838]";
-    if (i === paso) return "bg-[#52b788]";
+    if (i === paso) return "bg-[#9d6278]";
     return "bg-[#e8e0d8]";
   };
 
@@ -164,9 +164,9 @@ export function NewPatientWizard({
                   setEspecie(esp);
                   clearFieldError("especie");
                 }}
-                className={`flex-1 rounded-2xl border-2 px-2.5 py-4 text-center transition-all hover:border-[#52b788] ${
+                className={`flex-1 rounded-2xl border-2 px-2.5 py-4 text-center transition-all hover:border-[#c4a3a8] ${
                   especie === esp
-                    ? "border-[#5c1838] bg-[#f0faf5]"
+                    ? "border-[#5c1838] bg-[#f5eef0]"
                     : "border-[#e8e0d8]"
                 }`}
               >
@@ -185,7 +185,7 @@ export function NewPatientWizard({
               type="button"
               disabled={!especie}
               onClick={() => go(2)}
-              className="flex-[2] rounded-xl bg-[#5c1838] py-3 text-[15px] font-semibold text-white hover:bg-[#401127] disabled:cursor-not-allowed disabled:bg-[#b7d5c9]"
+              className="flex-[2] rounded-xl bg-[#5c1838] py-3 text-[15px] font-semibold text-white hover:bg-[#401127] disabled:cursor-not-allowed disabled:bg-[#d4c4c8]"
             >
               Siguiente →
             </button>
