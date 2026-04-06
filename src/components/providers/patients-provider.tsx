@@ -12,9 +12,11 @@ import {
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import {
+  appendEstudio,
   createPatient,
   deletePatient as deletePatientApi,
   fetchPatients,
+  removeEstudioRemote,
   replacePatient,
 } from "@/lib/patients-api";
 import type {
@@ -294,45 +296,44 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
 
   const addEstudio = useCallback(
     async (patientId: string, data: Omit<Estudio, "id" | "fecha">) => {
-      const estudio: Estudio = {
-        ...data,
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-        fecha: new Date().toISOString(),
-      };
-      let nextPatient: Paciente | undefined;
-      setPatients((prev) => {
-        const cur = prev.find((p) => p.id === patientId);
-        if (!cur) return prev;
-        nextPatient = {
-          ...cur,
-          estudios: [...(cur.estudios ?? []), estudio],
-        };
-        return prev.map((p) =>
-          p.id === patientId ? nextPatient! : p,
+      try {
+        const saved = await appendEstudio(patientId, data);
+        setPatients((prev) =>
+          prev.map((p) => (p.id === patientId ? saved : p)),
         );
-      });
-      if (nextPatient) await persistOne(nextPatient);
+      } catch (e) {
+        toast.error(
+          e instanceof Error ? e.message : "No se pudo guardar el estudio.",
+        );
+        try {
+          await reloadFromServer();
+        } catch {
+          /* ignore */
+        }
+      }
     },
-    [persistOne],
+    [reloadFromServer],
   );
 
   const removeEstudio = useCallback(
     async (patientId: string, estudioId: string) => {
-      let nextPatient: Paciente | undefined;
-      setPatients((prev) => {
-        const cur = prev.find((p) => p.id === patientId);
-        if (!cur) return prev;
-        nextPatient = {
-          ...cur,
-          estudios: (cur.estudios ?? []).filter((e) => e.id !== estudioId),
-        };
-        return prev.map((p) =>
-          p.id === patientId ? nextPatient! : p,
+      try {
+        const saved = await removeEstudioRemote(patientId, estudioId);
+        setPatients((prev) =>
+          prev.map((p) => (p.id === patientId ? saved : p)),
         );
-      });
-      if (nextPatient) await persistOne(nextPatient);
+      } catch (e) {
+        toast.error(
+          e instanceof Error ? e.message : "No se pudo quitar el estudio.",
+        );
+        try {
+          await reloadFromServer();
+        } catch {
+          /* ignore */
+        }
+      }
     },
-    [persistOne],
+    [reloadFromServer],
   );
 
   const value = useMemo(

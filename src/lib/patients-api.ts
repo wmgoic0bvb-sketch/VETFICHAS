@@ -1,4 +1,4 @@
-import type { Paciente, PacienteDraft } from "@/types/patient";
+import type { Estudio, Paciente, PacienteDraft } from "@/types/patient";
 
 async function readErrorMessage(res: Response): Promise<string> {
   try {
@@ -45,6 +45,35 @@ export async function replacePatient(patient: Paciente): Promise<Paciente> {
   await ensureOk(res);
   const data = (await res.json()) as { patient: Paciente };
   return data.patient;
+}
+
+/** Añade un estudio con $push en Mongo (evita pisar otros cambios concurrentes). */
+export async function appendEstudio(
+  patientId: string,
+  data: Omit<Estudio, "id" | "fecha">,
+): Promise<Paciente> {
+  const res = await fetch(`/api/patients/${patientId}/estudios`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(data),
+  });
+  await ensureOk(res);
+  const out = (await res.json()) as { patient: Paciente };
+  return out.patient;
+}
+
+export async function removeEstudioRemote(
+  patientId: string,
+  estudioId: string,
+): Promise<Paciente> {
+  const res = await fetch(
+    `/api/patients/${patientId}/estudios/${encodeURIComponent(estudioId)}`,
+    { method: "DELETE", credentials: "include" },
+  );
+  await ensureOk(res);
+  const out = (await res.json()) as { patient: Paciente };
+  return out.patient;
 }
 
 export async function deletePatient(id: string): Promise<void> {

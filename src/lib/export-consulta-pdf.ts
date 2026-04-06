@@ -2,10 +2,6 @@ import { jsPDF } from "jspdf";
 import { formatFecha } from "@/lib/date-utils";
 import type { Consulta } from "@/types/patient";
 import type { Especie } from "@/types/patient";
-import {
-  ZOOVET_CLINIC_PHONE,
-  ZOOVET_DOCUMENT_ADDRESS,
-} from "@/lib/clinic-branding";
 
 // ─── Paleta formal de alto contraste ─────────────────────────────────────────
 const M = 20;
@@ -24,7 +20,8 @@ const LOGO_MAX_H = 28;
 // El header se ajusta dinámicamente al alto del logo
 const LOGO_PAD = 6; // padding arriba/abajo del logo
 const SUBHEADER_H = 22; // franja crema con datos del paciente
-const FOOTER_H = 22;
+/** Franja inferior brand; espacio para sedes centradas + fecha + contador. */
+const FOOTER_H = 32;
 
 export type ConsultaPdfPatient = {
   nombre: string;
@@ -89,6 +86,24 @@ function ensureY(doc: jsPDF, y: number, need: number): number {
     return M + 6;
   }
   return y;
+}
+
+/** Ancho del bloque dirección + teléfono (una sede) para el pie PDF. */
+function measureFooterBranchBlock(
+  doc: jsPDF,
+  address: string,
+  phone: string,
+  sep: string,
+  fontSize: number,
+): { wLeft: number; wRight: number } {
+  const leftStr = `${address}${sep}`;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(fontSize);
+  const wLeft = doc.getTextWidth(leftStr);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(fontSize);
+  const wRight = doc.getTextWidth(`Tel. ${phone}`);
+  return { wLeft, wRight };
 }
 
 // ─── Fila de dato formal ──────────────────────────────────────────────────────
@@ -269,6 +284,15 @@ export async function exportConsultaPdf(
   doc.line(M, y, pageW - M, y);
 
   // ── PIE DE PÁGINA ─────────────────────────────────────────────────────────
+  const footerBranches = [
+    { address: "Av. Roca 1844", phone: "298 4428052" },
+    { address: "Villegas 287", phone: "298 4420114" },
+    { address: "Mitre 1344", phone: "298 5308554" },
+  ] as const;
+  const FOOTER_BRANCH_SEP = "  ·  ";
+  const FOOTER_BRANCH_GAP_MM = 6;
+  const FOOTER_BRANCH_FONT_SIZES = [9, 8.5, 8, 7.5] as const;
+
   const totalPages = doc.getNumberOfPages();
   for (let p = 1; p <= totalPages; p++) {
     doc.setPage(p);
@@ -277,37 +301,90 @@ export async function exportConsultaPdf(
     doc.setFillColor(...BRAND);
     doc.rect(0, ph - FOOTER_H, pageW, FOOTER_H, "F");
 
-    const addrLines = doc.splitTextToSize(ZOOVET_DOCUMENT_ADDRESS, pageW - 2 * M);
-    let fy = ph - FOOTER_H + 6;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);           // era 7.5
-    doc.setTextColor(230, 195, 215);
-    for (const line of addrLines) {
-      doc.text(line, cx, fy, { align: "center" });
-      fy += 4.2;
+    const footerBandLeft = M;
+    const footerBandRight = pageW - M;
+    const footerBandW = footerBandRight - footerBandLeft;
+
+    // Sede más abajo, centrada en vertical entre la parte superior del pie y la línea de fecha
+    const footerZoneTop = ph - FOOTER_H + 4;
+    const footerZoneBottom = ph - 4.5;
+    const fyBranch = (footerZoneTop + footerZoneBottom) / 2;
+
+    let branchFs: (typeof FOOTER_BRANCH_FONT_SIZES)[number] = 7.5;
+    let blockWidths: { wLeft: number; wRight: number }[] = [];
+
+    for (const fs of FOOTER_BRANCH_FONT_SIZES) {
+      const widths = footerBranches.map((b) =>
+        measureFooterBranchBlock(doc, b.address, b.phone, FOOTER_BRANCH_SEP, fs),
+      );
+      const rowW =
+        widths.reduce((s, w) => s + w.wLeft + w.wRight, 0) +
+        FOOTER_BRANCH_GAP_MM * (footerBranches.length - 1);
+      if (rowW <= footerBandW) {
+        branchFs = fs;
+        blockWidths = widths;
+        break;
+      }
     }
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9.5);         // era 8
-    doc.setTextColor(...WHITE);
-    doc.text(`Tel. ${ZOOVET_CLINIC_PHONE}`, cx, fy + 1, { align: "center" });
 
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.5);         // era 7
-    doc.setTextColor(215, 175, 200);
-    doc.text(`${p} / ${totalPages}`, pageW - M, ph - FOOTER_H + 6, {
-      align: "right",
-    });
+    if (blockWidths.length === 0) {
+      branchFs = 7.5;
+      blockWidths = footerBranches.map((b) =>
+        measureFooterBranchBlock(
+          doc,
+          b.address,
+          b.phone,
+          FOOTER_BRANCH_SEP,
+          branchFs,
+        ),
+      );
+    }
 
+    const totalBranchRowW =
+      blockWidths.reduce((s, w) => s + w.wLeft + w.wRight, 0) +
+      FOOTER_BRANCH_GAP_MM * (footerBranches.length - 1);
+    let xCursor = footerBandLeft + (footerBandW - totalBranchRowW) / 2;
+
+    for (let i = 0; i < footerBranches.length; i++) {
+      const { wLeft, wRight } = blockWidths[i];
+      const { address, phone } = footerBranches[i];
+      const leftStr = `${address}${FOOTER_BRANCH_SEP}`;
+      const phoneStr = `Tel. ${phone}`;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(branchFs);
+      doc.setTextColor(230, 195, 215);
+      doc.text(leftStr, xCursor, fyBranch);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(branchFs);
+      doc.setTextColor(...WHITE);
+      doc.text(phoneStr, xCursor + wLeft, fyBranch);
+
+      xCursor += wLeft + wRight;
+      if (i < footerBranches.length - 1) {
+        xCursor += FOOTER_BRANCH_GAP_MM;
+      }
+    }
+
+    const fyMeta = ph - 2;
     if (p === totalPages) {
-      doc.setFontSize(8);         // era 6.5
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
       doc.setTextColor(195, 155, 180);
       doc.text(
         `Documento generado el ${new Date().toLocaleString("es-AR")}`,
         cx,
-        ph - 2,
+        fyMeta,
         { align: "center" },
       );
     }
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+    doc.setTextColor(215, 175, 200);
+    doc.text(`${p} / ${totalPages}`, pageW - M, fyMeta, {
+      align: "right",
+    });
   }
 
   const fname = `consulta-zoovet-${safeFilePart(patient.nombre)}.pdf`;
