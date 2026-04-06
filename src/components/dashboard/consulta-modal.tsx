@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FieldError, inputErrorRing } from "@/components/ui/field-error";
 import { DbLoadingOverlay } from "@/components/ui/lottie-loading";
 import { Modal } from "@/components/ui/modal";
@@ -19,10 +19,13 @@ export function ConsultaModal({
   open,
   onClose,
   onSave,
+  initialConsulta,
 }: {
   open: boolean;
   onClose: () => void;
   onSave: (data: Omit<Consulta, "id">) => void | Promise<void>;
+  /** Si está definido, el modal carga estos datos (modo edición). */
+  initialConsulta?: Consulta | null;
 }) {
   const [motivo, setMotivo] = useState("");
   const [veterinario, setVeterinario] = useState("");
@@ -44,8 +47,25 @@ export function ConsultaModal({
   const [vetListError, setVetListError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const isEdit = Boolean(initialConsulta);
+
   useEffect(() => {
-    if (open) {
+    if (!open) return;
+    if (initialConsulta) {
+      setMotivo(initialConsulta.motivo);
+      setVeterinario(initialConsulta.veterinario);
+      setTipo(initialConsulta.tipo);
+      setFecha(
+        initialConsulta.fecha?.trim()
+          ? initialConsulta.fecha.slice(0, 10)
+          : todayISODate(),
+      );
+      setPeso(initialConsulta.peso);
+      setTemp(initialConsulta.temp);
+      setDiag(initialConsulta.diag);
+      setTrat(initialConsulta.trat);
+      setMeds(initialConsulta.meds);
+    } else {
       setMotivo("");
       setVeterinario("");
       setTipo("Consulta");
@@ -55,12 +75,12 @@ export function ConsultaModal({
       setDiag("");
       setTrat("");
       setMeds("");
-      setMotivoError(null);
-      setVetError(null);
-      setHasChanges(false);
-      setConfirmCloseOpen(false);
     }
-  }, [open]);
+    setMotivoError(null);
+    setVetError(null);
+    setHasChanges(false);
+    setConfirmCloseOpen(false);
+  }, [open, initialConsulta]);
 
   useEffect(() => {
     if (!open) return;
@@ -96,9 +116,17 @@ export function ConsultaModal({
     };
   }, [open]);
 
+  const legacyVetNombre = initialConsulta?.veterinario?.trim();
+  const vetRows = useMemo(() => {
+    if (legacyVetNombre && !vetOpciones.some((v) => v.nombre === legacyVetNombre)) {
+      return [{ id: "__legacy__", nombre: legacyVetNombre }, ...vetOpciones];
+    }
+    return vetOpciones;
+  }, [vetOpciones, legacyVetNombre]);
+
   const guardar = async () => {
     const m = motivo.trim();
-    if (!vetListLoading && vetOpciones.length === 0) {
+    if (!vetListLoading && vetRows.length === 0) {
       setVetError(
         "No hay veterinarios activos. Un administrador puede cargarlos en Administración.",
       );
@@ -169,7 +197,7 @@ export function ConsultaModal({
         ✕
       </button>
       <h2 id="consulta-title" className="text-xl font-bold text-[#1a1a1a]">
-        Nueva consulta 📋
+        {isEdit ? "Editar consulta 📋" : "Nueva consulta 📋"}
       </h2>
       <div className="mt-4 space-y-4">
         <div
@@ -203,7 +231,7 @@ export function ConsultaModal({
             <option value="">
               {vetListLoading ? "Cargando veterinarios…" : "Elegir veterinario..."}
             </option>
-            {vetOpciones.map((v) => (
+            {vetRows.map((v) => (
               <option key={v.id} value={v.nombre}>
                 {v.nombre}
               </option>
@@ -374,7 +402,7 @@ export function ConsultaModal({
             disabled={busy}
             className="flex-[2] rounded-xl bg-[#5c1838] py-3 text-[15px] font-semibold text-white hover:bg-[#401127] disabled:opacity-60"
           >
-            ✓ Guardar consulta
+            {isEdit ? "✓ Guardar cambios" : "✓ Guardar consulta"}
           </button>
         </div>
       </div>

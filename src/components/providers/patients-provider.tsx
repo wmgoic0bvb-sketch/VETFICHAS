@@ -51,6 +51,11 @@ interface PatientsContextValue {
     patientId: string,
     consulta: Omit<Consulta, "id">,
   ) => Promise<void>;
+  updateConsulta: (
+    patientId: string,
+    consultaId: string,
+    data: Omit<Consulta, "id">,
+  ) => Promise<void>;
   addEstudio: (
     patientId: string,
     estudio: Omit<Estudio, "id" | "fecha">,
@@ -294,6 +299,29 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
     [persistOne],
   );
 
+  const updateConsulta = useCallback(
+    async (
+      patientId: string,
+      consultaId: string,
+      data: Omit<Consulta, "id">,
+    ) => {
+      let nextPatient: Paciente | undefined;
+      setPatients((prev) => {
+        const cur = prev.find((p) => p.id === patientId);
+        if (!cur) return prev;
+        const list = cur.consultas ?? [];
+        const idx = list.findIndex((c) => c.id === consultaId);
+        if (idx === -1) return prev;
+        const nextList = [...list];
+        nextList[idx] = { ...data, id: consultaId };
+        nextPatient = { ...cur, consultas: nextList };
+        return prev.map((p) => (p.id === patientId ? nextPatient! : p));
+      });
+      if (nextPatient) await persistOne(nextPatient);
+    },
+    [persistOne],
+  );
+
   const addEstudio = useCallback(
     async (patientId: string, data: Omit<Estudio, "id" | "fecha">) => {
       try {
@@ -348,6 +376,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
       removePatient,
       getById,
       addConsulta,
+      updateConsulta,
       addEstudio,
       removeEstudio,
     }),
@@ -362,6 +391,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
       removePatient,
       getById,
       addConsulta,
+      updateConsulta,
       addEstudio,
       removeEstudio,
     ],

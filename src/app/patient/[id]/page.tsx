@@ -62,9 +62,11 @@ function ConsultaHeader({ c }: { c: Consulta }) {
 function ConsultaCard({
   c,
   patient,
+  onEdit,
 }: {
   c: Consulta;
   patient: Pick<Paciente, "nombre" | "especie" | "raza">;
+  onEdit: (consulta: Consulta) => void;
 }) {
   const hasDetails = Boolean(c.peso || c.temp || c.diag || c.trat || c.meds);
   const [open, setOpen] = useState(false);
@@ -92,28 +94,46 @@ function ConsultaCard({
     }
   };
 
+  const editBtn = (
+    <button
+      type="button"
+      onClick={() => onEdit(c)}
+      className="-m-1 flex shrink-0 items-center justify-center rounded-lg p-1 text-[#5c1838] hover:bg-[#f0faf5]"
+      aria-label="Editar consulta"
+      title="Editar consulta"
+    >
+      <PencilIcon className="h-4 w-4" />
+    </button>
+  );
+
   return (
     <div className="mb-2.5 overflow-hidden rounded-[14px] border-l-[3px] border-[#5c1838]/35 bg-[#f5f0eb] last:mb-0">
       {hasDetails ? (
-        <button
-          type="button"
-          id={triggerId}
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          aria-controls={panelId}
-          className="flex w-full items-start gap-2 px-4 py-3.5 text-left transition-colors hover:bg-[#efeae2]"
-        >
-          <ConsultaHeader c={c} />
-          <span
-            className={`mt-1 inline-block shrink-0 text-[10px] leading-none text-[#888] transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-            aria-hidden
+        <div className="flex items-start gap-1 px-4 py-3.5 transition-colors hover:bg-[#efeae2]/80">
+          <button
+            type="button"
+            id={triggerId}
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-controls={panelId}
+            className="flex min-w-0 flex-1 items-start gap-2 text-left"
           >
-            ▼
-          </span>
-        </button>
+            <ConsultaHeader c={c} />
+            <span
+              className={`mt-1 inline-block shrink-0 text-[10px] leading-none text-[#888] transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+              aria-hidden
+            >
+              ▼
+            </span>
+          </button>
+          {editBtn}
+        </div>
       ) : (
-        <div className="px-4 py-3.5">
-          <ConsultaHeader c={c} />
+        <div className="flex items-start gap-1 px-4 py-3.5">
+          <div className="min-w-0 flex-1">
+            <ConsultaHeader c={c} />
+          </div>
+          {editBtn}
         </div>
       )}
       {hasDetails && open ? (
@@ -171,11 +191,15 @@ export default function PatientDetailPage() {
     ready,
     getById,
     addConsulta,
+    updateConsulta,
     addProximoControl,
     updateProximoControl,
     removeProximoControl,
   } = usePatients();
   const [consultaOpen, setConsultaOpen] = useState(false);
+  const [editingConsulta, setEditingConsulta] = useState<Consulta | null>(
+    null,
+  );
   const [editFichaOpen, setEditFichaOpen] = useState(false);
 
   const patient = patientId ? getById(patientId) : undefined;
@@ -390,7 +414,10 @@ export default function PatientDetailPage() {
                 </h2>
                 <button
                   type="button"
-                  onClick={() => setConsultaOpen(true)}
+                  onClick={() => {
+                    setEditingConsulta(null);
+                    setConsultaOpen(true);
+                  }}
                   className="shrink-0 rounded-xl bg-[#5c1838] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#401127] sm:w-auto sm:self-center"
                 >
                   + Agregar consulta
@@ -402,7 +429,14 @@ export default function PatientDetailPage() {
                 </div>
               ) : (
                 consultas.map((c) => (
-                  <ConsultaCard key={c.id} c={c} patient={patient} />
+                  <ConsultaCard
+                    key={c.id}
+                    c={c}
+                    patient={patient}
+                    onEdit={(consulta) => {
+                      setEditingConsulta(consulta);
+                    }}
+                  />
                 ))
               )}
             </section>
@@ -416,10 +450,18 @@ export default function PatientDetailPage() {
         <PatientDangerZone patient={patient} />
 
         <ConsultaModal
-          open={consultaOpen}
-          onClose={() => setConsultaOpen(false)}
+          open={consultaOpen || editingConsulta !== null}
+          initialConsulta={editingConsulta}
+          onClose={() => {
+            setConsultaOpen(false);
+            setEditingConsulta(null);
+          }}
           onSave={async (data) => {
-            await addConsulta(patient.id, data);
+            if (editingConsulta) {
+              await updateConsulta(patient.id, editingConsulta.id, data);
+            } else {
+              await addConsulta(patient.id, data);
+            }
           }}
         />
 
