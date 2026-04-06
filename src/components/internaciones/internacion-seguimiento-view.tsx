@@ -23,7 +23,6 @@ import {
   ordenesTratamientoRecientesPrimero,
 } from "@/lib/internacion-utils";
 import {
-  ESTADO_GENERAL_EVOLUCION,
   type DatosInternacion,
   type EvolucionRondaInternacion,
   type EstadoGeneralEvolucion,
@@ -862,10 +861,6 @@ function EvolucionesLista({
             <span>FC: {e.frecuenciaCardiaca || "—"} lpm</span>
             <span>FR: {e.frecuenciaRespiratoria || "—"} rpm</span>
             <span>Peso: {e.peso?.trim() ? `${e.peso} kg` : "—"}</span>
-            <span className="sm:col-span-2">
-              Estado:{" "}
-              <strong className="text-[#1a1a1a]">{e.estadoGeneral}</strong>
-            </span>
           </div>
           {e.observaciones.trim() ? (
             <p className="mt-2 whitespace-pre-wrap text-[13px] leading-relaxed text-[#333]">
@@ -1053,24 +1048,6 @@ function EvolucionModal({
               className="w-full rounded-xl border border-[#e8e0d8] px-3 py-2 text-sm"
             />
           </div>
-        </div>
-        <div>
-          <label className="mb-1 block text-[11px] font-bold uppercase text-[#8b7355]">
-            Estado general
-          </label>
-          <select
-            value={estadoGeneral}
-            onChange={(e) =>
-              setEstadoGeneral(e.target.value as EstadoGeneralEvolucion)
-            }
-            className="w-full rounded-xl border border-[#e8e0d8] px-3 py-2 text-sm"
-          >
-            {ESTADO_GENERAL_EVOLUCION.map((x) => (
-              <option key={x} value={x}>
-                {x}
-              </option>
-            ))}
-          </select>
         </div>
         <div>
           <label className="mb-1 block text-[11px] font-bold uppercase text-[#8b7355]">
