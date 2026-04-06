@@ -22,13 +22,20 @@ const authConfig = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.sub = user.id;
         token.id = user.id;
         token.dni = user.dni;
         token.role = user.role ?? "user";
         token.name = user.name ?? "";
+        token.picture = user.image ?? undefined;
+      }
+      if (trigger === "update" && session) {
+        const s = session as Record<string, unknown>;
+        if (typeof s.name === "string") token.name = s.name;
+        if (typeof s.picture === "string" || s.picture === null)
+          token.picture = s.picture as string | null | undefined;
       }
       return token;
     },
@@ -39,6 +46,8 @@ const authConfig = {
         session.user.role = token.role ?? "user";
         session.user.name =
           typeof token.name === "string" ? token.name : "";
+        session.user.image =
+          typeof token.picture === "string" ? token.picture : null;
       }
       return session;
     },

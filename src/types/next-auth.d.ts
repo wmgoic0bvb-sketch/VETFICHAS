@@ -22,5 +22,6 @@ declare module "next-auth/jwt" {
     dni?: string;
     role?: "user" | "admin" | "vet";
     name?: string;
+    picture?: string | null;
   }
 }
