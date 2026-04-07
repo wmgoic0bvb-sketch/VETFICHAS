@@ -156,8 +156,10 @@ export async function exportInternacionPdf(
   y = drawBrandRule(doc, pageW, y - 2, true);
 
   const ingresoRows: Array<[string, string]> = [];
-  if (datos.fechaIngreso)
-    ingresoRows.push(["Fecha de ingreso", formatFecha(datos.fechaIngreso)]);
+  if (datos.fechaIngreso) {
+    const horaStr = datos.horaIngreso ? ` · ${datos.horaIngreso} hs` : "";
+    ingresoRows.push(["Fecha de ingreso", `${formatFecha(datos.fechaIngreso)}${horaStr}`]);
+  }
   if (datos.motivoIngreso?.trim())
     ingresoRows.push(["Motivo de ingreso", datos.motivoIngreso.trim()]);
   if (datos.veterinarioResponsable?.trim())

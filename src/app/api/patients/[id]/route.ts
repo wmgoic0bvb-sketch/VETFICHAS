@@ -137,6 +137,7 @@ export const PUT = auth(async (req: NextAuthRequest, ctx) => {
           esUnicaConsulta: patient.esUnicaConsulta,
           internado: patient.internado,
           datosInternacion: patient.datosInternacion,
+          historialInternaciones: patient.historialInternaciones ?? [],
           proximosControles: patient.proximosControles,
           consultas: patient.consultas,
           estudios: patient.estudios,

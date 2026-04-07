@@ -1,4 +1,7 @@
-import { mergeDatosInternacion } from "@/lib/internacion-utils";
+import {
+  mergeDatosInternacion,
+  normalizeInternacionHistorialItem,
+} from "@/lib/internacion-utils";
 import {
   isoFechaLegacyAFechaHora,
   isFechaHoraProximoControlValida,
@@ -8,6 +11,7 @@ import type {
   Consulta,
   DueñoContacto,
   EstadoPaciente,
+  InternacionHistorial,
   ModificacionPaciente,
   Paciente,
   ProximoControl,
@@ -190,6 +194,13 @@ export type StoredPatient = Paciente & {
   proximoControl?: unknown;
 };
 
+function normalizeHistorialInternaciones(raw: unknown): InternacionHistorial[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item) => normalizeInternacionHistorialItem(item))
+    .filter((x): x is InternacionHistorial => x !== null);
+}
+
 export function normalizePatient(p: StoredPatient): Paciente {
   const raw = p as unknown as Record<string, unknown>;
   const { dueno: _d, tel: _t, ...rest } = p as StoredPatient & {
@@ -200,7 +211,11 @@ export function normalizePatient(p: StoredPatient): Paciente {
   return {
     ...(rest as Omit<
       Paciente,
-      "dueños" | "estado" | "datosInternacion" | "historialModificaciones"
+      | "dueños"
+      | "estado"
+      | "datosInternacion"
+      | "historialInternaciones"
+      | "historialModificaciones"
     >),
     dueños: normalizeDueños(raw),
     estado: normalizeEstado(raw.estado),
@@ -211,6 +226,9 @@ export function normalizePatient(p: StoredPatient): Paciente {
     datosInternacion: mergeDatosInternacion(
       raw.datosInternacion,
       internadoFlag,
+    ),
+    historialInternaciones: normalizeHistorialInternaciones(
+      raw.historialInternaciones,
     ),
     proximosControles: normalizeProximosControles(
       raw.proximosControles,

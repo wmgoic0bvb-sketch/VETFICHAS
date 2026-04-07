@@ -18,12 +18,14 @@ import { Modal } from "@/components/ui/modal";
 import { WhatsAppIcon } from "@/components/ui/whatsapp-icon";
 import { calcularEdad, formatFecha } from "@/lib/date-utils";
 import { exportConsultaPdf } from "@/lib/export-consulta-pdf";
+import { exportInternacionPdf } from "@/lib/export-internacion-pdf";
 import { buildWhatsAppUrl } from "@/lib/phone-utils";
 import { toast } from "sonner";
 import {
   ESTADO_PACIENTE_LABELS,
   esPacienteActivo,
   type Consulta,
+  type InternacionHistorial,
   type Paciente,
 } from "@/types/patient";
 
@@ -165,6 +167,80 @@ function ConsultaCard({
         <button
           type="button"
           onClick={handleExportPdf}
+          disabled={pdfLoading}
+          className="rounded-lg border border-[#5c1838]/35 bg-white px-3 py-1.5 text-xs font-semibold text-[#5c1838] shadow-sm transition-colors hover:bg-[#5c1838]/10 disabled:pointer-events-none disabled:opacity-50"
+        >
+          {pdfLoading ? "Generando PDF…" : "Exportar PDF"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function InternacionHistorialCard({
+  entry,
+  patient,
+}: {
+  entry: InternacionHistorial;
+  patient: Pick<Paciente, "nombre" | "especie" | "raza">;
+}) {
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  const handlePdf = async () => {
+    setPdfLoading(true);
+    try {
+      await exportInternacionPdf(
+        { nombre: patient.nombre, especie: patient.especie, raza: patient.raza },
+        entry,
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo generar el PDF");
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  const etiquetaEgreso =
+    entry.tipoEgreso === "fallecimiento" ? "Fallecimiento" : "Alta";
+  const colorEgreso =
+    entry.tipoEgreso === "fallecimiento"
+      ? "text-rose-700"
+      : "text-emerald-800";
+
+  return (
+    <div className="mb-2.5 overflow-hidden rounded-[14px] border-l-[3px] border-[#5c1838]/35 bg-[#f5f0eb] last:mb-0">
+      <div className="px-4 py-3.5">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1 space-y-0.5">
+            <div className="text-xs text-[#888]">
+              Ingreso: {formatFecha(entry.fechaIngreso)}
+              {entry.fechaAlta ? (
+                <span className={`ml-3 font-medium ${colorEgreso}`}>
+                  {etiquetaEgreso}: {formatFecha(entry.fechaAlta.slice(0, 10))}
+                </span>
+              ) : null}
+            </div>
+            {entry.diagnosticoPrincipal.trim() ? (
+              <div className="text-[14px] font-semibold leading-snug text-[#1a1a1a] line-clamp-2">
+                {entry.diagnosticoPrincipal}
+              </div>
+            ) : (
+              <div className="text-[13px] italic text-[#aaa]">
+                Sin diagnóstico registrado
+              </div>
+            )}
+            {entry.veterinarioResponsable ? (
+              <div className="text-[13px] text-[#555]">
+                👨‍⚕️ {entry.veterinarioResponsable}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+      <div className="flex justify-end border-t border-[#e0d9cf]/80 bg-[#faf8f5]/60 px-4 py-2.5">
+        <button
+          type="button"
+          onClick={handlePdf}
           disabled={pdfLoading}
           className="rounded-lg border border-[#5c1838]/35 bg-white px-3 py-1.5 text-xs font-semibold text-[#5c1838] shadow-sm transition-colors hover:bg-[#5c1838]/10 disabled:pointer-events-none disabled:opacity-50"
         >
@@ -444,6 +520,21 @@ export default function PatientDetailPage() {
             <section className={cardClass}>
                 <PatientEstudiosSection key={patient.id} patient={patient} />
             </section>
+
+            {(patient.historialInternaciones?.length ?? 0) > 0 ? (
+              <section className={cardClass}>
+                <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-[#5c1838]">
+                  Historial de internaciones ({patient.historialInternaciones!.length})
+                </h2>
+                {[...(patient.historialInternaciones ?? [])].reverse().map((entry) => (
+                  <InternacionHistorialCard
+                    key={entry.id}
+                    entry={entry}
+                    patient={patient}
+                  />
+                ))}
+              </section>
+            ) : null}
           </div>
         </div>
 
