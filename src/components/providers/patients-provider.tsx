@@ -159,6 +159,10 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
             data.datosInternacion !== undefined
               ? data.datosInternacion
               : cur.datosInternacion,
+          historialInternaciones:
+            data.historialInternaciones !== undefined
+              ? data.historialInternaciones
+              : cur.historialInternaciones,
           proximosControles: data.proximosControles ?? [],
           consultas: cur.consultas,
           estudios: cur.estudios,

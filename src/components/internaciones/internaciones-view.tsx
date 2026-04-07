@@ -7,13 +7,27 @@ import { PatientCard } from "@/components/dashboard/patient-card";
 import { PatientSearch } from "@/components/dashboard/patient-search";
 import { usePatients } from "@/components/providers/patients-provider";
 import { DbLoadingOverlay, LottieSpinner } from "@/components/ui/lottie-loading";
+import { Modal } from "@/components/ui/modal";
 import { usePendingNavigation } from "@/lib/use-pending-navigation";
 import { defaultDatosInternacion } from "@/lib/internacion-utils";
 import {
   dueñosParaBusqueda,
   formatDueñosCorto,
 } from "@/lib/dueños-utils";
-import type { Paciente } from "@/types/patient";
+import type { InternacionHistorial, Paciente, TipoEgreso } from "@/types/patient";
+
+interface EgresoModalState {
+  paciente: Paciente;
+  tipo: TipoEgreso;
+  fechaHoraLocal: string;
+  causa: string;
+}
+
+function nowDatetimeLocal(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 function matchPaciente(query: string, p: Paciente): boolean {
   const term = query.toLowerCase().trim();
@@ -30,6 +44,7 @@ export function InternacionesView() {
   const { patients, ready, updatePatient } = usePatients();
   const [query, setQuery] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [egresoModal, setEgresoModal] = useState<EgresoModalState | null>(null);
 
   const internados = useMemo(
     () => patients.filter((p) => p.internado),
@@ -67,19 +82,43 @@ export function InternacionesView() {
     }
   };
 
-  const finalizarInternacion = async (p: Paciente) => {
-    setBusyId(p.id);
+  const abrirEgresoModal = (p: Paciente) => {
+    setEgresoModal({ paciente: p, tipo: "alta", fechaHoraLocal: nowDatetimeLocal(), causa: "" });
+  };
+
+  const confirmarEgreso = async () => {
+    if (!egresoModal) return;
+    const { paciente, tipo, fechaHoraLocal, causa } = egresoModal;
+    setEgresoModal(null);
+    setBusyId(paciente.id);
     try {
-      const base = p.datosInternacion ?? defaultDatosInternacion();
-      await updatePatient(p.id, {
-        ...draftFromPatient(p),
+      const base = paciente.datosInternacion ?? defaultDatosInternacion();
+      const internacionCompletada = {
+        ...base,
+        fechaAlta: new Date(fechaHoraLocal).toISOString(),
+        tipoEgreso: tipo,
+        ...(tipo === "fallecimiento" && causa.trim()
+          ? { causaFallecimiento: causa.trim() }
+          : {}),
+      };
+      const histEntry: InternacionHistorial = {
+        ...internacionCompletada,
+        id: `int-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      };
+      await updatePatient(paciente.id, {
+        ...draftFromPatient(paciente),
         internado: false,
-        datosInternacion: {
-          ...base,
-          fechaAlta: new Date().toISOString(),
-        },
+        datosInternacion: undefined,
+        historialInternaciones: [
+          ...(paciente.historialInternaciones ?? []),
+          histEntry,
+        ],
       });
-      toast.success(`Internación finalizada para ${p.nombre}`);
+      toast.success(
+        tipo === "fallecimiento"
+          ? `Fallecimiento registrado para ${paciente.nombre}`
+          : `Internación finalizada para ${paciente.nombre}`,
+      );
     } catch {
       /* toast en updatePatient */
     } finally {
@@ -179,7 +218,7 @@ export function InternacionesView() {
                 <button
                   type="button"
                   disabled={busyId === p.id}
-                  onClick={() => void finalizarInternacion(p)}
+                  onClick={() => abrirEgresoModal(p)}
                   className="mt-2 rounded-xl border border-[#e8e0d8] bg-white px-3 py-2 text-[13px] font-medium text-[#5c1838] transition-colors hover:bg-[#f5f0eb] disabled:opacity-50"
                 >
                   {busyId === p.id ? "Guardando…" : "Finalizar internación"}
@@ -197,6 +236,124 @@ export function InternacionesView() {
       </section>
 
       <DbLoadingOverlay show={isPending} label="Cargando internación…" />
+
+      {/* Modal de egreso */}
+      <Modal
+        open={egresoModal !== null}
+        onClose={() => setEgresoModal(null)}
+        labelledBy="egreso-modal-title"
+      >
+        {egresoModal && (
+          <div className="flex flex-col gap-5">
+            <div>
+              <h2
+                id="egreso-modal-title"
+                className="text-[17px] font-bold text-[#1a1a1a]"
+              >
+                Registrar egreso
+              </h2>
+              <p className="mt-0.5 text-[14px] text-[#888]">
+                {egresoModal.paciente.nombre}
+              </p>
+            </div>
+
+            {/* Tipo de egreso */}
+            <div className="flex gap-3">
+              {(["alta", "fallecimiento"] as TipoEgreso[]).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() =>
+                    setEgresoModal((prev) => prev && { ...prev, tipo: t })
+                  }
+                  className={`flex-1 rounded-xl border-2 px-3 py-3 text-[13px] font-semibold transition-colors ${
+                    egresoModal.tipo === t
+                      ? t === "fallecimiento"
+                        ? "border-rose-600 bg-rose-50 text-rose-700"
+                        : "border-[#5c1838] bg-[#f5f0eb] text-[#5c1838]"
+                      : "border-[#e8e0d8] bg-white text-[#555] hover:bg-[#f5f0eb]"
+                  }`}
+                >
+                  {t === "alta" ? "Alta médica" : "Fallecimiento"}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {/* Fecha y hora — siempre visible */}
+              <div>
+                <label
+                  htmlFor="egreso-fecha"
+                  className="mb-1 block text-[13px] font-semibold text-[#1a1a1a]"
+                >
+                  Fecha y hora
+                </label>
+                <input
+                  id="egreso-fecha"
+                  type="datetime-local"
+                  value={egresoModal.fechaHoraLocal}
+                  onChange={(e) =>
+                    setEgresoModal(
+                      (prev) =>
+                        prev && { ...prev, fechaHoraLocal: e.target.value },
+                    )
+                  }
+                  className="w-full rounded-xl border border-[#e8e0d8] px-3 py-2 text-[14px] focus:outline-none focus:border-[#5c1838]"
+                />
+              </div>
+
+              {/* Causa — solo para fallecimiento */}
+              {egresoModal.tipo === "fallecimiento" && (
+                <div>
+                  <label
+                    htmlFor="egreso-causa"
+                    className="mb-1 block text-[13px] font-semibold text-[#1a1a1a]"
+                  >
+                    Causa{" "}
+                    <span className="font-normal text-[#aaa]">(opcional)</span>
+                  </label>
+                  <input
+                    id="egreso-causa"
+                    type="text"
+                    placeholder="Ej: insuficiencia cardíaca, trauma…"
+                    value={egresoModal.causa}
+                    onChange={(e) =>
+                      setEgresoModal(
+                        (prev) => prev && { ...prev, causa: e.target.value },
+                      )
+                    }
+                    className="w-full rounded-xl border border-[#e8e0d8] px-3 py-2 text-[14px] focus:border-rose-400 focus:outline-none"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Acciones */}
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setEgresoModal(null)}
+                className="rounded-xl border border-[#e8e0d8] bg-white px-4 py-2 text-[13px] font-medium text-[#555] transition-colors hover:bg-[#f5f0eb]"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmarEgreso()}
+                className={`rounded-xl px-4 py-2 text-[13px] font-semibold text-white transition-colors ${
+                  egresoModal.tipo === "fallecimiento"
+                    ? "bg-rose-600 hover:bg-rose-700"
+                    : "bg-[#5c1838] hover:bg-[#7a2149]"
+                }`}
+              >
+                {egresoModal.tipo === "fallecimiento"
+                  ? "Registrar fallecimiento"
+                  : "Confirmar alta"}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </main>
   );
 }

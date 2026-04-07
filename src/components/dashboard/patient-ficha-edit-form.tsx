@@ -45,6 +45,7 @@ export function draftFromPatient(p: Paciente): PacienteEditable {
     esUnicaConsulta: p.esUnicaConsulta,
     internado: p.internado ?? false,
     datosInternacion: p.datosInternacion,
+    historialInternaciones: p.historialInternaciones,
     proximosControles: [...p.proximosControles],
   };
 }

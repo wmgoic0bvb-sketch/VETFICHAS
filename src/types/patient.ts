@@ -116,12 +116,27 @@ export interface ModificacionPaciente {
   resumen: string;
 }
 
+/** Tipo de egreso de internación. */
+export type TipoEgreso = "alta" | "fallecimiento";
+
+/** Registro completo de una internación finalizada (persiste en historial). */
+export interface InternacionHistorial extends DatosInternacion {
+  /** ID único del registro (para claves React y generación de PDF). */
+  id: string;
+}
+
 /** Datos clínicos del seguimiento de internación (persistidos en el paciente). */
 export interface DatosInternacion {
   /** Fecha de ingreso (YYYY-MM-DD). */
   fechaIngreso: string;
-  /** Fecha/hora de alta (ISO); set al finalizar internación. */
+  /** Hora de ingreso (HH:MM, 24 h). */
+  horaIngreso?: string;
+  /** Fecha/hora de egreso (ISO); set al finalizar internación (alta o fallecimiento). */
   fechaAlta?: string;
+  /** Cómo finalizó la internación: alta médica o fallecimiento. */
+  tipoEgreso?: TipoEgreso;
+  /** Causa del fallecimiento (solo si tipoEgreso === "fallecimiento"; opcional). */
+  causaFallecimiento?: string;
   motivoIngreso: string;
   veterinarioResponsable: string;
   diagnosticoPrincipal: string;
@@ -151,8 +166,10 @@ export interface Paciente {
   esUnicaConsulta: boolean;
   /** Paciente actualmente en internación / hospitalización. */
   internado: boolean;
-  /** Seguimiento de internación (ingreso, plan, evoluciones). Opcional si nunca internó. */
+  /** Seguimiento de internación activa (ingreso, plan, evoluciones). Undefined si no está internado. */
   datosInternacion?: DatosInternacion;
+  /** Registros de internaciones previas finalizadas. */
+  historialInternaciones?: InternacionHistorial[];
   /** Controles programados (varios por paciente). */
   proximosControles: ProximoControl[];
   consultas: Consulta[];

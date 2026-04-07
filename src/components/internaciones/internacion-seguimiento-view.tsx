@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -50,9 +50,12 @@ export function InternacionSeguimientoView() {
   const puedeEditar = patient?.internado === true;
 
   const [headerFecha, setHeaderFecha] = useState("");
+  const [headerHora, setHeaderHora] = useState("");
   const [headerMotivo, setHeaderMotivo] = useState("");
   const [headerVet, setHeaderVet] = useState("");
   const [saving, setSaving] = useState<string | null>(null);
+  const [editandoDatosIngreso, setEditandoDatosIngreso] = useState(false);
+  const datosIngresoInicializados = useRef(false);
 
   const [diagModalOpen, setDiagModalOpen] = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
@@ -69,8 +72,14 @@ export function InternacionSeguimientoView() {
     if (!patient) return;
     const d = datosSeguros(patient.datosInternacion);
     setHeaderFecha(d.fechaIngreso || todayISODate());
+    setHeaderHora(d.horaIngreso ?? "");
     setHeaderMotivo(d.motivoIngreso);
     setHeaderVet(d.veterinarioResponsable);
+    if (!datosIngresoInicializados.current) {
+      datosIngresoInicializados.current = true;
+      const tieneData = !!(d.motivoIngreso.trim() || d.veterinarioResponsable.trim());
+      setEditandoDatosIngreso(!tieneData);
+    }
   }, [patient, patient?.datosInternacion]);
 
   useEffect(() => {
@@ -137,9 +146,11 @@ export function InternacionSeguimientoView() {
     await persistDatos({
       ...datos,
       fechaIngreso: headerFecha.slice(0, 10),
+      horaIngreso: headerHora.trim() || undefined,
       motivoIngreso: headerMotivo.trim(),
       veterinarioResponsable: vetNombre,
     });
+    setEditandoDatosIngreso(false);
     toast.success("Datos de ingreso guardados");
   };
 
@@ -283,7 +294,24 @@ export function InternacionSeguimientoView() {
           </div>
         </div>
 
-        <div className="mt-4 grid gap-3 border-t border-[#ebe6df] pt-4 sm:grid-cols-2">
+        <div className="mt-4 flex items-center justify-between border-t border-[#ebe6df] pt-4">
+          <span className="text-[11px] font-bold uppercase tracking-wide text-[#8b7355]">
+            Datos de ingreso
+          </span>
+          {puedeEditar && !editandoDatosIngreso && (
+            <button
+              type="button"
+              onClick={() => setEditandoDatosIngreso(true)}
+              className="-m-1 flex items-center gap-1.5 rounded-lg p-1 text-[13px] font-medium text-[#5c1838] hover:bg-[#f5f0eb]"
+              aria-label="Editar datos de ingreso"
+            >
+              <PencilIcon className="h-4 w-4" />
+              Editar
+            </button>
+          )}
+        </div>
+
+        <div className="mt-3 grid gap-3 sm:grid-cols-3">
           <div>
             <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-[#8b7355]">
               Fecha de ingreso
@@ -292,19 +320,28 @@ export function InternacionSeguimientoView() {
               type="date"
               value={headerFecha.slice(0, 10)}
               onChange={(e) => setHeaderFecha(e.target.value)}
-              disabled={!puedeEditar}
+              disabled={!puedeEditar || !editandoDatosIngreso}
+              className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-white px-3 py-2 text-sm outline-none focus:border-[#5c1838] disabled:bg-[#f5f5f5]"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-[#8b7355]">
+              Hora
+            </label>
+            <input
+              type="time"
+              value={headerHora}
+              onChange={(e) => setHeaderHora(e.target.value)}
+              disabled={!puedeEditar || !editandoDatosIngreso}
               className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-white px-3 py-2 text-sm outline-none focus:border-[#5c1838] disabled:bg-[#f5f5f5]"
             />
           </div>
           <div>
             <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-[#8b7355]">
-              Días de internación
+              Días internado
             </p>
-            <p className="rounded-xl border border-transparent bg-[#f5f0eb] px-3 py-2 text-sm font-medium text-[#333]">
-              {diasInternacion} día{diasInternacion !== 1 ? "s" : ""}{" "}
-              <span className="font-normal text-[#888]">
-                (desde {formatFecha(d.fechaIngreso)})
-              </span>
+            <p className="whitespace-nowrap rounded-xl border border-transparent bg-[#f5f0eb] px-3 py-2 text-sm font-medium text-[#333]">
+              {diasInternacion} día{diasInternacion !== 1 ? "s" : ""}
             </p>
           </div>
         </div>
@@ -316,7 +353,7 @@ export function InternacionSeguimientoView() {
           <textarea
             value={headerMotivo}
             onChange={(e) => setHeaderMotivo(e.target.value)}
-            disabled={!puedeEditar}
+            disabled={!puedeEditar || !editandoDatosIngreso}
             rows={2}
             className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-white px-3 py-2 text-sm outline-none focus:border-[#5c1838] disabled:bg-[#f5f5f5]"
           />
@@ -332,7 +369,7 @@ export function InternacionSeguimientoView() {
           <select
             id="internacion-vet-responsable"
             value={headerVetSelectValue}
-            disabled={!puedeEditar || vetListLoading}
+            disabled={!puedeEditar || !editandoDatosIngreso || vetListLoading}
             onChange={(e) => setHeaderVet(e.target.value)}
             aria-invalid={Boolean(vetListError)}
             aria-describedby={
@@ -358,7 +395,7 @@ export function InternacionSeguimientoView() {
           ) : null}
         </div>
 
-        {puedeEditar ? (
+        {puedeEditar && editandoDatosIngreso ? (
           <div className="mt-4 flex justify-end">
             <button
               type="button"

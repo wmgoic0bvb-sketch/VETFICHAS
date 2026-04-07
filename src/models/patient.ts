@@ -96,7 +96,28 @@ const modificacionPacienteSchema = new Schema(
 const datosInternacionSchema = new Schema(
   {
     fechaIngreso: { type: String, default: "" },
+    horaIngreso: { type: String },
     fechaAlta: { type: String },
+    tipoEgreso: { type: String, enum: ["alta", "fallecimiento"] },
+    causaFallecimiento: { type: String },
+    motivoIngreso: { type: String, default: "" },
+    veterinarioResponsable: { type: String, default: "" },
+    diagnosticoPrincipal: { type: String, default: "" },
+    diagnosticoEditadoEn: { type: String },
+    ordenes: { type: [ordenTratamientoInternacionSchema], default: [] },
+    evoluciones: { type: [evolucionRondaInternacionSchema], default: [] },
+  },
+  { _id: false },
+);
+
+const internacionHistorialSchema = new Schema(
+  {
+    id: { type: String, required: true },
+    fechaIngreso: { type: String, default: "" },
+    horaIngreso: { type: String },
+    fechaAlta: { type: String },
+    tipoEgreso: { type: String, enum: ["alta", "fallecimiento"] },
+    causaFallecimiento: { type: String },
     motivoIngreso: { type: String, default: "" },
     veterinarioResponsable: { type: String, default: "" },
     diagnosticoPrincipal: { type: String, default: "" },
@@ -142,6 +163,7 @@ const patientSchema = new Schema(
     esUnicaConsulta: { type: Boolean, default: false },
     internado: { type: Boolean, default: false },
     datosInternacion: { type: datosInternacionSchema, required: false },
+    historialInternaciones: { type: [internacionHistorialSchema], default: [] },
     proximosControles: { type: [proximoControlSchema], default: [] },
     consultas: { type: [consultaSchema], default: [] },
     estudios: { type: [estudioSchema], default: [] },

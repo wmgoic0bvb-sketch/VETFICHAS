@@ -3,12 +3,21 @@ import type {
   DatosInternacion,
   EvolucionRondaInternacion,
   EstadoGeneralEvolucion,
+  InternacionHistorial,
   OrdenTratamientoInternacion,
+  TipoEgreso,
 } from "@/types/patient";
+
+function nowHHMM(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 export function defaultDatosInternacion(): DatosInternacion {
   return {
     fechaIngreso: todayISODate(),
+    horaIngreso: nowHHMM(),
     motivoIngreso: "",
     veterinarioResponsable: "",
     diagnosticoPrincipal: "",
@@ -104,14 +113,29 @@ export function mergeDatosInternacion(
         .map(normalizeEvolucion)
         .filter((x): x is EvolucionRondaInternacion => x !== null)
     : [];
+  const tipoEgresoRaw = o.tipoEgreso;
+  const tipoEgreso: TipoEgreso | undefined =
+    tipoEgresoRaw === "alta" || tipoEgresoRaw === "fallecimiento"
+      ? tipoEgresoRaw
+      : undefined;
+
   return {
     fechaIngreso:
       typeof o.fechaIngreso === "string" && o.fechaIngreso.trim()
         ? o.fechaIngreso.trim().slice(0, 10)
         : base.fechaIngreso,
+    horaIngreso:
+      typeof o.horaIngreso === "string" && /^\d{2}:\d{2}$/.test(o.horaIngreso.trim())
+        ? o.horaIngreso.trim()
+        : undefined,
     fechaAlta:
       typeof o.fechaAlta === "string" && o.fechaAlta.trim()
         ? o.fechaAlta.trim()
+        : undefined,
+    tipoEgreso,
+    causaFallecimiento:
+      typeof o.causaFallecimiento === "string" && o.causaFallecimiento.trim()
+        ? o.causaFallecimiento.trim()
         : undefined,
     motivoIngreso:
       typeof o.motivoIngreso === "string" ? o.motivoIngreso : "",
@@ -131,6 +155,19 @@ export function mergeDatosInternacion(
     ordenes,
     evoluciones,
   };
+}
+
+/** Normaliza un ítem del historial de internaciones (requiere `id`). */
+export function normalizeInternacionHistorialItem(
+  raw: unknown,
+): InternacionHistorial | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  const id = typeof o.id === "string" && o.id.trim() ? o.id.trim() : null;
+  if (!id) return null;
+  const datos = mergeDatosInternacion(raw, false);
+  if (!datos) return null;
+  return { ...datos, id };
 }
 
 /** Más reciente arriba (id `ord-<timestamp>-` o fecha de inicio descendente). */
