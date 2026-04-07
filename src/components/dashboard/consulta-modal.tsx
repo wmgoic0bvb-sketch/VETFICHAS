@@ -9,6 +9,7 @@ import type { Consulta, ConsultaTipo } from "@/types/patient";
 
 const tipos: ConsultaTipo[] = [
   "Consulta",
+  "Consulta a domicilio",
   "Control",
   "Vacuna",
   "Urgencia",
@@ -345,7 +346,7 @@ export function ConsultaModal({
         </div>
         <div>
           <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
-            Diagnóstico
+            Anamnesis y diagnóstico
           </label>
           <textarea
             value={diag}

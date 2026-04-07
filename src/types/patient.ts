@@ -2,6 +2,7 @@ export type Especie = "Perro" | "Gato";
 
 export type ConsultaTipo =
   | "Consulta"
+  | "Consulta a domicilio"
   | "Control"
   | "Vacuna"
   | "Urgencia"
