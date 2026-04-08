@@ -61,6 +61,16 @@ function ConsultaHeader({ c }: { c: Consulta }) {
   );
 }
 
+const isoDateOnly = /^\d{4}-\d{2}-\d{2}$/;
+const ddmmyyyy = /^\d{2}\/\d{2}\/\d{4}$/;
+
+function formatRefuerzoDisplay(raw: string) {
+  const t = raw.trim();
+  if (ddmmyyyy.test(t)) return t;
+  if (isoDateOnly.test(t)) return formatFecha(t);
+  return t;
+}
+
 function ConsultaCard({
   c,
   patient,
@@ -70,7 +80,10 @@ function ConsultaCard({
   patient: Pick<Paciente, "nombre" | "especie" | "raza">;
   onEdit: (consulta: Consulta) => void;
 }) {
-  const hasDetails = Boolean(c.peso || c.temp || c.diag || c.trat || c.meds);
+  const esVacuna = c.tipo === "Vacuna";
+  const hasDetails = esVacuna
+    ? Boolean(c.diag || c.trat || c.meds)
+    : Boolean(c.peso || c.temp || c.diag || c.trat || c.meds);
   const [open, setOpen] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const panelId = `consulta-detail-${c.id}`;
@@ -145,22 +158,50 @@ function ConsultaCard({
           aria-labelledby={triggerId}
           className="border-t border-[#e0d9cf] bg-[#faf8f5] px-4 py-3"
         >
-          {(c.peso || c.temp) && (
+          {!esVacuna && (c.peso || c.temp) ? (
             <div className="text-[13px] leading-relaxed text-[#555]">
               {c.peso ? `⚖️ Peso: ${c.peso} kg` : ""}
               {c.peso && c.temp ? " · " : ""}
               {c.temp ? `🌡️ Temp: ${c.temp}°C` : ""}
             </div>
+          ) : null}
+          {esVacuna ? (
+            <>
+              {c.diag ? (
+                <div className="mt-1 text-[13px] leading-relaxed text-[#555]">
+                  🏷️ Marca: {c.diag}
+                </div>
+              ) : null}
+              {c.trat ? (
+                <div className="mt-1 text-[13px] leading-relaxed text-[#555]">
+                  📦 Lote: {c.trat}
+                </div>
+              ) : null}
+              {c.meds ? (
+                <div className="mt-1 text-[13px] leading-relaxed text-[#555]">
+                  📅 Próximo refuerzo: {formatRefuerzoDisplay(c.meds)}
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <>
+              {c.diag ? (
+                <div className="mt-1 text-[13px] leading-relaxed text-[#555]">
+                  📋 {c.diag}
+                </div>
+              ) : null}
+              {c.trat ? (
+                <div className="mt-1 text-[13px] leading-relaxed text-[#555]">
+                  💊 {c.trat}
+                </div>
+              ) : null}
+              {c.meds ? (
+                <div className="mt-1 text-[13px] leading-relaxed text-[#555]">
+                  🧴 {c.meds}
+                </div>
+              ) : null}
+            </>
           )}
-          {c.diag ? (
-            <div className="mt-1 text-[13px] leading-relaxed text-[#555]">📋 {c.diag}</div>
-          ) : null}
-          {c.trat ? (
-            <div className="mt-1 text-[13px] leading-relaxed text-[#555]">💊 {c.trat}</div>
-          ) : null}
-          {c.meds ? (
-            <div className="mt-1 text-[13px] leading-relaxed text-[#555]">🧴 {c.meds}</div>
-          ) : null}
         </div>
       ) : null}
       <div className="flex justify-end border-t border-[#e0d9cf]/80 bg-[#faf8f5]/60 px-4 py-2.5">

@@ -5,6 +5,7 @@ import { FieldError, inputErrorRing } from "@/components/ui/field-error";
 import { DbLoadingOverlay } from "@/components/ui/lottie-loading";
 import { Modal } from "@/components/ui/modal";
 import { todayISODate } from "@/lib/date-utils";
+import { maskInputFechaDDMMYYYY } from "@/lib/proximo-control-utils";
 import type { Consulta, ConsultaTipo } from "@/types/patient";
 
 const tipos: ConsultaTipo[] = [
@@ -15,6 +16,66 @@ const tipos: ConsultaTipo[] = [
   "Urgencia",
   "Cirugía",
 ];
+
+/** Opciones fijas de vacuna; el campo `motivo` guarda las elegidas unidas por " · ". */
+const VACUNAS_OPCIONES = [
+  "Triple felina",
+  "Quintuple",
+  "Antirrabica",
+  "Sextuple",
+  "Leucemia felina",
+] as const;
+
+const VACUNA_SET = new Set<string>(VACUNAS_OPCIONES);
+
+const VACUNAS_MOTIVO_SEP = " · ";
+
+function parseVacunasFromMotivo(motivo: string): string[] {
+  if (!motivo.trim()) return [];
+  const tokens = motivo
+    .split(/ · |, |;/)
+    .map((t) => t.trim())
+    .filter(Boolean);
+  const picked = tokens.filter((t) => VACUNA_SET.has(t));
+  return VACUNAS_OPCIONES.filter((o) => picked.includes(o));
+}
+
+function joinVacunasMotivo(selected: string[]): string {
+  return VACUNAS_OPCIONES.filter((o) => selected.includes(o)).join(
+    VACUNAS_MOTIVO_SEP,
+  );
+}
+
+const FECHA_MASKED_DDMMYYYY = /^\d{2}\/\d{2}\/\d{4}$/;
+
+function isoToMaskedDDMMYYYY(iso: string): string {
+  const t = iso.trim();
+  const parts = t.split("-");
+  if (parts.length !== 3) return "";
+  const [y, m, d] = parts;
+  if (!y || !m || !d) return "";
+  return `${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}/${y}`;
+}
+
+function maskedDDMMYYYYToISO(masked: string): string | null {
+  const m = FECHA_MASKED_DDMMYYYY.exec(masked.trim());
+  if (!m) return null;
+  const [dd, mm, yyyy] = masked.trim().split("/");
+  const d = Number(dd);
+  const mo = Number(mm);
+  const y = Number(yyyy);
+  if (!Number.isFinite(d) || !Number.isFinite(mo) || !Number.isFinite(y))
+    return null;
+  const dt = new Date(y, mo - 1, d);
+  if (
+    dt.getFullYear() !== y ||
+    dt.getMonth() !== mo - 1 ||
+    dt.getDate() !== d
+  )
+    return null;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${y}-${pad(mo)}-${pad(d)}`;
+}
 
 export function ConsultaModal({
   open,
@@ -47,6 +108,9 @@ export function ConsultaModal({
   const [vetListLoading, setVetListLoading] = useState(false);
   const [vetListError, setVetListError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [vacunasSel, setVacunasSel] = useState<string[]>([]);
+  const [vacunaFechaInput, setVacunaFechaInput] = useState("");
+  const [refuerzoError, setRefuerzoError] = useState<string | null>(null);
 
   const isEdit = Boolean(initialConsulta);
 
@@ -54,12 +118,26 @@ export function ConsultaModal({
     if (!open) return;
     if (initialConsulta) {
       setMotivo(initialConsulta.motivo);
+      setVacunasSel(
+        initialConsulta.tipo === "Vacuna"
+          ? parseVacunasFromMotivo(initialConsulta.motivo)
+          : [],
+      );
       setVeterinario(initialConsulta.veterinario);
       setTipo(initialConsulta.tipo);
       setFecha(
         initialConsulta.fecha?.trim()
           ? initialConsulta.fecha.slice(0, 10)
           : todayISODate(),
+      );
+      setVacunaFechaInput(
+        initialConsulta.tipo === "Vacuna"
+          ? isoToMaskedDDMMYYYY(
+              initialConsulta.fecha?.trim()
+                ? initialConsulta.fecha.slice(0, 10)
+                : todayISODate(),
+            )
+          : "",
       );
       setPeso(initialConsulta.peso);
       setTemp(initialConsulta.temp);
@@ -68,9 +146,11 @@ export function ConsultaModal({
       setMeds(initialConsulta.meds);
     } else {
       setMotivo("");
+      setVacunasSel([]);
       setVeterinario("");
       setTipo("Consulta");
       setFecha(todayISODate());
+      setVacunaFechaInput(isoToMaskedDDMMYYYY(todayISODate()));
       setPeso("");
       setTemp("");
       setDiag("");
@@ -79,6 +159,7 @@ export function ConsultaModal({
     }
     setMotivoError(null);
     setVetError(null);
+    setRefuerzoError(null);
     setHasChanges(false);
     setConfirmCloseOpen(false);
   }, [open, initialConsulta]);
@@ -125,8 +206,23 @@ export function ConsultaModal({
     return vetOpciones;
   }, [vetOpciones, legacyVetNombre]);
 
+  const isVacuna = tipo === "Vacuna";
+
+  const applyTipoChange = (next: ConsultaTipo) => {
+    if (tipo === "Vacuna" && next !== "Vacuna") {
+      const j = joinVacunasMotivo(vacunasSel);
+      if (j) setMotivo(j);
+    }
+    if (tipo !== "Vacuna" && next === "Vacuna") {
+      setVacunasSel(parseVacunasFromMotivo(motivo));
+      setVacunaFechaInput(isoToMaskedDDMMYYYY(fecha || todayISODate()));
+    }
+    setTipo(next);
+    setHasChanges(true);
+  };
+
   const guardar = async () => {
-    const m = motivo.trim();
+    const m = isVacuna ? joinVacunasMotivo(vacunasSel) : motivo.trim();
     if (!vetListLoading && vetRows.length === 0) {
       setVetError(
         "No hay veterinarios activos. Un administrador puede cargarlos en Administración.",
@@ -138,11 +234,23 @@ export function ConsultaModal({
       return;
     }
     if (!m) {
-      setMotivoError("Completá el motivo de la consulta.");
+      setMotivoError(
+        isVacuna
+          ? "Elegí al menos una vacuna de la lista."
+          : "Completá el motivo de la consulta.",
+      );
       return;
+    }
+    if (isVacuna) {
+      const r = meds.trim();
+      if (r && !FECHA_MASKED_DDMMYYYY.test(r)) {
+        setRefuerzoError("Revisá la fecha (DD/MM/AAAA).");
+        return;
+      }
     }
     setMotivoError(null);
     setVetError(null);
+    setRefuerzoError(null);
     setSaving(true);
     try {
       await Promise.resolve(
@@ -151,8 +259,8 @@ export function ConsultaModal({
           veterinario,
           tipo,
           fecha,
-          peso,
-          temp,
+          peso: isVacuna ? "" : peso,
+          temp: isVacuna ? "" : temp,
           diag: diag.trim(),
           trat: trat.trim(),
           meds: meds.trim(),
@@ -198,196 +306,423 @@ export function ConsultaModal({
         ✕
       </button>
       <h2 id="consulta-title" className="text-xl font-bold text-[#1a1a1a]">
-        {isEdit ? "Editar consulta 📋" : "Nueva consulta 📋"}
+        {isVacuna
+          ? isEdit
+            ? "Editar vacunación 💉"
+            : "Nueva vacunación 💉"
+          : isEdit
+            ? "Editar consulta 📋"
+            : "Nueva consulta 📋"}
       </h2>
       <div className="mt-4 space-y-4">
-        <div
-          className="rounded-[14px] border border-[#b7d5c9] bg-[#f0faf5] p-3.5"
-        >
-          <label
-            htmlFor="consulta-vet"
-            className="mb-1.5 block text-[13px] font-semibold text-[#401127]"
-          >
-            Veterinario *
-          </label>
-          <select
-            id="consulta-vet"
-            value={veterinario}
-            disabled={vetListLoading}
-            onChange={(e) => {
-              setVeterinario(e.target.value);
-              setHasChanges(true);
-              if (vetError) setVetError(null);
-            }}
-            aria-invalid={Boolean(vetError || vetListError)}
-            aria-describedby={
-              [vetListError && "consulta-vet-list-err", vetError && "consulta-vet-err"]
-                .filter(Boolean)
-                .join(" ") || undefined
-            }
-            className={`w-full min-h-[48px] cursor-pointer rounded-xl border-[1.5px] border-[#5c1838] bg-white px-3.5 py-2.5 text-sm text-[#1a1a1a] outline-none transition-colors focus:border-[#401127] focus:shadow-[0_0_0_3px_rgba(45,106,79,0.2)] disabled:cursor-wait disabled:opacity-70 ${inputErrorRing(
-              Boolean(vetError || vetListError),
-            )}`}
-          >
-            <option value="">
-              {vetListLoading ? "Cargando veterinarios…" : "Elegir veterinario..."}
-            </option>
-            {vetRows.map((v) => (
-              <option key={v.id} value={v.nombre}>
-                {v.nombre}
-              </option>
-            ))}
-          </select>
-          {vetListError ? (
-            <FieldError id="consulta-vet-list-err" message={vetListError} />
-          ) : null}
-          {vetError ? (
-            <FieldError id="consulta-vet-err" message={vetError} />
-          ) : null}
-        </div>
-
-        <div>
-          <label
-            htmlFor="consulta-motivo"
-            className="mb-1.5 block text-[13px] font-semibold text-[#555]"
-          >
-            Motivo de la consulta *
-          </label>
-          <input
-            id="consulta-motivo"
-            value={motivo}
-            onChange={(e) => {
-              setMotivo(e.target.value);
-              setHasChanges(true);
-              if (motivoError) setMotivoError(null);
-            }}
-            aria-invalid={Boolean(motivoError)}
-            aria-describedby={
-              motivoError ? "consulta-motivo-err" : undefined
-            }
-            className={`w-full rounded-xl border-[1.5px] px-3.5 py-2.5 text-sm outline-none transition-colors ${inputErrorRing(
-              Boolean(motivoError),
-            )}`}
-            placeholder="Ej: Control anual, Vómitos..."
-          />
-          {motivoError ? (
-            <FieldError id="consulta-motivo-err" message={motivoError} />
-          ) : null}
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
-              Tipo
-            </label>
-            <select
-              value={tipo}
-              onChange={(e) => {
-                setTipo(e.target.value as ConsultaTipo);
-                setHasChanges(true);
-              }}
-              className="w-full cursor-pointer rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
+        {isVacuna ? (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
+                  Tipo
+                </label>
+                <select
+                  value={tipo}
+                  onChange={(e) =>
+                    applyTipoChange(e.target.value as ConsultaTipo)
+                  }
+                  className="w-full cursor-pointer rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
+                >
+                  {tipos.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
+                  Fecha de aplicación
+                </label>
+                <input
+                  inputMode="numeric"
+                  value={vacunaFechaInput}
+                  onChange={(e) => {
+                    const next = maskInputFechaDDMMYYYY(e.target.value);
+                    setVacunaFechaInput(next);
+                    const iso = maskedDDMMYYYYToISO(next);
+                    if (iso) setFecha(iso);
+                    setHasChanges(true);
+                  }}
+                  className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 font-mono text-[15px] tabular-nums tracking-wide outline-none transition-colors placeholder:text-[#c4bbb0] focus:border-[#5c1838] focus:bg-white"
+                  placeholder="DD/MM/AAAA"
+                />
+              </div>
+            </div>
+            <div>
+              <span
+                id="vacunas-legend"
+                className="mb-1.5 block text-[13px] font-semibold text-[#555]"
+              >
+                Vacunas aplicadas *
+              </span>
+              <details
+                className={`group rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 open:bg-white open:pb-3 ${inputErrorRing(
+                  Boolean(motivoError),
+                )}`}
+              >
+                <summary className="cursor-pointer list-none text-sm text-[#1a1a1a] outline-none marker:content-none [&::-webkit-details-marker]:hidden">
+                  <span className="flex items-center justify-between gap-2">
+                    <span>
+                      {vacunasSel.length === 0
+                        ? "Tocá para elegir una o más…"
+                        : vacunasSel.length === 1
+                          ? vacunasSel[0]
+                          : `${vacunasSel.length} vacunas seleccionadas`}
+                    </span>
+                    <span
+                      className="text-[10px] text-[#888] transition-transform group-open:rotate-180"
+                      aria-hidden
+                    >
+                      ▼
+                    </span>
+                  </span>
+                </summary>
+                <fieldset
+                  aria-labelledby="vacunas-legend"
+                  className="mt-3 space-y-2 border-0 p-0"
+                >
+                  <legend className="sr-only">Vacunas aplicadas</legend>
+                  {VACUNAS_OPCIONES.map((nombre) => {
+                    const id = `vacuna-opt-${nombre.replace(/\s+/g, "-").toLowerCase()}`;
+                    const checked = vacunasSel.includes(nombre);
+                    return (
+                      <label
+                        key={nombre}
+                        htmlFor={id}
+                        className="flex cursor-pointer items-center gap-2.5 rounded-lg py-1 pl-0.5 pr-1 text-sm text-[#333] hover:bg-[#f0faf5]"
+                      >
+                        <input
+                          id={id}
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            setVacunasSel((prev) =>
+                              checked
+                                ? prev.filter((x) => x !== nombre)
+                                : [...prev, nombre],
+                            );
+                            setHasChanges(true);
+                            if (motivoError) setMotivoError(null);
+                          }}
+                          className="h-4 w-4 shrink-0 rounded border-[#5c1838]/40 text-[#5c1838] focus:ring-[#5c1838]"
+                        />
+                        {nombre}
+                      </label>
+                    );
+                  })}
+                </fieldset>
+              </details>
+              {motivoError ? (
+                <FieldError id="consulta-motivo-err" message={motivoError} />
+              ) : null}
+            </div>
+            <div
+              className="rounded-[14px] border border-[#b7d5c9] bg-[#f0faf5] p-3.5"
             >
-              {tipos.map((t) => (
-                <option key={t} value={t}>
-                  {t}
+              <label
+                htmlFor="consulta-vet"
+                className="mb-1.5 block text-[13px] font-semibold text-[#401127]"
+              >
+                Veterinario *
+              </label>
+              <select
+                id="consulta-vet"
+                value={veterinario}
+                disabled={vetListLoading}
+                onChange={(e) => {
+                  setVeterinario(e.target.value);
+                  setHasChanges(true);
+                  if (vetError) setVetError(null);
+                }}
+                aria-invalid={Boolean(vetError || vetListError)}
+                aria-describedby={
+                  [vetListError && "consulta-vet-list-err", vetError && "consulta-vet-err"]
+                    .filter(Boolean)
+                    .join(" ") || undefined
+                }
+                className={`w-full min-h-[48px] cursor-pointer rounded-xl border-[1.5px] border-[#5c1838] bg-white px-3.5 py-2.5 text-sm text-[#1a1a1a] outline-none transition-colors focus:border-[#401127] focus:shadow-[0_0_0_3px_rgba(45,106,79,0.2)] disabled:cursor-wait disabled:opacity-70 ${inputErrorRing(
+                  Boolean(vetError || vetListError),
+                )}`}
+              >
+                <option value="">
+                  {vetListLoading ? "Cargando veterinarios…" : "Elegir veterinario..."}
                 </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
-              Fecha
-            </label>
-            <input
-              type="date"
-              value={fecha}
-              onChange={(e) => {
-                setFecha(e.target.value);
-                setHasChanges(true);
-              }}
-              className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
-            />
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
-              Peso (kg)
-            </label>
-            <input
-              type="number"
-              step="0.1"
-              value={peso}
-              onChange={(e) => {
-                setPeso(e.target.value);
-                setHasChanges(true);
-              }}
-              className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
-              placeholder="Ej: 12.5"
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
-              Temperatura (°C)
-            </label>
-            <input
-              type="number"
-              step="0.1"
-              value={temp}
-              onChange={(e) => {
-                setTemp(e.target.value);
-                setHasChanges(true);
-              }}
-              className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
-              placeholder="Ej: 38.5"
-            />
-          </div>
-        </div>
-        <div>
-          <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
-            Anamnesis y diagnóstico
-          </label>
-          <textarea
-            value={diag}
-            onChange={(e) => {
-              setDiag(e.target.value);
-              setHasChanges(true);
-            }}
-            rows={2}
-            className="min-h-[88px] w-full resize-y rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm leading-relaxed outline-none focus:border-[#5c1838] focus:bg-white"
-            placeholder="Descripción del diagnóstico..."
-          />
-        </div>
-        <div>
-          <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
-            Tratamiento indicado
-          </label>
-          <textarea
-            value={trat}
-            onChange={(e) => {
-              setTrat(e.target.value);
-              setHasChanges(true);
-            }}
-            rows={2}
-            className="min-h-[88px] w-full resize-y rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm leading-relaxed outline-none focus:border-[#5c1838] focus:bg-white"
-            placeholder="Tratamiento y observaciones..."
-          />
-        </div>
-        <div>
-          <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
-            Medicamentos recetados
-          </label>
-          <input
-            value={meds}
-            onChange={(e) => {
-              setMeds(e.target.value);
-              setHasChanges(true);
-            }}
-            className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
-            placeholder="Ej: Amoxicilina 500mg cada 12hs por 7 días"
-          />
-        </div>
+                {vetRows.map((v) => (
+                  <option key={v.id} value={v.nombre}>
+                    {v.nombre}
+                  </option>
+                ))}
+              </select>
+              {vetListError ? (
+                <FieldError id="consulta-vet-list-err" message={vetListError} />
+              ) : null}
+              {vetError ? (
+                <FieldError id="consulta-vet-err" message={vetError} />
+              ) : null}
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div>
+                <label
+                  htmlFor="vacuna-marca"
+                  className="mb-1.5 block text-[13px] font-semibold text-[#555]"
+                >
+                  Marca <span className="font-normal text-[#888]">(opc.)</span>
+                </label>
+                <input
+                  id="vacuna-marca"
+                  value={diag}
+                  onChange={(e) => {
+                    setDiag(e.target.value);
+                    setHasChanges(true);
+                  }}
+                  className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
+                  placeholder="Laboratorio / marca"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="vacuna-lote"
+                  className="mb-1.5 block text-[13px] font-semibold text-[#555]"
+                >
+                  Lote <span className="font-normal text-[#888]">(opc.)</span>
+                </label>
+                <input
+                  id="vacuna-lote"
+                  value={trat}
+                  onChange={(e) => {
+                    setTrat(e.target.value);
+                    setHasChanges(true);
+                  }}
+                  className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
+                  placeholder="Nº de lote"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="vacuna-refuerzo"
+                  className="mb-1.5 block text-[13px] font-semibold text-[#555]"
+                >
+                  Próximo refuerzo{" "}
+                  <span className="font-normal text-[#888]">(opc.)</span>
+                </label>
+                <input
+                  id="vacuna-refuerzo"
+                  inputMode="numeric"
+                  value={meds}
+                  onChange={(e) => {
+                    const next = maskInputFechaDDMMYYYY(e.target.value);
+                    setMeds(next);
+                    setHasChanges(true);
+                    if (refuerzoError) setRefuerzoError(null);
+                  }}
+                  className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
+                  placeholder="DD/MM/AAAA"
+                />
+                {refuerzoError ? (
+                  <div className="mt-1">
+                    <FieldError id="vacuna-refuerzo-err" message={refuerzoError} />
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div
+              className="rounded-[14px] border border-[#b7d5c9] bg-[#f0faf5] p-3.5"
+            >
+              <label
+                htmlFor="consulta-vet"
+                className="mb-1.5 block text-[13px] font-semibold text-[#401127]"
+              >
+                Veterinario *
+              </label>
+              <select
+                id="consulta-vet"
+                value={veterinario}
+                disabled={vetListLoading}
+                onChange={(e) => {
+                  setVeterinario(e.target.value);
+                  setHasChanges(true);
+                  if (vetError) setVetError(null);
+                }}
+                aria-invalid={Boolean(vetError || vetListError)}
+                aria-describedby={
+                  [vetListError && "consulta-vet-list-err", vetError && "consulta-vet-err"]
+                    .filter(Boolean)
+                    .join(" ") || undefined
+                }
+                className={`w-full min-h-[48px] cursor-pointer rounded-xl border-[1.5px] border-[#5c1838] bg-white px-3.5 py-2.5 text-sm text-[#1a1a1a] outline-none transition-colors focus:border-[#401127] focus:shadow-[0_0_0_3px_rgba(45,106,79,0.2)] disabled:cursor-wait disabled:opacity-70 ${inputErrorRing(
+                  Boolean(vetError || vetListError),
+                )}`}
+              >
+                <option value="">
+                  {vetListLoading ? "Cargando veterinarios…" : "Elegir veterinario..."}
+                </option>
+                {vetRows.map((v) => (
+                  <option key={v.id} value={v.nombre}>
+                    {v.nombre}
+                  </option>
+                ))}
+              </select>
+              {vetListError ? (
+                <FieldError id="consulta-vet-list-err" message={vetListError} />
+              ) : null}
+              {vetError ? (
+                <FieldError id="consulta-vet-err" message={vetError} />
+              ) : null}
+            </div>
+
+            <div>
+              <label
+                htmlFor="consulta-motivo"
+                className="mb-1.5 block text-[13px] font-semibold text-[#555]"
+              >
+                Motivo de la consulta *
+              </label>
+              <input
+                id="consulta-motivo"
+                value={motivo}
+                onChange={(e) => {
+                  setMotivo(e.target.value);
+                  setHasChanges(true);
+                  if (motivoError) setMotivoError(null);
+                }}
+                aria-invalid={Boolean(motivoError)}
+                aria-describedby={
+                  motivoError ? "consulta-motivo-err" : undefined
+                }
+                className={`w-full rounded-xl border-[1.5px] px-3.5 py-2.5 text-sm outline-none transition-colors ${inputErrorRing(
+                  Boolean(motivoError),
+                )}`}
+                placeholder="Ej: Control anual, Vómitos..."
+              />
+              {motivoError ? (
+                <FieldError id="consulta-motivo-err" message={motivoError} />
+              ) : null}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
+                  Tipo
+                </label>
+                <select
+                  value={tipo}
+                  onChange={(e) =>
+                    applyTipoChange(e.target.value as ConsultaTipo)
+                  }
+                  className="w-full cursor-pointer rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
+                >
+                  {tipos.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
+                  Fecha
+                </label>
+                <input
+                  type="date"
+                  value={fecha}
+                  onChange={(e) => {
+                    setFecha(e.target.value);
+                    setHasChanges(true);
+                  }}
+                  className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
+                  Peso (kg)
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={peso}
+                  onChange={(e) => {
+                    setPeso(e.target.value);
+                    setHasChanges(true);
+                  }}
+                  className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
+                  placeholder="Ej: 12.5"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
+                  Temperatura (°C)
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={temp}
+                  onChange={(e) => {
+                    setTemp(e.target.value);
+                    setHasChanges(true);
+                  }}
+                  className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
+                  placeholder="Ej: 38.5"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
+                Anamnesis y diagnóstico
+              </label>
+              <textarea
+                value={diag}
+                onChange={(e) => {
+                  setDiag(e.target.value);
+                  setHasChanges(true);
+                }}
+                rows={2}
+                className="min-h-[88px] w-full resize-y rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm leading-relaxed outline-none focus:border-[#5c1838] focus:bg-white"
+                placeholder="Descripción del diagnóstico..."
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
+                Tratamiento indicado
+              </label>
+              <textarea
+                value={trat}
+                onChange={(e) => {
+                  setTrat(e.target.value);
+                  setHasChanges(true);
+                }}
+                rows={2}
+                className="min-h-[88px] w-full resize-y rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm leading-relaxed outline-none focus:border-[#5c1838] focus:bg-white"
+                placeholder="Tratamiento y observaciones..."
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
+                Medicamentos recetados
+              </label>
+              <input
+                value={meds}
+                onChange={(e) => {
+                  setMeds(e.target.value);
+                  setHasChanges(true);
+                }}
+                className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
+                placeholder="Ej: Amoxicilina 500mg cada 12hs por 7 días"
+              />
+            </div>
+          </>
+        )}
         <div className="mt-6 flex gap-2.5">
           <button
             type="button"
@@ -403,7 +738,11 @@ export function ConsultaModal({
             disabled={busy}
             className="flex-[2] rounded-xl bg-[#5c1838] py-3 text-[15px] font-semibold text-white hover:bg-[#401127] disabled:opacity-60"
           >
-            {isEdit ? "✓ Guardar cambios" : "✓ Guardar consulta"}
+            {isEdit
+              ? "✓ Guardar cambios"
+              : isVacuna
+                ? "✓ Guardar vacunación"
+                : "✓ Guardar consulta"}
           </button>
         </div>
       </div>

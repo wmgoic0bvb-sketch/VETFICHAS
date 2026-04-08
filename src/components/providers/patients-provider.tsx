@@ -12,6 +12,11 @@ import {
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import {
+  combinarMaskedAFechaHoraGuardada,
+  esFechaMaskedAnteriorAHoy,
+  isFechaHoraProximoControlValida,
+} from "@/lib/proximo-control-utils";
+import {
   appendEstudio,
   createPatient,
   deletePatient as deletePatientApi,
@@ -19,6 +24,7 @@ import {
   removeEstudioRemote,
   replacePatient,
 } from "@/lib/patients-api";
+import { DEFAULT_SUCURSAL_ID } from "@/lib/sucursales";
 import type {
   Consulta,
   Estudio,
@@ -290,9 +296,40 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
       setPatients((prev) => {
         const cur = prev.find((p) => p.id === patientId);
         if (!cur) return prev;
+        const refMasked = consulta.meds.trim();
+        const shouldAutoControl =
+          consulta.tipo === "Vacuna" &&
+          /^\d{2}\/\d{2}\/\d{4}$/.test(refMasked) &&
+          !esFechaMaskedAnteriorAHoy(refMasked);
+        const autoFechaHora = shouldAutoControl
+          ? combinarMaskedAFechaHoraGuardada(refMasked, "09:00")
+          : null;
+        const autoNota = shouldAutoControl ? "Refuerzo de vacuna" : "";
+        const exists =
+          shouldAutoControl &&
+          autoFechaHora &&
+          cur.proximosControles.some(
+            (c) => c.fechaHora === autoFechaHora && (c.nota ?? "") === autoNota,
+          );
+        const autoControl: ProximoControl | null =
+          shouldAutoControl &&
+          autoFechaHora &&
+          !exists &&
+          isFechaHoraProximoControlValida(autoFechaHora)
+            ? {
+                id: `pc-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+                fechaHora: autoFechaHora,
+                sucursalId: DEFAULT_SUCURSAL_ID,
+                nota: autoNota,
+                asistencia: null,
+              }
+            : null;
         nextPatient = {
           ...cur,
           consultas: [...(cur.consultas ?? []), consulta],
+          proximosControles: autoControl
+            ? [...cur.proximosControles, autoControl]
+            : cur.proximosControles,
         };
         return prev.map((p) =>
           p.id === patientId ? nextPatient! : p,
@@ -318,7 +355,41 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
         if (idx === -1) return prev;
         const nextList = [...list];
         nextList[idx] = { ...data, id: consultaId };
-        nextPatient = { ...cur, consultas: nextList };
+        const refMasked = data.meds.trim();
+        const shouldAutoControl =
+          data.tipo === "Vacuna" &&
+          /^\d{2}\/\d{2}\/\d{4}$/.test(refMasked) &&
+          !esFechaMaskedAnteriorAHoy(refMasked);
+        const autoFechaHora = shouldAutoControl
+          ? combinarMaskedAFechaHoraGuardada(refMasked, "09:00")
+          : null;
+        const autoNota = shouldAutoControl ? "Refuerzo de vacuna" : "";
+        const exists =
+          shouldAutoControl &&
+          autoFechaHora &&
+          cur.proximosControles.some(
+            (c) => c.fechaHora === autoFechaHora && (c.nota ?? "") === autoNota,
+          );
+        const autoControl: ProximoControl | null =
+          shouldAutoControl &&
+          autoFechaHora &&
+          !exists &&
+          isFechaHoraProximoControlValida(autoFechaHora)
+            ? {
+                id: `pc-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+                fechaHora: autoFechaHora,
+                sucursalId: DEFAULT_SUCURSAL_ID,
+                nota: autoNota,
+                asistencia: null,
+              }
+            : null;
+        nextPatient = {
+          ...cur,
+          consultas: nextList,
+          proximosControles: autoControl
+            ? [...cur.proximosControles, autoControl]
+            : cur.proximosControles,
+        };
         return prev.map((p) => (p.id === patientId ? nextPatient! : p));
       });
       if (nextPatient) await persistOne(nextPatient);
