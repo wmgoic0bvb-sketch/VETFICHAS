@@ -146,9 +146,12 @@ export interface DatosInternacion {
   evoluciones: EvolucionRondaInternacion[];
 }
 
+export type SucursalPaciente = "AVENIDA" | "VILLEGAS" | "MITRE";
+
 export interface Paciente {
   id: string;
   especie: Especie;
+  sucursal?: SucursalPaciente | null;
   nombre: string;
   raza: string;
   sexo: string;

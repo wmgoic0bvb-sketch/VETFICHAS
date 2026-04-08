@@ -149,6 +149,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
         merged = {
           ...cur,
           especie: data.especie,
+          sucursal: data.sucursal ?? null,
           nombre: data.nombre,
           raza: data.raza,
           sexo: data.sexo,

@@ -12,6 +12,11 @@ const userSchema = new Schema(
       enum: ["user", "admin", "vet"],
       default: "user",
     },
+    sucursal: {
+      type: String,
+      enum: ["AVENIDA", "VILLEGAS", "MITRE", null],
+      default: null,
+    },
   },
   { timestamps: true },
 );

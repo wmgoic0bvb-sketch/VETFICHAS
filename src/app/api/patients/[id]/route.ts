@@ -124,6 +124,7 @@ export const PUT = auth(async (req: NextAuthRequest, ctx) => {
       {
         $set: {
           especie: patient.especie,
+          sucursal: patient.sucursal ?? null,
           nombre: patient.nombre,
           raza: patient.raza,
           sexo: patient.sexo,
