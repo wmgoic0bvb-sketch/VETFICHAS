@@ -201,26 +201,14 @@ export function ProximosControlesSection({
                 >
                   {vistaFecha || pc.fechaHora}
                 </span>
-                {puedeMarcarAsistencia ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPersisting(true);
-                      void Promise.resolve(
-                        onUpdate(pc.id, {
-                          asistencia:
-                            pc.asistencia === "ausente" ? "asistio" : "ausente",
-                        }),
-                      ).finally(() => setPersisting(false));
-                    }}
-                    className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 ${
-                      pc.asistencia === "ausente"
-                        ? "bg-red-100 text-red-800 ring-red-300 focus-visible:ring-red-400"
-                        : "bg-emerald-100 text-emerald-900 ring-emerald-300 focus-visible:ring-emerald-500"
-                    }`}
-                  >
-                    {pc.asistencia === "ausente" ? "Ausente" : "Realizado"}
-                  </button>
+                {pc.asistencia === "asistio" ? (
+                  <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-900">
+                    Asistió
+                  </span>
+                ) : pc.asistencia === "ausente" ? (
+                  <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-[11px] font-semibold text-red-800">
+                    Ausente
+                  </span>
                 ) : (
                   badgeFor(pc.fechaHora)
                 )}
@@ -243,6 +231,46 @@ export function ProximosControlesSection({
               ) : null}
 
               <div className="mt-4 flex flex-wrap gap-2">
+                {puedeMarcarAsistencia ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPersisting(true);
+                        void Promise.resolve(
+                          onUpdate(pc.id, {
+                            asistencia: pc.asistencia === "asistio" ? null : "asistio",
+                          }),
+                        ).finally(() => setPersisting(false));
+                      }}
+                      className={`rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${
+                        pc.asistencia === "asistio"
+                          ? "border-emerald-400 bg-emerald-100 text-emerald-800"
+                          : "border-emerald-300 bg-transparent text-emerald-700 hover:bg-emerald-50"
+                      }`}
+                    >
+                      Asistió
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPersisting(true);
+                        void Promise.resolve(
+                          onUpdate(pc.id, {
+                            asistencia: pc.asistencia === "ausente" ? null : "ausente",
+                          }),
+                        ).finally(() => setPersisting(false));
+                      }}
+                      className={`rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${
+                        pc.asistencia === "ausente"
+                          ? "border-red-400 bg-red-100 text-red-800"
+                          : "border-red-300 bg-transparent text-red-600 hover:bg-red-50"
+                      }`}
+                    >
+                      Ausente
+                    </button>
+                  </>
+                ) : null}
                 <button
                   type="button"
                   disabled={yaOcurrio}
