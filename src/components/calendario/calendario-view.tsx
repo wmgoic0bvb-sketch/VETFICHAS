@@ -5,7 +5,9 @@ import Link from "next/link";
 import { usePatients } from "@/components/providers/patients-provider";
 import { LottieSpinner } from "@/components/ui/lottie-loading";
 import { parseFechaHoraLocal } from "@/lib/proximo-control-utils";
+import { buildWhatsAppUrl } from "@/lib/phone-utils";
 import { getSucursalById, SUCURSALES } from "@/lib/sucursales";
+import { WhatsAppIcon } from "@/components/ui/whatsapp-icon";
 import { MiniCalendario, mismoDia } from "./mini-calendario";
 import type { Paciente, ProximoControl } from "@/types/patient";
 
@@ -68,6 +70,12 @@ function FilaControl({
   const sucursal = getSucursalById(control.sucursalId);
   const dueños = formatDueños(paciente);
 
+  const tel = paciente.dueños[0]?.tel?.trim();
+  const nombreDueño = paciente.dueños[0]?.nombre?.trim();
+  const sucNombre = sucursal?.nombre ?? "";
+  const mensaje = `Hola${nombreDueño ? ` ${nombreDueño}` : ""}! Nos comunicamos de ZooVet para recordarte que hoy${paciente.nombre} tiene control programado${sucNombre ? ` en ${sucNombre}` : ""}. ¡Gracias!`;
+  const waUrl = tel ? buildWhatsAppUrl(tel, mensaje) : null;
+
   return (
     <li className="flex items-center gap-3 rounded-xl border border-[#e8e0d8] bg-white px-4 py-4 transition-colors hover:bg-[#faf7f5]">
       <button
@@ -110,9 +118,22 @@ function FilaControl({
         ) : null}
       </Link>
 
-      {sucursal ? (
-        <span className="shrink-0 text-xs text-[#aaa]">{sucursal.nombre}</span>
-      ) : null}
+      <div className="flex shrink-0 items-center gap-2">
+        {sucursal ? (
+          <span className="text-xs text-[#aaa]">{sucursal.nombre}</span>
+        ) : null}
+        {waUrl ? (
+          <a
+            href={waUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Enviar recordatorio por WhatsApp"
+            className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#25D366]/40 bg-[#dcf8c6]/30 text-[#128C7E] transition-colors hover:bg-[#dcf8c6]/60"
+          >
+            <WhatsAppIcon size={14} />
+          </a>
+        ) : null}
+      </div>
     </li>
   );
 }
