@@ -24,6 +24,27 @@ function InternacionesIcon({ className }: { className?: string }) {
   );
 }
 
+function CalendarioIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  );
+}
+
 function PacientesIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -62,6 +83,7 @@ export function AppSidebar({
     pathname === "/internaciones" || pathname.startsWith("/internaciones/");
   const pacientesActive =
     pathname === "/" || pathname.startsWith("/patient/");
+  const calendarioActive = pathname === "/calendario";
 
   useEffect(() => {
     onClose();
@@ -113,6 +135,16 @@ export function AppSidebar({
           >
             <InternacionesIcon className="h-[22px] w-[22px] shrink-0" />
             <span className="min-w-0 truncate">Internaciones</span>
+          </Link>
+          <Link
+            href="/calendario"
+            className={calendarioActive ? activeClass : inactiveClass}
+            title="Calendario"
+            aria-current={calendarioActive ? "page" : undefined}
+            onClick={() => onClose()}
+          >
+            <CalendarioIcon className="h-[22px] w-[22px] shrink-0" />
+            <span className="min-w-0 truncate">Calendario</span>
           </Link>
         </nav>
       </aside>
