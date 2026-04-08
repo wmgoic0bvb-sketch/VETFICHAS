@@ -12,7 +12,6 @@ const tipos: ConsultaTipo[] = [
   "Consulta",
   "Consulta a domicilio",
   "Control",
-  "Vacuna",
   "Urgencia",
   "Cirugía",
 ];
@@ -82,12 +81,15 @@ export function ConsultaModal({
   onClose,
   onSave,
   initialConsulta,
+  initialTipo,
 }: {
   open: boolean;
   onClose: () => void;
   onSave: (data: Omit<Consulta, "id">) => void | Promise<void>;
   /** Si está definido, el modal carga estos datos (modo edición). */
   initialConsulta?: Consulta | null;
+  /** Tipo inicial cuando se crea una nueva entrada (ignorado en modo edición). */
+  initialTipo?: ConsultaTipo;
 }) {
   const [motivo, setMotivo] = useState("");
   const [veterinario, setVeterinario] = useState("");
@@ -148,7 +150,7 @@ export function ConsultaModal({
       setMotivo("");
       setVacunasSel([]);
       setVeterinario("");
-      setTipo("Consulta");
+      setTipo(initialTipo ?? "Consulta");
       setFecha(todayISODate());
       setVacunaFechaInput(isoToMaskedDDMMYYYY(todayISODate()));
       setPeso("");
@@ -162,7 +164,7 @@ export function ConsultaModal({
     setRefuerzoError(null);
     setHasChanges(false);
     setConfirmCloseOpen(false);
-  }, [open, initialConsulta]);
+  }, [open, initialConsulta, initialTipo]);
 
   useEffect(() => {
     if (!open) return;

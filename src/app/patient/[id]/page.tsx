@@ -314,6 +314,7 @@ export default function PatientDetailPage() {
     removeProximoControl,
   } = usePatients();
   const [consultaOpen, setConsultaOpen] = useState(false);
+  const [vacunaOpen, setVacunaOpen] = useState(false);
   const [editingConsulta, setEditingConsulta] = useState<Consulta | null>(
     null,
   );
@@ -529,16 +530,42 @@ export default function PatientDetailPage() {
                 <h2 className="text-xs font-bold uppercase tracking-wider text-[#5c1838]">
                   Historial de consultas ({patient.consultas?.length ?? 0})
                 </h2>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingConsulta(null);
-                    setConsultaOpen(true);
-                  }}
-                  className="shrink-0 rounded-xl bg-[#5c1838] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#401127] sm:w-auto sm:self-center"
-                >
-                  + Agregar consulta
-                </button>
+                <div className="group/add relative shrink-0 sm:self-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingConsulta(null);
+                      setConsultaOpen(true);
+                    }}
+                    className="rounded-xl bg-[#5c1838] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#401127]"
+                  >
+                    + Agregar consulta
+                  </button>
+                  <div className="absolute right-0 top-full z-20 hidden pt-1 group-hover/add:block">
+                    <div className="min-w-[190px] overflow-hidden rounded-xl border border-[#e8e0d8] bg-white shadow-lg">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingConsulta(null);
+                          setConsultaOpen(true);
+                        }}
+                        className="w-full px-4 py-2.5 text-left text-sm text-[#333] hover:bg-[#f5f0eb]"
+                      >
+                        Agregar consulta
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingConsulta(null);
+                          setVacunaOpen(true);
+                        }}
+                        className="w-full border-t border-[#e8e0d8] px-4 py-2.5 text-left text-sm text-[#333] hover:bg-[#f5f0eb]"
+                      >
+                        Agregar vacuna
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
               {consultas.length === 0 ? (
                 <div className="py-8 text-center text-sm text-[#aaa]">
@@ -582,10 +609,12 @@ export default function PatientDetailPage() {
         <PatientDangerZone patient={patient} />
 
         <ConsultaModal
-          open={consultaOpen || editingConsulta !== null}
+          open={consultaOpen || vacunaOpen || editingConsulta !== null}
           initialConsulta={editingConsulta}
+          initialTipo={vacunaOpen ? "Vacuna" : undefined}
           onClose={() => {
             setConsultaOpen(false);
+            setVacunaOpen(false);
             setEditingConsulta(null);
           }}
           onSave={async (data) => {
