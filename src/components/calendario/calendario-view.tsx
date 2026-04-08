@@ -9,6 +9,8 @@ import { buildWhatsAppUrl } from "@/lib/phone-utils";
 import { getSucursalById, SUCURSALES } from "@/lib/sucursales";
 import { WhatsAppIcon } from "@/components/ui/whatsapp-icon";
 import { MiniCalendario, mismoDia } from "./mini-calendario";
+import { useCalendarioTour } from "./use-calendario-tour";
+import "driver.js/dist/driver.css";
 import type { Paciente, ProximoControl } from "@/types/patient";
 
 // TODO: Filtro temporal por string hardcodeado (sucursalId === "roca-1844", etc).
@@ -61,10 +63,12 @@ function FilaControl({
   paciente,
   control,
   onToggle,
+  isFirst = false,
 }: {
   paciente: Paciente;
   control: ProximoControl;
   onToggle: (pacienteId: string, controlId: string, checked: boolean) => void;
+  isFirst?: boolean;
 }) {
   const asistio = control.asistencia === "asistio";
   const sucursal = getSucursalById(control.sucursalId);
@@ -79,6 +83,7 @@ function FilaControl({
   return (
     <li className="flex items-center gap-3 rounded-xl border border-[#e8e0d8] bg-white px-4 py-4 transition-colors hover:bg-[#faf7f5]">
       <button
+        id={isFirst ? "tour-checkbox-asistencia" : undefined}
         type="button"
         onClick={() => onToggle(paciente.id, control.id, !asistio)}
         title={asistio ? "Desmarcar asistencia" : "El paciente asistió"}
@@ -124,6 +129,7 @@ function FilaControl({
         ) : null}
         {waUrl ? (
           <a
+            id={isFirst ? "tour-whatsapp-btn" : undefined}
             href={waUrl}
             target="_blank"
             rel="noopener noreferrer"
@@ -187,6 +193,8 @@ export function CalendarioView() {
     [updateProximoControl],
   );
 
+  useCalendarioTour(ready, controles.length > 0);
+
   const hoy = new Date();
   const esHoy = mismoDia(fechaSeleccionada, hoy);
   const fechaLabel = formatDDMMAAAA(fechaSeleccionada);
@@ -218,7 +226,7 @@ export function CalendarioView() {
           </p>
         </div>
 
-        <div className="relative">
+        <div className="relative" id="tour-selector-fecha">
           <button
             ref={btnRef}
             type="button"
@@ -254,7 +262,7 @@ export function CalendarioView() {
       </div>
 
       {/* Filtro por sucursal */}
-      <div className="mb-3 flex flex-wrap gap-1.5">
+      <div id="tour-filtro-sucursal" className="mb-3 flex flex-wrap gap-1.5">
         <button
           type="button"
           onClick={() => setFiltroSucursal(null)}
@@ -290,12 +298,13 @@ export function CalendarioView() {
         </div>
       ) : (
         <ul className="flex flex-col gap-1.5">
-          {controles.map(({ paciente, control }) => (
+          {controles.map(({ paciente, control }, i) => (
             <FilaControl
               key={`${paciente.id}-${control.id}`}
               paciente={paciente}
               control={control}
               onToggle={handleToggle}
+              isFirst={i === 0}
             />
           ))}
         </ul>
