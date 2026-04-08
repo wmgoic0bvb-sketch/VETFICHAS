@@ -95,16 +95,6 @@ export function AppSidebar({
           aria-label="Secciones"
         >
           <Link
-            href="/internaciones"
-            className={internacionesActive ? activeClass : inactiveClass}
-            title="Internaciones"
-            aria-current={internacionesActive ? "page" : undefined}
-            onClick={() => onClose()}
-          >
-            <InternacionesIcon className="h-[22px] w-[22px] shrink-0" />
-            <span className="min-w-0 truncate">Internaciones</span>
-          </Link>
-          <Link
             href="/"
             className={pacientesActive ? activeClass : inactiveClass}
             title="Pacientes"
@@ -113,6 +103,16 @@ export function AppSidebar({
           >
             <PacientesIcon className="h-[22px] w-[22px] shrink-0" />
             <span className="min-w-0 truncate">Pacientes</span>
+          </Link>
+          <Link
+            href="/internaciones"
+            className={internacionesActive ? activeClass : inactiveClass}
+            title="Internaciones"
+            aria-current={internacionesActive ? "page" : undefined}
+            onClick={() => onClose()}
+          >
+            <InternacionesIcon className="h-[22px] w-[22px] shrink-0" />
+            <span className="min-w-0 truncate">Internaciones</span>
           </Link>
         </nav>
       </aside>

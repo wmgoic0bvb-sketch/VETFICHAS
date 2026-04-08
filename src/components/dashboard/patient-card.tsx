@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { formatDueñosCorto } from "@/lib/dueños-utils";
 import { esPacienteActivo, type Paciente } from "@/types/patient";
 
@@ -20,8 +21,8 @@ export function PatientCard({
       : "bg-violet-100 text-violet-900";
 
   return (
-    <button
-      type="button"
+    <Link
+      href={`/patient/${patient.id}`}
       onClick={() => onOpen(patient.id)}
       className="cursor-pointer rounded-[18px] border-2 border-transparent bg-white px-4 py-5 text-center transition-all hover:-translate-y-0.5 hover:border-[#5c1838]"
     >
@@ -68,6 +69,6 @@ export function PatientCard({
       >
         {patient.especie}
       </span>
-    </button>
+    </Link>
   );
 }
