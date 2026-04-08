@@ -73,7 +73,7 @@ function FilaControl({
   const tel = paciente.dueños[0]?.tel?.trim();
   const nombreDueño = paciente.dueños[0]?.nombre?.trim();
   const sucNombre = sucursal?.nombre ?? "";
-  const mensaje = `Hola${nombreDueño ? ` ${nombreDueño}` : ""}! Nos comunicamos de ZooVet para recordarte que hoy${paciente.nombre} tiene control programado${sucNombre ? ` en ${sucNombre}` : ""}. ¡Gracias!`;
+  const mensaje = `Hola! Nos comunicamos de ZooVet para recordarte que hoy ${paciente.nombre} tiene control programado${sucNombre ? ` en ${sucNombre}` : ""}. ¡Gracias!`;
   const waUrl = tel ? buildWhatsAppUrl(tel, mensaje) : null;
 
   return (
