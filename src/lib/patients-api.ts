@@ -76,6 +76,17 @@ export async function removeEstudioRemote(
   return out.patient;
 }
 
+export async function fetchLastUpdated(): Promise<number> {
+  try {
+    const res = await fetch("/api/meta/last-updated", { credentials: "include" });
+    if (!res.ok) return 0;
+    const data = (await res.json()) as { ts: number };
+    return data.ts ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
 export async function deletePatient(id: string): Promise<void> {
   const res = await fetch(`/api/patients/${id}`, {
     method: "DELETE",

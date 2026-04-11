@@ -315,6 +315,7 @@ export default function PatientDetailPage() {
   } = usePatients();
   const [consultaOpen, setConsultaOpen] = useState(false);
   const [vacunaOpen, setVacunaOpen] = useState(false);
+  const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [editingConsulta, setEditingConsulta] = useState<Consulta | null>(
     null,
   );
@@ -530,41 +531,45 @@ export default function PatientDetailPage() {
                 <h2 className="text-xs font-bold uppercase tracking-wider text-[#5c1838]">
                   Historial de consultas ({patient.consultas?.length ?? 0})
                 </h2>
-                <div className="group/add relative shrink-0 sm:self-center">
+                <div className="relative shrink-0 sm:self-center">
                   <button
                     type="button"
-                    onClick={() => {
-                      setEditingConsulta(null);
-                      setConsultaOpen(true);
-                    }}
+                    onClick={() => setAddMenuOpen((v) => !v)}
                     className="rounded-xl bg-[#5c1838] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#401127]"
                   >
                     + Agregar consulta
                   </button>
-                  <div className="absolute right-0 top-full z-20 hidden pt-1 group-hover/add:block">
-                    <div className="min-w-[190px] overflow-hidden rounded-xl border border-[#e8e0d8] bg-white shadow-lg">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingConsulta(null);
-                          setConsultaOpen(true);
-                        }}
-                        className="w-full px-4 py-2.5 text-left text-sm text-[#333] hover:bg-[#f5f0eb]"
-                      >
-                        Agregar consulta
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingConsulta(null);
-                          setVacunaOpen(true);
-                        }}
-                        className="w-full border-t border-[#e8e0d8] px-4 py-2.5 text-left text-sm text-[#333] hover:bg-[#f5f0eb]"
-                      >
-                        Agregar vacuna
-                      </button>
-                    </div>
-                  </div>
+                  {addMenuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setAddMenuOpen(false)} />
+                      <div className="absolute right-0 top-full z-20 pt-1">
+                        <div className="min-w-[190px] overflow-hidden rounded-xl border border-[#e8e0d8] bg-white shadow-lg">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAddMenuOpen(false);
+                              setEditingConsulta(null);
+                              setConsultaOpen(true);
+                            }}
+                            className="w-full px-4 py-2.5 text-left text-sm text-[#333] hover:bg-[#f5f0eb]"
+                          >
+                            Agregar consulta
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAddMenuOpen(false);
+                              setEditingConsulta(null);
+                              setVacunaOpen(true);
+                            }}
+                            className="w-full border-t border-[#e8e0d8] px-4 py-2.5 text-left text-sm text-[#333] hover:bg-[#f5f0eb]"
+                          >
+                            Agregar vacuna
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
               {consultas.length === 0 ? (

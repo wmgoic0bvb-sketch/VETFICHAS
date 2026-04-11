@@ -21,7 +21,7 @@ import { PatientSearch } from "./patient-search";
 export function Dashboard() {
   const { push, isPending } = usePendingNavigation();
   const { data: session } = useSession();
-  const { patients, ready, addPatient, addConsulta } = usePatients();
+  const { patients, ready, isRefreshing, refresh, addPatient, addConsulta } = usePatients();
   const [query, setQuery] = useState("");
   const [sucursalFiltro, setSucursalFiltro] = useState<SucursalPaciente | null>(null);
   const [filtroInicializado, setFiltroInicializado] = useState(false);
@@ -96,7 +96,34 @@ export function Dashboard() {
   return (
     <AppShell onNewPatient={() => setWizardOpen(true)}>
       <main className="mx-auto w-full max-w-[900px] flex-1 px-4 py-6">
-        <PatientSearch value={query} onChange={setQuery} />
+        <div className="mb-5 flex items-center gap-2 [&>div:first-child]:mb-0 [&>div:first-child]:flex-1 [&>div:first-child]:min-w-0">
+          <PatientSearch value={query} onChange={setQuery} />
+          <button
+            type="button"
+            onClick={refresh}
+            disabled={isRefreshing}
+            aria-label="Actualizar lista de pacientes"
+            title="Actualizar"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#e8e0d8] bg-white text-[#5c1838] transition hover:bg-[#efe8e0] disabled:opacity-50"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={`h-4 w-4 transition-transform ${isRefreshing ? "animate-spin" : ""}`}
+              aria-hidden
+            >
+              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+              <path d="M21 3v5h-5" />
+              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+              <path d="M8 16H3v5" />
+            </svg>
+          </button>
+        </div>
 
         <div className="mb-5 flex gap-2">
           {(

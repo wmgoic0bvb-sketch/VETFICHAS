@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -20,6 +21,7 @@ import {
   appendEstudio,
   createPatient,
   deletePatient as deletePatientApi,
+  fetchLastUpdated,
   fetchPatients,
   removeEstudioRemote,
   replacePatient,
@@ -39,6 +41,8 @@ export type PacienteEditable = Omit<PacienteDraft, "consultas">;
 interface PatientsContextValue {
   patients: Paciente[];
   ready: boolean;
+  isRefreshing: boolean;
+  refresh: () => void;
   addPatient: (draft: PacienteDraft) => Promise<Paciente>;
   updatePatient: (id: string, data: PacienteEditable) => Promise<void>;
   addProximoControl: (
@@ -75,10 +79,31 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
   const { status } = useSession();
   const [patients, setPatients] = useState<Paciente[]>([]);
   const [ready, setReady] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const isRefreshingRef = useRef(false);
+  const lastServerTs = useRef<number>(0);
 
   const reloadFromServer = useCallback(async () => {
     const list = await fetchPatients();
     setPatients(list);
+  }, []);
+
+  const refresh = useCallback(async () => {
+    if (isRefreshingRef.current) return;
+    isRefreshingRef.current = true;
+    setIsRefreshing(true);
+    try {
+      const [list, ts] = await Promise.all([fetchPatients(), fetchLastUpdated()]);
+      setPatients(list);
+      lastServerTs.current = ts;
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "No se pudieron cargar los pacientes.",
+      );
+    } finally {
+      isRefreshingRef.current = false;
+      setIsRefreshing(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -94,8 +119,11 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     (async () => {
       try {
-        const list = await fetchPatients();
-        if (!cancelled) setPatients(list);
+        const [list, ts] = await Promise.all([fetchPatients(), fetchLastUpdated()]);
+        if (!cancelled) {
+          setPatients(list);
+          lastServerTs.current = ts;
+        }
       } catch (e) {
         toast.error(
           e instanceof Error
@@ -109,6 +137,31 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
+  }, [status]);
+
+  // Poll for remote changes every 45s and auto-reload when detected
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    const id = setInterval(async () => {
+      try {
+        const ts = await fetchLastUpdated();
+        if (ts > lastServerTs.current && !isRefreshingRef.current) {
+          isRefreshingRef.current = true;
+          setIsRefreshing(true);
+          try {
+            const list = await fetchPatients();
+            setPatients(list);
+            lastServerTs.current = ts;
+          } finally {
+            isRefreshingRef.current = false;
+            setIsRefreshing(false);
+          }
+        }
+      } catch {
+        // silent — no toast for background polling errors
+      }
+    }, 10_000);
+    return () => clearInterval(id);
   }, [status]);
 
   const addPatient = useCallback(async (draft: PacienteDraft): Promise<Paciente> => {
@@ -444,6 +497,8 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
     () => ({
       patients,
       ready,
+      isRefreshing,
+      refresh,
       addPatient,
       updatePatient,
       addProximoControl,
@@ -459,6 +514,8 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
     [
       patients,
       ready,
+      isRefreshing,
+      refresh,
       addPatient,
       updatePatient,
       addProximoControl,

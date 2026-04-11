@@ -1,0 +1,11 @@
+
+---
+description: Gestión de datos y prevención de valores hardcodeados en VetFichas
+globs: ["src/app/api/**/*", "src/models/**/*", "src/lib/**/*"]
+alwaysApply: true
+---
+
+# Gestión de Datos Dinámicos
+- **No Hardcoding:** Prohibido escribir listas de especies, razas, sucursales o tipos de consulta directamente en componentes o rutas de API.
+
+- **Nuevas Colecciones:** Si el usuario pide categorizar algo nuevo (ej. "Tipos de Medicamentos"), detente y ofrece crear un nuevo Schema de Mongoose o una colección dedicada en lugar de un `enum` estático.
