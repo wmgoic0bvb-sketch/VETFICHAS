@@ -122,12 +122,20 @@ export function DashboardNav({
           VetFichas
         </Link>
         {isAdmin ? (
-          <Link
-            href="/admin"
-            className="hidden text-sm font-medium text-[#555] hover:text-[#5c1838] sm:inline"
-          >
-            Administración
-          </Link>
+          <>
+            <Link
+              href="/admin"
+              className="hidden text-sm font-medium text-[#555] hover:text-[#5c1838] sm:inline"
+            >
+              Administración
+            </Link>
+            <Link
+              href="/admin/stats"
+              className="hidden text-sm font-medium text-[#555] hover:text-[#5c1838] sm:inline"
+            >
+              Estadísticas
+            </Link>
+          </>
         ) : null}
       </div>
       <div className="flex shrink-0 items-center gap-2">
@@ -169,14 +177,24 @@ export function DashboardNav({
                 </div>
               ) : null}
               {isAdmin ? (
-                <Link
-                  href="/admin"
-                  role="menuitem"
-                  className="flex w-full items-center px-3 py-2 text-left text-sm text-[#333] hover:bg-[#f5f0eb] sm:hidden"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  Administración
-                </Link>
+                <>
+                  <Link
+                    href="/admin"
+                    role="menuitem"
+                    className="flex w-full items-center px-3 py-2 text-left text-sm text-[#333] hover:bg-[#f5f0eb] sm:hidden"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    Administración
+                  </Link>
+                  <Link
+                    href="/admin/stats"
+                    role="menuitem"
+                    className="flex w-full items-center px-3 py-2 text-left text-sm text-[#333] hover:bg-[#f5f0eb] sm:hidden"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    Estadísticas
+                  </Link>
+                </>
               ) : null}
               {userId ? (
                 <Link

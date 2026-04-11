@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FieldError, inputErrorRing } from "@/components/ui/field-error";
 import { DbLoadingOverlay } from "@/components/ui/lottie-loading";
 import { Modal } from "@/components/ui/modal";
+import { MedicamentoAutocomplete } from "@/components/dashboard/medicamento-autocomplete";
 import { todayISODate } from "@/lib/date-utils";
 import { maskInputFechaDDMMYYYY } from "@/lib/proximo-control-utils";
 import type { Consulta, ConsultaTipo } from "@/types/patient";
@@ -713,10 +714,10 @@ export function ConsultaModal({
               <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
                 Medicamentos recetados
               </label>
-              <input
+              <MedicamentoAutocomplete
                 value={meds}
-                onChange={(e) => {
-                  setMeds(e.target.value);
+                onChange={(next) => {
+                  setMeds(next);
                   setHasChanges(true);
                 }}
                 className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
