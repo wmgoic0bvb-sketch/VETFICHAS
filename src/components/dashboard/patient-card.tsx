@@ -35,11 +35,13 @@ export function PatientCard({
       <span className="mb-2 block text-[52px] leading-none" aria-hidden>
         {emoji(patient.especie)}
       </span>
-      <div className="text-base font-bold text-[#1a1a1a]">{patient.nombre}</div>
+      <div className="text-base font-bold capitalize text-[#1a1a1a]">
+        {patient.nombre}
+      </div>
       <div className="mt-1 text-xs text-[#888]">
         {patient.raza || patient.especie}
       </div>
-      <div className="mt-1.5 text-xs font-medium text-[#5c1838]">
+      <div className="mt-1.5 text-xs font-medium capitalize text-[#5c1838]">
         👤 {formatDueñosCorto(patient.dueños)}
       </div>
       {!esPacienteActivo(patient) ? (

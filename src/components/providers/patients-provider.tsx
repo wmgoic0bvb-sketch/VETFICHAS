@@ -21,6 +21,7 @@ import {
   appendEstudio,
   createPatient,
   deletePatient as deletePatientApi,
+  DuplicadoPacienteError,
   fetchLastUpdated,
   fetchPatients,
   removeEstudioRemote,
@@ -43,7 +44,10 @@ interface PatientsContextValue {
   ready: boolean;
   isRefreshing: boolean;
   refresh: () => void;
-  addPatient: (draft: PacienteDraft) => Promise<Paciente>;
+  addPatient: (
+    draft: PacienteDraft,
+    opts?: { force?: boolean },
+  ) => Promise<Paciente>;
   updatePatient: (id: string, data: PacienteEditable) => Promise<void>;
   addProximoControl: (
     patientId: string,
@@ -164,18 +168,28 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(id);
   }, [status]);
 
-  const addPatient = useCallback(async (draft: PacienteDraft): Promise<Paciente> => {
-    try {
-      const patient = await createPatient(draft);
-      setPatients((prev) => [patient, ...prev]);
-      return patient;
-    } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : "No se pudo crear el paciente.",
-      );
-      throw e;
-    }
-  }, []);
+  const addPatient = useCallback(
+    async (
+      draft: PacienteDraft,
+      opts?: { force?: boolean },
+    ): Promise<Paciente> => {
+      try {
+        const patient = await createPatient(draft, opts);
+        setPatients((prev) => [patient, ...prev]);
+        return patient;
+      } catch (e) {
+        if (e instanceof DuplicadoPacienteError) {
+          // No mostrar toast: el wizard abre un modal de confirmación.
+          throw e;
+        }
+        toast.error(
+          e instanceof Error ? e.message : "No se pudo crear el paciente.",
+        );
+        throw e;
+      }
+    },
+    [],
+  );
 
   const removePatient = useCallback(async (id: string) => {
     try {

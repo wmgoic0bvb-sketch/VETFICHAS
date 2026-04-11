@@ -105,13 +105,13 @@ function FilaControl({
           <span className="text-base">
             {paciente.especie === "Perro" ? "🐶" : "🐱"}
           </span>
-          <span className={`truncate text-base font-medium ${
+          <span className={`truncate text-base font-medium capitalize ${
             asistio ? "text-[#888] line-through" : "text-[#1a1a1a]"
           }`}>
             {paciente.nombre}
           </span>
           {dueños ? (
-            <span className="hidden truncate text-sm text-[#999] sm:inline">
+            <span className="hidden truncate text-sm capitalize text-[#999] sm:inline">
               · {dueños}
             </span>
           ) : null}

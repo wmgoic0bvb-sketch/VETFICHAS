@@ -4,6 +4,7 @@ import { useEffect, useId, useState } from "react";
 import { usePatients } from "@/components/providers/patients-provider";
 import type { PacienteEditable } from "@/components/providers/patients-provider";
 import { FieldError, inputErrorRing } from "@/components/ui/field-error";
+import { toPascalCase } from "@/lib/name-case";
 import {
   normalizePhoneInput,
   normalizeStoredPhoneForEdit,
@@ -116,8 +117,8 @@ export function PatientFichaEditForm({
   };
 
   const saveEdit = async () => {
-    const n = draft.nombre.trim();
-    const d1 = draft.dueños[0].nombre.trim();
+    const n = toPascalCase(draft.nombre);
+    const d1 = toPascalCase(draft.dueños[0].nombre);
     const nextErrors: FieldErrors = {};
     if (!draft.especie) nextErrors.especie = "Elegí si es perro o gato.";
     if (!n) nextErrors.nombre = "Ingresá el nombre de la mascota.";
@@ -138,7 +139,7 @@ export function PatientFichaEditForm({
         dueños: [
           { nombre: d1, tel: normalizePhoneInput(draft.dueños[0].tel) },
           {
-            nombre: draft.dueños[1].nombre.trim(),
+            nombre: toPascalCase(draft.dueños[1].nombre),
             tel: normalizePhoneInput(draft.dueños[1].tel),
           },
         ],

@@ -170,7 +170,7 @@ export function InternacionesView() {
                       {p.especie === "Perro" ? "🐶" : "🐱"}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block font-semibold text-[#1a1a1a]">
+                      <span className="block font-semibold capitalize text-[#1a1a1a]">
                         {p.nombre}
                       </span>
                       <span className="text-[13px] text-[#888]">
@@ -252,7 +252,7 @@ export function InternacionesView() {
               >
                 Registrar egreso
               </h2>
-              <p className="mt-0.5 text-[14px] text-[#888]">
+              <p className="mt-0.5 text-[14px] capitalize text-[#888]">
                 {egresoModal.paciente.nombre}
               </p>
             </div>
