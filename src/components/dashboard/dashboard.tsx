@@ -45,12 +45,16 @@ export function Dashboard() {
     totalArchivados,
   } = useMemo(() => {
     const term = query.toLowerCase().trim();
-    const match = (p: Paciente) =>
-      (!term ||
-        p.nombre.toLowerCase().includes(term) ||
-        dueñosParaBusqueda(p).toLowerCase().includes(term) ||
-        (p.raza || "").toLowerCase().includes(term)) &&
-      (!sucursalFiltro || p.sucursal === sucursalFiltro);
+    const match = (p: Paciente) => {
+      if (term) {
+        return (
+          p.nombre.toLowerCase().includes(term) ||
+          dueñosParaBusqueda(p).toLowerCase().includes(term) ||
+          (p.raza || "").toLowerCase().includes(term)
+        );
+      }
+      return !sucursalFiltro || p.sucursal === sucursalFiltro;
+    };
 
     const activos = patients.filter(esPacienteActivo);
     const archiv = patients.filter((p) => !esPacienteActivo(p));
@@ -154,10 +158,14 @@ export function Dashboard() {
 
         <section className="mb-10">
           <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.06em] text-[#5c1838]">
-            Pacientes
+            Pacientes <span className="text-[#8b7355]">({principales.length})</span>
           </h2>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3.5">
-            <PatientGrid patients={principales} onOpen={openFicha} />
+            <PatientGrid
+              patients={principales}
+              onOpen={openFicha}
+              userSucursal={session?.user?.sucursal ?? null}
+            />
           </div>
         </section>
 
@@ -172,6 +180,7 @@ export function Dashboard() {
             <PatientGrid
               patients={externosOUnica}
               onOpen={openFicha}
+              userSucursal={session?.user?.sucursal ?? null}
               emptyMessage={
                 <p className="text-[15px]">
                   Ningún paciente en esta categoría con el filtro actual.
@@ -201,6 +210,7 @@ export function Dashboard() {
                     <PatientGrid
                       patients={archivPrincipales}
                       onOpen={openFicha}
+                      userSucursal={session?.user?.sucursal ?? null}
                       emptyMessage={
                         <p className="text-[15px]">
                           Ninguno en esta categoría con el filtro actual.
@@ -220,6 +230,7 @@ export function Dashboard() {
                     <PatientGrid
                       patients={archivExternos}
                       onOpen={openFicha}
+                      userSucursal={session?.user?.sucursal ?? null}
                       emptyMessage={
                         <p className="text-[15px]">
                           Ninguno en esta categoría con el filtro actual.
