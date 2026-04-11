@@ -249,8 +249,8 @@ export function Dashboard() {
         open={wizardOpen}
         onClose={() => setWizardOpen(false)}
         defaultSucursal={session?.user?.sucursal ?? null}
-        onSave={async (draft) => {
-          const p = await addPatient(draft);
+        onSave={async (draft, opts) => {
+          const p = await addPatient(draft, opts);
           setSelectedId(p.id);
           setDetailAfterConsulta(true);
           setConsultaOpen(true);

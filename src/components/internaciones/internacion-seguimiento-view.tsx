@@ -259,7 +259,7 @@ export function InternacionSeguimientoView() {
       <section className={`${cardClass} mt-6`}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-[#1a1a1a]">
+            <h1 className="text-xl font-bold capitalize text-[#1a1a1a]">
               <Link
                 href={`/patient/${patient.id}`}
                 className="rounded-sm text-inherit underline-offset-4 outline-none transition-colors hover:text-[#5c1838] hover:underline focus-visible:ring-2 focus-visible:ring-[#5c1838]/35"

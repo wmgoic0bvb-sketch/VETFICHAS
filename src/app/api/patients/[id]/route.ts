@@ -11,6 +11,7 @@ import {
   pacienteParaRespuestaApi,
 } from "@/lib/patient-change-log";
 import { connectMongo } from "@/lib/mongodb";
+import { toPascalCase } from "@/lib/name-case";
 import {
   normalizePatient,
   type StoredPatient,
@@ -125,13 +126,22 @@ export const PUT = auth(async (req: NextAuthRequest, ctx) => {
         $set: {
           especie: patient.especie,
           sucursal: patient.sucursal ?? null,
-          nombre: patient.nombre,
+          nombre: toPascalCase(patient.nombre),
           raza: patient.raza,
           sexo: patient.sexo,
           fnac: patient.fnac,
           castrado: patient.castrado,
           color: patient.color,
-          dueños: patient.dueños,
+          dueños: [
+            {
+              nombre: toPascalCase(patient.dueños[0]?.nombre ?? ""),
+              tel: patient.dueños[0]?.tel ?? "",
+            },
+            {
+              nombre: toPascalCase(patient.dueños[1]?.nombre ?? ""),
+              tel: patient.dueños[1]?.tel ?? "",
+            },
+          ],
           dir: patient.dir,
           estado: patient.estado,
           esExterno: patient.esExterno,

@@ -292,11 +292,23 @@ function InternacionHistorialCard({
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({
+  label,
+  value,
+  capitalize = false,
+}: {
+  label: string;
+  value: string;
+  capitalize?: boolean;
+}) {
   return (
     <div className="flex justify-between gap-4 py-2">
       <span className="text-[#888]">{label}</span>
-      <span className="text-right font-medium text-[#1a1a1a]">{value}</span>
+      <span
+        className={`text-right font-medium text-[#1a1a1a] ${capitalize ? "capitalize" : ""}`}
+      >
+        {value}
+      </span>
     </div>
   );
 }
@@ -405,7 +417,9 @@ export default function PatientDetailPage() {
                 <span className="mb-2 block text-[56px] leading-none" aria-hidden>
                   {emoji(patient.especie)}
                 </span>
-                <h1 className="text-xl font-bold text-[#1a1a1a]">{patient.nombre}</h1>
+                <h1 className="text-xl font-bold capitalize text-[#1a1a1a]">
+                  {patient.nombre}
+                </h1>
                 <p className="mt-1 text-sm text-[#888]">
                   {patient.raza || patient.especie} · {calcularEdad(patient.fnac)}
                 </p>
@@ -472,7 +486,11 @@ export default function PatientDetailPage() {
                       </a>
                     ) : null}
                   </div>
-                  <Row label="Nombre" value={patient.dueños[0].nombre || "—"} />
+                  <Row
+                    label="Nombre"
+                    value={patient.dueños[0].nombre || "—"}
+                    capitalize
+                  />
                   {patient.dueños[0].tel ? (
                     <Row label="Teléfono" value={patient.dueños[0].tel} />
                   ) : null}
@@ -499,6 +517,7 @@ export default function PatientDetailPage() {
                     <Row
                       label="Nombre"
                       value={patient.dueños[1].nombre || "—"}
+                      capitalize
                     />
                     {patient.dueños[1].tel ? (
                       <Row label="Teléfono" value={patient.dueños[1].tel} />

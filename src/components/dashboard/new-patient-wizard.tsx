@@ -1,12 +1,23 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useState } from "react";
 import { FieldError, inputErrorRing } from "@/components/ui/field-error";
 import { DbLoadingOverlay } from "@/components/ui/lottie-loading";
 import { Modal } from "@/components/ui/modal";
-import { parDueñosVacío } from "@/lib/dueños-utils";
+import { parDueñosVacío, formatDueñosCorto } from "@/lib/dueños-utils";
+import { toPascalCase } from "@/lib/name-case";
+import {
+  DuplicadoPacienteError,
+  type PacienteSimilarResumen,
+} from "@/lib/patients-api";
 import { normalizePhoneInput } from "@/lib/phone-utils";
-import type { Especie, PacienteDraft, SucursalPaciente } from "@/types/patient";
+import type {
+  DueñoContacto,
+  Especie,
+  PacienteDraft,
+  SucursalPaciente,
+} from "@/types/patient";
 
 const SUCURSALES: SucursalPaciente[] = ["AVENIDA", "VILLEGAS", "MITRE"];
 
@@ -23,7 +34,10 @@ export function NewPatientWizard({
 }: {
   open: boolean;
   onClose: () => void;
-  onSave: (draft: PacienteDraft) => void | Promise<void>;
+  onSave: (
+    draft: PacienteDraft,
+    opts?: { force?: boolean },
+  ) => void | Promise<void>;
   defaultSucursal?: SucursalPaciente | null;
 }) {
   const [paso, setPaso] = useState(1);
@@ -40,6 +54,9 @@ export function NewPatientWizard({
   const [esExterno, setEsExterno] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [saving, setSaving] = useState(false);
+  const [duplicados, setDuplicados] = useState<PacienteSimilarResumen[] | null>(
+    null,
+  );
 
   const clearFieldError = (key: FieldKeys) => {
     setFieldErrors((prev) => {
@@ -64,6 +81,7 @@ export function NewPatientWizard({
     setDir("");
     setEsExterno(false);
     setFieldErrors({});
+    setDuplicados(null);
   }, []);
 
   const handleClose = () => {
@@ -73,6 +91,49 @@ export function NewPatientWizard({
   };
 
   const go = (n: number) => setPaso(n);
+
+  const construirDraft = (): PacienteDraft => {
+    const d1 = toPascalCase(dueños[0].nombre);
+    return {
+      especie: especie as Especie,
+      sucursal: sucursal ?? null,
+      nombre: toPascalCase(nombre),
+      raza: raza.trim(),
+      sexo,
+      fnac,
+      castrado,
+      color: color.trim(),
+      dueños: [
+        { nombre: d1, tel: normalizePhoneInput(dueños[0].tel) },
+        {
+          nombre: toPascalCase(dueños[1].nombre),
+          tel: normalizePhoneInput(dueños[1].tel),
+        },
+      ],
+      dir: dir.trim(),
+      estado: "activo",
+      esExterno,
+      esUnicaConsulta: false,
+      internado: false,
+      consultas: [],
+    };
+  };
+
+  const ejecutarGuardado = async (opts?: { force?: boolean }) => {
+    setSaving(true);
+    try {
+      await onSave(construirDraft(), opts);
+      reset();
+      onClose();
+    } catch (e) {
+      if (e instanceof DuplicadoPacienteError) {
+        setDuplicados(e.similares);
+      }
+      /* otros errores: el provider ya mostró toast */
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const guardar = async () => {
     const n = nombre.trim();
@@ -90,38 +151,12 @@ export function NewPatientWizard({
       return;
     }
     setFieldErrors({});
-    setSaving(true);
-    try {
-      await onSave({
-        especie: especie as Especie,
-        sucursal: sucursal ?? null,
-        nombre: n,
-        raza: raza.trim(),
-        sexo,
-        fnac,
-        castrado,
-        color: color.trim(),
-        dueños: [
-          { nombre: d1, tel: normalizePhoneInput(dueños[0].tel) },
-          {
-            nombre: dueños[1].nombre.trim(),
-            tel: normalizePhoneInput(dueños[1].tel),
-          },
-        ],
-        dir: dir.trim(),
-        estado: "activo",
-        esExterno,
-        esUnicaConsulta: false,
-        internado: false,
-        consultas: [],
-      });
-      reset();
-      onClose();
-    } catch {
-      /* onSave puede rechazar si falla el alta en el servidor */
-    } finally {
-      setSaving(false);
-    }
+    await ejecutarGuardado();
+  };
+
+  const confirmarCrearIgual = async () => {
+    setDuplicados(null);
+    await ejecutarGuardado({ force: true });
   };
 
   const stepClass = (i: number) => {
@@ -340,6 +375,15 @@ export function NewPatientWizard({
         </div>
       )}
 
+      {duplicados ? (
+        <DuplicadosModal
+          similares={duplicados}
+          saving={saving}
+          onCancelar={() => setDuplicados(null)}
+          onCrearIgual={() => void confirmarCrearIgual()}
+        />
+      ) : null}
+
       {paso === 3 && (
         <div>
           <h2 className="text-xl font-bold text-[#1a1a1a]">Dueños y contacto 👤</h2>
@@ -502,6 +546,97 @@ export function NewPatientWizard({
           </div>
         </div>
       )}
+      </div>
+    </Modal>
+  );
+}
+
+function DuplicadosModal({
+  similares,
+  saving,
+  onCancelar,
+  onCrearIgual,
+}: {
+  similares: PacienteSimilarResumen[];
+  saving: boolean;
+  onCancelar: () => void;
+  onCrearIgual: () => void;
+}) {
+  return (
+    <Modal
+      open
+      onClose={onCancelar}
+      labelledBy="duplicados-title"
+      overlayClassName="z-[210]"
+    >
+      <h2
+        id="duplicados-title"
+        className="text-lg font-bold text-[#1a1a1a]"
+      >
+        ¿Ya existe este paciente?
+      </h2>
+      <p className="mt-1 mb-4 text-sm text-[#666]">
+        Encontramos {similares.length === 1 ? "un paciente" : "pacientes"} con
+        nombre de mascota y dueño muy parecidos:
+      </p>
+      <ul className="mb-5 flex flex-col gap-2">
+        {similares.map((s) => {
+          const pair: [DueñoContacto, DueñoContacto] = [
+            s.dueños[0] ?? { nombre: "", tel: "" },
+            s.dueños[1] ?? { nombre: "", tel: "" },
+          ];
+          return (
+            <li
+              key={s.id}
+              className="rounded-xl border border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5"
+            >
+              <p className="text-sm font-semibold text-[#1a1a1a]">
+                {s.nombre}
+                {s.estado === "archivado" ? (
+                  <span className="ml-2 rounded-full bg-[#e8e0d8] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#555]">
+                    Archivado
+                  </span>
+                ) : null}
+              </p>
+              <p className="text-[13px] text-[#666]">
+                {formatDueñosCorto(pair)}
+              </p>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="mb-3 text-[12px] text-[#888]">
+        Si es el mismo paciente, abrí la ficha existente. Si estás seguro de
+        que es uno nuevo, podés crearlo igual.
+      </p>
+      <div className="mb-4 flex flex-col gap-1.5">
+        {similares.map((s) => (
+          <Link
+            key={s.id}
+            href={`/patient/${s.id}`}
+            className="inline-flex items-center justify-center rounded-xl border-[1.5px] border-[#5c1838] bg-white px-3 py-2 text-[14px] font-semibold text-[#5c1838] hover:bg-[#f5eef0]"
+          >
+            → Ir a la ficha de {s.nombre}
+          </Link>
+        ))}
+      </div>
+      <div className="flex gap-2.5">
+        <button
+          type="button"
+          onClick={onCancelar}
+          disabled={saving}
+          className="flex-1 rounded-xl border-[1.5px] border-[#e8e0d8] bg-transparent py-3 text-[14px] font-medium text-[#555] hover:bg-[#f5f0eb] disabled:opacity-60"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          onClick={onCrearIgual}
+          disabled={saving}
+          className="flex-1 rounded-xl bg-[#5c1838] py-3 text-[14px] font-semibold text-white hover:bg-[#401127] disabled:opacity-60"
+        >
+          Crear igual
+        </button>
       </div>
     </Modal>
   );
