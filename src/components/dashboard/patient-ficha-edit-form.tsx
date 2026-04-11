@@ -15,7 +15,10 @@ import {
   type DueñoContacto,
   type EstadoPaciente,
   type Paciente,
+  type SucursalPaciente,
 } from "@/types/patient";
+
+const SUCURSALES: SucursalPaciente[] = ["AVENIDA", "VILLEGAS", "MITRE"];
 
 type FieldKeys = "especie" | "nombre" | "dueño1";
 type FieldErrors = Partial<Record<FieldKeys, string>>;
@@ -23,6 +26,7 @@ type FieldErrors = Partial<Record<FieldKeys, string>>;
 export function draftFromPatient(p: Paciente): PacienteEditable {
   return {
     especie: p.especie,
+    sucursal: p.sucursal ?? null,
     nombre: p.nombre,
     raza: p.raza,
     sexo: p.sexo,
@@ -205,6 +209,33 @@ export function PatientFichaEditForm({
         {fieldErrors.especie ? (
           <FieldError message={fieldErrors.especie} />
         ) : null}
+      </div>
+
+      <div>
+        <span className="mb-2 block text-[13px] font-semibold text-[#555]">
+          Sucursal
+        </span>
+        <div className="flex gap-2">
+          {SUCURSALES.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() =>
+                setDraft((prev) => ({
+                  ...prev,
+                  sucursal: prev.sucursal === s ? null : s,
+                }))
+              }
+              className={`flex-1 rounded-xl border-[1.5px] py-2 text-[13px] font-semibold transition-colors ${
+                draft.sucursal === s
+                  ? "border-[#5c1838] bg-[#5c1838] text-white"
+                  : "border-[#e8e0d8] bg-[#faf9f7] text-[#555] hover:border-[#c4a3a8]"
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div>

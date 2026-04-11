@@ -7,11 +7,15 @@ import { Modal } from "@/components/ui/modal";
 import { ConfirmAlertDialog } from "@/components/ui/confirm-alert-dialog";
 import { DbLoadingOverlay, LottieSpinner } from "@/components/ui/lottie-loading";
 
+export type Sucursal = "AVENIDA" | "VILLEGAS" | "MITRE";
+export const SUCURSALES: Sucursal[] = ["AVENIDA", "VILLEGAS", "MITRE"];
+
 export type AdminUserRow = {
   id: string;
   dni: string;
   name: string | null;
   role: "user" | "admin" | "vet";
+  sucursal: Sucursal | null;
   createdAt: string | null;
   updatedAt: string | null;
 };
@@ -88,6 +92,7 @@ export function AdminUsersPanel() {
                   <th className="px-4 py-3 font-semibold text-[#333]">DNI</th>
                   <th className="px-4 py-3 font-semibold text-[#333]">Nombre</th>
                   <th className="px-4 py-3 font-semibold text-[#333]">Rol</th>
+                  <th className="px-4 py-3 font-semibold text-[#333]">Sucursal</th>
                   <th className="px-4 py-3 text-right font-semibold text-[#333]">
                     Acciones
                   </th>
@@ -119,6 +124,15 @@ export function AdminUsersPanel() {
                             ? "Veterinario"
                             : "Usuario"}
                       </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {u.sucursal ? (
+                        <span className="rounded-full bg-[#f0ebe4] px-2.5 py-0.5 text-xs font-medium text-[#5c1838]">
+                          {u.sucursal}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-[#aaa]">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <button
@@ -253,6 +267,9 @@ function UserForm({
   const [role, setRole] = useState<"user" | "admin" | "vet">(
     initial?.role ?? "user",
   );
+  const [sucursal, setSucursal] = useState<Sucursal | null>(
+    initial?.sucursal ?? null,
+  );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -270,6 +287,7 @@ function UserForm({
             password,
             name: name.trim() || undefined,
             role,
+            sucursal,
           }),
         });
         const j = await res.json().catch(() => ({}));
@@ -285,6 +303,7 @@ function UserForm({
       const body: Record<string, unknown> = {
         name: name.trim() === "" ? null : name.trim(),
         role,
+        sucursal,
       };
       if (password.trim() !== "") {
         body.password = password;
@@ -392,6 +411,29 @@ function UserForm({
           <option value="user">Usuario</option>
           <option value="vet">Veterinario</option>
           <option value="admin">Administrador</option>
+        </select>
+      </label>
+
+      <label className="block">
+        <span className="mb-1 block text-sm font-medium text-[#444]">
+          Sucursal
+        </span>
+        <select
+          value={sucursal ?? ""}
+          onChange={(e) => {
+            const v = e.target.value;
+            setSucursal(
+              v === "AVENIDA" || v === "VILLEGAS" || v === "MITRE" ? v : null,
+            );
+          }}
+          className="w-full rounded-xl border border-[#e8e0d8] bg-white px-3 py-2 text-[#333] outline-none ring-[#5c1838]/30 focus:ring-2"
+        >
+          <option value="">Sin asignar</option>
+          {SUCURSALES.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
         </select>
       </label>
 

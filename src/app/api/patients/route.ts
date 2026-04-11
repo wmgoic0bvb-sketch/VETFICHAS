@@ -67,6 +67,12 @@ export const POST = auth(async (req: NextAuthRequest) => {
     await connectMongo();
     const doc = await Patient.create({
       especie: draft.especie,
+      sucursal:
+        draft.sucursal === "AVENIDA" ||
+        draft.sucursal === "VILLEGAS" ||
+        draft.sucursal === "MITRE"
+          ? draft.sucursal
+          : null,
       nombre: draft.nombre.trim(),
       raza: typeof draft.raza === "string" ? draft.raza : "",
       sexo: typeof draft.sexo === "string" ? draft.sexo : "",

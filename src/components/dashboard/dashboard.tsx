@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePatients } from "@/components/providers/patients-provider";
 import { dueñosParaBusqueda } from "@/lib/dueños-utils";
 import {
@@ -9,7 +9,9 @@ import {
   type Paciente,
 } from "@/types/patient";
 import { DbLoadingOverlay, LottieSpinner } from "@/components/ui/lottie-loading";
+import { useSession } from "next-auth/react";
 import { usePendingNavigation } from "@/lib/use-pending-navigation";
+import type { SucursalPaciente } from "@/types/patient";
 import { ConsultaModal } from "./consulta-modal";
 import { AppShell } from "@/components/layout/app-shell";
 import { NewPatientWizard } from "./new-patient-wizard";
@@ -18,8 +20,17 @@ import { PatientSearch } from "./patient-search";
 
 export function Dashboard() {
   const { push, isPending } = usePendingNavigation();
+  const { data: session } = useSession();
   const { patients, ready, isRefreshing, refresh, addPatient, addConsulta } = usePatients();
   const [query, setQuery] = useState("");
+  const [sucursalFiltro, setSucursalFiltro] = useState<SucursalPaciente | null>(null);
+  const [filtroInicializado, setFiltroInicializado] = useState(false);
+
+  useEffect(() => {
+    if (filtroInicializado || !session) return;
+    setSucursalFiltro(session.user?.sucursal ?? null);
+    setFiltroInicializado(true);
+  }, [session, filtroInicializado]);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [consultaOpen, setConsultaOpen] = useState(false);
@@ -34,11 +45,16 @@ export function Dashboard() {
     totalArchivados,
   } = useMemo(() => {
     const term = query.toLowerCase().trim();
-    const match = (p: Paciente) =>
-      !term ||
-      p.nombre.toLowerCase().includes(term) ||
-      dueñosParaBusqueda(p).toLowerCase().includes(term) ||
-      (p.raza || "").toLowerCase().includes(term);
+    const match = (p: Paciente) => {
+      if (term) {
+        return (
+          p.nombre.toLowerCase().includes(term) ||
+          dueñosParaBusqueda(p).toLowerCase().includes(term) ||
+          (p.raza || "").toLowerCase().includes(term)
+        );
+      }
+      return !sucursalFiltro || p.sucursal === sucursalFiltro;
+    };
 
     const activos = patients.filter(esPacienteActivo);
     const archiv = patients.filter((p) => !esPacienteActivo(p));
@@ -60,7 +76,7 @@ export function Dashboard() {
       ),
       totalArchivados: archiv.length,
     };
-  }, [patients, query]);
+  }, [patients, query, sucursalFiltro]);
 
   const openFicha = (id: string) => {
     push(`/patient/${id}`);
@@ -113,12 +129,43 @@ export function Dashboard() {
           </button>
         </div>
 
+        <div className="mb-5 flex gap-2">
+          {(
+            [
+              { label: "Todas", value: null },
+              { label: "AVENIDA", value: "AVENIDA" },
+              { label: "VILLEGAS", value: "VILLEGAS" },
+              { label: "MITRE", value: "MITRE" },
+            ] as const
+          ).map(({ label, value }) => {
+            const active = sucursalFiltro === value;
+            return (
+              <button
+                key={label}
+                type="button"
+                onClick={() => setSucursalFiltro(value)}
+                className={`rounded-full border px-4 py-1.5 text-[13px] font-semibold transition-colors ${
+                  active
+                    ? "border-[#8b5e3c] bg-[#8b5e3c] text-white"
+                    : "border-[#e8e0d8] bg-white text-[#8b5e3c] hover:border-[#8b5e3c]"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
         <section className="mb-10">
           <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.06em] text-[#5c1838]">
-            Pacientes
+            Pacientes <span className="text-[#8b7355]">({principales.length})</span>
           </h2>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3.5">
-            <PatientGrid patients={principales} onOpen={openFicha} />
+            <PatientGrid
+              patients={principales}
+              onOpen={openFicha}
+              userSucursal={session?.user?.sucursal ?? null}
+            />
           </div>
         </section>
 
@@ -133,6 +180,7 @@ export function Dashboard() {
             <PatientGrid
               patients={externosOUnica}
               onOpen={openFicha}
+              userSucursal={session?.user?.sucursal ?? null}
               emptyMessage={
                 <p className="text-[15px]">
                   Ningún paciente en esta categoría con el filtro actual.
@@ -162,6 +210,7 @@ export function Dashboard() {
                     <PatientGrid
                       patients={archivPrincipales}
                       onOpen={openFicha}
+                      userSucursal={session?.user?.sucursal ?? null}
                       emptyMessage={
                         <p className="text-[15px]">
                           Ninguno en esta categoría con el filtro actual.
@@ -181,6 +230,7 @@ export function Dashboard() {
                     <PatientGrid
                       patients={archivExternos}
                       onOpen={openFicha}
+                      userSucursal={session?.user?.sucursal ?? null}
                       emptyMessage={
                         <p className="text-[15px]">
                           Ninguno en esta categoría con el filtro actual.
@@ -198,6 +248,7 @@ export function Dashboard() {
       <NewPatientWizard
         open={wizardOpen}
         onClose={() => setWizardOpen(false)}
+        defaultSucursal={session?.user?.sucursal ?? null}
         onSave={async (draft) => {
           const p = await addPatient(draft);
           setSelectedId(p.id);

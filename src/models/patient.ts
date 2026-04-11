@@ -131,6 +131,11 @@ const internacionHistorialSchema = new Schema(
 const patientSchema = new Schema(
   {
     especie: { type: String, enum: ["Perro", "Gato"], required: true },
+    sucursal: {
+      type: String,
+      enum: ["AVENIDA", "VILLEGAS", "MITRE", null],
+      default: null,
+    },
     nombre: { type: String, required: true, trim: true },
     raza: { type: String, default: "" },
     sexo: { type: String, default: "" },

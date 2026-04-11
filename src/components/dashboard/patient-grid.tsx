@@ -8,11 +8,13 @@ export function PatientGrid({
   patients,
   onOpen,
   emptyMessage,
+  userSucursal,
 }: {
   patients: Paciente[];
   onOpen: (id: string) => void;
   /** Si no se pasa, se usa el mensaje por defecto (lista principal vacía). */
   emptyMessage?: ReactNode;
+  userSucursal?: Paciente["sucursal"] | null;
 }) {
   if (patients.length === 0) {
     return (
@@ -36,7 +38,12 @@ export function PatientGrid({
   return (
     <>
       {patients.map((p) => (
-        <PatientCard key={p.id} patient={p} onOpen={onOpen} />
+        <PatientCard
+          key={p.id}
+          patient={p}
+          onOpen={onOpen}
+          userSucursal={userSucursal}
+        />
       ))}
     </>
   );

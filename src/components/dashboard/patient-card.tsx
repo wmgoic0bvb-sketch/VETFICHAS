@@ -11,20 +11,26 @@ function emoji(especie: Paciente["especie"]) {
 export function PatientCard({
   patient,
   onOpen,
+  userSucursal,
 }: {
   patient: Paciente;
   onOpen: (id: string) => void;
+  userSucursal?: Paciente["sucursal"] | null;
 }) {
   const badgeClass =
     patient.especie === "Perro"
       ? "bg-sky-100 text-blue-900"
       : "bg-violet-100 text-violet-900";
+  const esOtraSucursal =
+    !!userSucursal && !!patient.sucursal && patient.sucursal !== userSucursal;
 
   return (
     <Link
       href={`/patient/${patient.id}`}
       onClick={() => onOpen(patient.id)}
-      className="cursor-pointer rounded-[18px] border-2 border-transparent bg-white px-4 py-5 text-center transition-all hover:-translate-y-0.5 hover:border-[#5c1838]"
+      className={`cursor-pointer rounded-[18px] border-2 border-transparent px-4 py-5 text-center transition-all hover:-translate-y-0.5 hover:border-[#5c1838] ${
+        esOtraSucursal ? "bg-[#faf7f3]" : "bg-white"
+      }`}
     >
       <span className="mb-2 block text-[52px] leading-none" aria-hidden>
         {emoji(patient.especie)}
@@ -40,6 +46,13 @@ export function PatientCard({
         <div className="mt-2 flex justify-center">
           <span className="rounded-full bg-stone-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-800">
             Archivado
+          </span>
+        </div>
+      ) : null}
+      {esOtraSucursal ? (
+        <div className="mt-2 flex justify-center">
+          <span className="rounded-full bg-[#efe3d4] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#8b5e3c]">
+            📍 {patient.sucursal}
           </span>
         </div>
       ) : null}

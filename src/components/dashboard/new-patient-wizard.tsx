@@ -6,7 +6,9 @@ import { DbLoadingOverlay } from "@/components/ui/lottie-loading";
 import { Modal } from "@/components/ui/modal";
 import { parDueñosVacío } from "@/lib/dueños-utils";
 import { normalizePhoneInput } from "@/lib/phone-utils";
-import type { Especie, PacienteDraft } from "@/types/patient";
+import type { Especie, PacienteDraft, SucursalPaciente } from "@/types/patient";
+
+const SUCURSALES: SucursalPaciente[] = ["AVENIDA", "VILLEGAS", "MITRE"];
 
 const steps = [1, 2, 3] as const;
 
@@ -17,13 +19,16 @@ export function NewPatientWizard({
   open,
   onClose,
   onSave,
+  defaultSucursal,
 }: {
   open: boolean;
   onClose: () => void;
   onSave: (draft: PacienteDraft) => void | Promise<void>;
+  defaultSucursal?: SucursalPaciente | null;
 }) {
   const [paso, setPaso] = useState(1);
   const [especie, setEspecie] = useState<Especie | "">("");
+  const [sucursal, setSucursal] = useState<SucursalPaciente | null>(defaultSucursal ?? null);
   const [nombre, setNombre] = useState("");
   const [raza, setRaza] = useState("");
   const [sexo, setSexo] = useState("");
@@ -48,6 +53,7 @@ export function NewPatientWizard({
   const reset = useCallback(() => {
     setPaso(1);
     setEspecie("");
+    setSucursal(defaultSucursal ?? null);
     setNombre("");
     setRaza("");
     setSexo("");
@@ -88,6 +94,7 @@ export function NewPatientWizard({
     try {
       await onSave({
         especie: especie as Especie,
+        sucursal: sucursal ?? null,
         nombre: n,
         raza: raza.trim(),
         sexo,
@@ -180,6 +187,27 @@ export function NewPatientWizard({
           {fieldErrors.especie ? (
             <FieldError message={fieldErrors.especie} />
           ) : null}
+
+          <div className="mt-5">
+            <p className="mb-2 text-[13px] font-semibold text-[#555]">Sucursal</p>
+            <div className="flex gap-2">
+              {SUCURSALES.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setSucursal(sucursal === s ? null : s)}
+                  className={`flex-1 rounded-xl border-[1.5px] py-2.5 text-[13px] font-semibold transition-colors ${
+                    sucursal === s
+                      ? "border-[#5c1838] bg-[#5c1838] text-white"
+                      : "border-[#e8e0d8] bg-[#faf9f7] text-[#555] hover:border-[#c4a3a8]"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="mt-6 flex gap-2.5">
             <button
               type="button"

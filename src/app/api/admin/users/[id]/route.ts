@@ -49,10 +49,22 @@ export async function PATCH(request: NextRequest, context: Ctx) {
   const password = typeof b.password === "string" ? b.password : undefined;
   const roleIn = b.role;
 
+  const SUCURSALES = ["AVENIDA", "VILLEGAS", "MITRE"] as const;
+  type Sucursal = (typeof SUCURSALES)[number];
+
+  const sucursalIn = b.sucursal;
+  const sucursal: Sucursal | null | undefined =
+    sucursalIn === null
+      ? null
+      : SUCURSALES.includes(sucursalIn as Sucursal)
+        ? (sucursalIn as Sucursal)
+        : undefined;
+
   const updates: {
     name?: string | null;
     passwordHash?: string;
     role?: AppRole;
+    sucursal?: Sucursal | null;
   } = {};
 
   if (name !== undefined) {
@@ -76,6 +88,10 @@ export async function PATCH(request: NextRequest, context: Ctx) {
       return NextResponse.json({ error: "Rol inválido" }, { status: 400 });
     }
     updates.role = roleIn;
+  }
+
+  if (sucursal !== undefined) {
+    updates.sucursal = sucursal;
   }
 
   if (Object.keys(updates).length === 0) {
@@ -110,17 +126,25 @@ export async function PATCH(request: NextRequest, context: Ctx) {
       }
     }
 
-    Object.assign(target, updates);
-    await target.save();
+    const updated = await User.findByIdAndUpdate(
+      id,
+      { $set: updates },
+      { new: true, runValidators: false },
+    ).exec();
+
+    if (!updated) {
+      return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+    }
 
     return NextResponse.json({
       user: {
-        id: target._id.toString(),
-        dni: typeof target.dni === "string" ? target.dni : String(target.dni),
-        name: target.name ?? null,
-        role: roleFromDb(target.role),
-        createdAt: target.createdAt?.toISOString() ?? null,
-        updatedAt: target.updatedAt?.toISOString() ?? null,
+        id: updated._id.toString(),
+        dni: typeof updated.dni === "string" ? updated.dni : String(updated.dni),
+        name: updated.name ?? null,
+        role: roleFromDb(updated.role),
+        sucursal: (updated.sucursal as Sucursal | null) ?? null,
+        createdAt: updated.createdAt?.toISOString() ?? null,
+        updatedAt: updated.updatedAt?.toISOString() ?? null,
       },
     });
   } catch (e) {
