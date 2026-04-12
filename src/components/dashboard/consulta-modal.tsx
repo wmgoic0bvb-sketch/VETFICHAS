@@ -6,6 +6,10 @@ import { DbLoadingOverlay } from "@/components/ui/lottie-loading";
 import { Modal } from "@/components/ui/modal";
 import { todayISODate } from "@/lib/date-utils";
 import { maskInputFechaDDMMYYYY } from "@/lib/proximo-control-utils";
+import {
+  joinVacunasMotivo,
+  parseVacunasMotivoTokens,
+} from "@/lib/vacunas";
 import type { Consulta, ConsultaTipo } from "@/types/patient";
 
 const tipos: ConsultaTipo[] = [
@@ -15,35 +19,6 @@ const tipos: ConsultaTipo[] = [
   "Urgencia",
   "Cirugía",
 ];
-
-/** Opciones fijas de vacuna; el campo `motivo` guarda las elegidas unidas por " · ". */
-const VACUNAS_OPCIONES = [
-  "Triple felina",
-  "Quintuple",
-  "Antirrabica",
-  "Sextuple",
-  "Leucemia felina",
-] as const;
-
-const VACUNA_SET = new Set<string>(VACUNAS_OPCIONES);
-
-const VACUNAS_MOTIVO_SEP = " · ";
-
-function parseVacunasFromMotivo(motivo: string): string[] {
-  if (!motivo.trim()) return [];
-  const tokens = motivo
-    .split(/ · |, |;/)
-    .map((t) => t.trim())
-    .filter(Boolean);
-  const picked = tokens.filter((t) => VACUNA_SET.has(t));
-  return VACUNAS_OPCIONES.filter((o) => picked.includes(o));
-}
-
-function joinVacunasMotivo(selected: string[]): string {
-  return VACUNAS_OPCIONES.filter((o) => selected.includes(o)).join(
-    VACUNAS_MOTIVO_SEP,
-  );
-}
 
 const FECHA_MASKED_DDMMYYYY = /^\d{2}\/\d{2}\/\d{4}$/;
 
@@ -113,6 +88,11 @@ export function ConsultaModal({
   const [vacunasSel, setVacunasSel] = useState<string[]>([]);
   const [vacunaFechaInput, setVacunaFechaInput] = useState("");
   const [refuerzoError, setRefuerzoError] = useState<string | null>(null);
+  const [vacunasCatalogo, setVacunasCatalogo] = useState<
+    { nombre: string; descripcion: string }[]
+  >([]);
+  const [vacunasListLoading, setVacunasListLoading] = useState(false);
+  const [vacunasListError, setVacunasListError] = useState<string | null>(null);
 
   const isEdit = Boolean(initialConsulta);
 
@@ -122,7 +102,7 @@ export function ConsultaModal({
       setMotivo(initialConsulta.motivo);
       setVacunasSel(
         initialConsulta.tipo === "Vacuna"
-          ? parseVacunasFromMotivo(initialConsulta.motivo)
+          ? parseVacunasMotivoTokens(initialConsulta.motivo, [])
           : [],
       );
       setVeterinario(initialConsulta.veterinario);
@@ -200,6 +180,58 @@ export function ConsultaModal({
     };
   }, [open]);
 
+  const nombresVacunasOrdenados = useMemo(
+    () => vacunasCatalogo.map((v) => v.nombre),
+    [vacunasCatalogo],
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setVacunasListLoading(true);
+    setVacunasListError(null);
+    void (async () => {
+      try {
+        const res = await fetch("/api/vacunas");
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}));
+          throw new Error(
+            typeof j.error === "string" ? j.error : "No se pudo cargar el catálogo",
+          );
+        }
+        const data = (await res.json()) as {
+          vacunas: { nombre: string; descripcion: string }[];
+        };
+        if (!cancelled) {
+          setVacunasCatalogo(data.vacunas);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setVacunasListError(
+            e instanceof Error ? e.message : "Error al cargar vacunas",
+          );
+          setVacunasCatalogo([]);
+        }
+      } finally {
+        if (!cancelled) setVacunasListLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !initialConsulta || initialConsulta.tipo !== "Vacuna") return;
+    if (nombresVacunasOrdenados.length === 0) return;
+    setVacunasSel(
+      parseVacunasMotivoTokens(
+        initialConsulta.motivo,
+        nombresVacunasOrdenados,
+      ),
+    );
+  }, [open, initialConsulta, nombresVacunasOrdenados]);
+
   const legacyVetNombre = initialConsulta?.veterinario?.trim();
   const vetRows = useMemo(() => {
     if (legacyVetNombre && !vetOpciones.some((v) => v.nombre === legacyVetNombre)) {
@@ -212,11 +244,11 @@ export function ConsultaModal({
 
   const applyTipoChange = (next: ConsultaTipo) => {
     if (tipo === "Vacuna" && next !== "Vacuna") {
-      const j = joinVacunasMotivo(vacunasSel);
+      const j = joinVacunasMotivo(vacunasSel, nombresVacunasOrdenados);
       if (j) setMotivo(j);
     }
     if (tipo !== "Vacuna" && next === "Vacuna") {
-      setVacunasSel(parseVacunasFromMotivo(motivo));
+      setVacunasSel(parseVacunasMotivoTokens(motivo, nombresVacunasOrdenados));
       setVacunaFechaInput(isoToMaskedDDMMYYYY(fecha || todayISODate()));
     }
     setTipo(next);
@@ -224,7 +256,9 @@ export function ConsultaModal({
   };
 
   const guardar = async () => {
-    const m = isVacuna ? joinVacunasMotivo(vacunasSel) : motivo.trim();
+    const m = isVacuna
+      ? joinVacunasMotivo(vacunasSel, nombresVacunasOrdenados)
+      : motivo.trim();
     if (!vetListLoading && vetRows.length === 0) {
       setVetError(
         "No hay veterinarios activos. Un administrador puede cargarlos en Administración.",
@@ -233,6 +267,16 @@ export function ConsultaModal({
     }
     if (!veterinario) {
       setVetError("Elegí el veterinario.");
+      return;
+    }
+    if (
+      isVacuna &&
+      !vacunasListLoading &&
+      nombresVacunasOrdenados.length === 0
+    ) {
+      setMotivoError(
+        "No hay vacunas en el catálogo. Un administrador puede cargarlas en Administración.",
+      );
       return;
     }
     if (!m) {
@@ -319,43 +363,23 @@ export function ConsultaModal({
       <div className="mt-4 space-y-4">
         {isVacuna ? (
           <>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
-                  Tipo
-                </label>
-                <select
-                  value={tipo}
-                  onChange={(e) =>
-                    applyTipoChange(e.target.value as ConsultaTipo)
-                  }
-                  className="w-full cursor-pointer rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none focus:border-[#5c1838] focus:bg-white"
-                >
-                  {tipos.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
-                  Fecha de aplicación
-                </label>
-                <input
-                  inputMode="numeric"
-                  value={vacunaFechaInput}
-                  onChange={(e) => {
-                    const next = maskInputFechaDDMMYYYY(e.target.value);
-                    setVacunaFechaInput(next);
-                    const iso = maskedDDMMYYYYToISO(next);
-                    if (iso) setFecha(iso);
-                    setHasChanges(true);
-                  }}
-                  className="w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 font-mono text-[15px] tabular-nums tracking-wide outline-none transition-colors placeholder:text-[#c4bbb0] focus:border-[#5c1838] focus:bg-white"
-                  placeholder="DD/MM/AAAA"
-                />
-              </div>
+            <div>
+              <label className="mb-1.5 block text-[13px] font-semibold text-[#555]">
+                Fecha de aplicación
+              </label>
+              <input
+                inputMode="numeric"
+                value={vacunaFechaInput}
+                onChange={(e) => {
+                  const next = maskInputFechaDDMMYYYY(e.target.value);
+                  setVacunaFechaInput(next);
+                  const iso = maskedDDMMYYYYToISO(next);
+                  if (iso) setFecha(iso);
+                  setHasChanges(true);
+                }}
+                className="w-full max-w-xs rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 font-mono text-[15px] tabular-nums tracking-wide outline-none transition-colors placeholder:text-[#c4bbb0] focus:border-[#5c1838] focus:bg-white"
+                placeholder="DD/MM/AAAA"
+              />
             </div>
             <div>
               <span
@@ -391,34 +415,46 @@ export function ConsultaModal({
                   className="mt-3 space-y-2 border-0 p-0"
                 >
                   <legend className="sr-only">Vacunas aplicadas</legend>
-                  {VACUNAS_OPCIONES.map((nombre) => {
-                    const id = `vacuna-opt-${nombre.replace(/\s+/g, "-").toLowerCase()}`;
-                    const checked = vacunasSel.includes(nombre);
-                    return (
-                      <label
-                        key={nombre}
-                        htmlFor={id}
-                        className="flex cursor-pointer items-center gap-2.5 rounded-lg py-1 pl-0.5 pr-1 text-sm text-[#333] hover:bg-[#f0faf5]"
-                      >
-                        <input
-                          id={id}
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => {
-                            setVacunasSel((prev) =>
-                              checked
-                                ? prev.filter((x) => x !== nombre)
-                                : [...prev, nombre],
-                            );
-                            setHasChanges(true);
-                            if (motivoError) setMotivoError(null);
-                          }}
-                          className="h-4 w-4 shrink-0 rounded border-[#5c1838]/40 text-[#5c1838] focus:ring-[#5c1838]"
-                        />
-                        {nombre}
-                      </label>
-                    );
-                  })}
+                  {vacunasListLoading ? (
+                    <p className="text-sm text-[#888]">Cargando catálogo…</p>
+                  ) : vacunasListError ? (
+                    <FieldError id="vacunas-cat-err" message={vacunasListError} />
+                  ) : vacunasCatalogo.length === 0 ? (
+                    <p className="text-sm text-[#888]">
+                      No hay vacunas cargadas. Pedile a un administrador que las dé
+                      de alta en Administración.
+                    </p>
+                  ) : (
+                    vacunasCatalogo.map((v) => {
+                      const nombre = v.nombre;
+                      const id = `vacuna-opt-${nombre.replace(/\s+/g, "-").toLowerCase()}`;
+                      const checked = vacunasSel.includes(nombre);
+                      return (
+                        <label
+                          key={nombre}
+                          htmlFor={id}
+                          className="flex cursor-pointer items-center gap-2.5 rounded-lg py-1 pl-0.5 pr-1 text-sm text-[#333] hover:bg-[#f0faf5]"
+                        >
+                          <input
+                            id={id}
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              setVacunasSel((prev) =>
+                                checked
+                                  ? prev.filter((x) => x !== nombre)
+                                  : [...prev, nombre],
+                              );
+                              setHasChanges(true);
+                              if (motivoError) setMotivoError(null);
+                            }}
+                            className="h-4 w-4 shrink-0 rounded border-[#5c1838]/40 text-[#5c1838] focus:ring-[#5c1838]"
+                          />
+                          <span className="font-medium">{nombre}</span>
+                        </label>
+                      );
+                    })
+                  )}
                 </fieldset>
               </details>
               {motivoError ? (

@@ -12,7 +12,9 @@
     "lint": "next lint",
     "hash-password": "node scripts/hash-password.cjs",
     "auth-secret": "node scripts/generate-auth-secret.cjs",
-    "seed-admin": "node scripts/seed-admin.cjs"
+    "seed-admin": "node scripts/seed-admin.cjs",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@lottiefiles/dotlottie-react": "^0.18.9",
@@ -36,6 +38,7 @@
     "eslint-config-next": "^14.2.35",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.4"
   }
 }
