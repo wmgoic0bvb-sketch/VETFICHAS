@@ -170,6 +170,13 @@ const patientSchema = new Schema(
     datosInternacion: { type: datosInternacionSchema, required: false },
     historialInternaciones: { type: [internacionHistorialSchema], default: [] },
     proximosControles: { type: [proximoControlSchema], default: [] },
+    /** URL pública `/carnet/[token]` (único, opaco). */
+    carnetPublicToken: {
+      type: String,
+      trim: true,
+      sparse: true,
+      unique: true,
+    },
     consultas: { type: [consultaSchema], default: [] },
     estudios: { type: [estudioSchema], default: [] },
     historialModificaciones: {

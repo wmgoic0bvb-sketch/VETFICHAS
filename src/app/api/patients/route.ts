@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextAuthRequest } from "next-auth";
 import { auth } from "@/auth";
+import {
+  ensureCarnetTokensForRows,
+  generateCarnetPublicToken,
+} from "@/lib/carnet-public";
 import { pacienteFromMongoLean } from "@/lib/mongodb-patient";
 import { pacienteParaRespuestaApi } from "@/lib/patient-change-log";
 import { connectMongo } from "@/lib/mongodb";
@@ -26,6 +30,7 @@ export const GET = auth(async (_req: NextAuthRequest) => {
   try {
     await connectMongo();
     const rows = await Patient.find().sort({ createdAt: -1 }).lean().exec();
+    await ensureCarnetTokensForRows(rows);
     const role = _req.auth.user.role;
     const patients = rows.map((doc) =>
       pacienteParaRespuestaApi(pacienteFromMongoLean(doc), role),
@@ -154,6 +159,7 @@ export const POST = auth(async (req: NextAuthRequest) => {
       esExterno: Boolean(draft.esExterno),
       esUnicaConsulta: Boolean(draft.esUnicaConsulta),
       internado: Boolean(draft.internado),
+      carnetPublicToken: generateCarnetPublicToken(),
       ...(draft.datosInternacion != null
         ? { datosInternacion: draft.datosInternacion }
         : {}),

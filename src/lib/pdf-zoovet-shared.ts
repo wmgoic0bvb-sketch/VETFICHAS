@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import { ZOOVET_FOOTER_BRANCHES } from "@/lib/clinic-branding";
 
 /** Margen horizontal (mm). */
 export const M = 20;
@@ -140,11 +141,6 @@ export function drawDataRow(
   return nextY + rowH;
 }
 
-const footerBranches = [
-  { address: "Av. Roca 1844", phone: "298 4428052" },
-  { address: "Villegas 287", phone: "298 4420114" },
-  { address: "Mitre 1344", phone: "298 5308554" },
-] as const;
 const FOOTER_BRANCH_SEP = "  ·  ";
 const FOOTER_BRANCH_GAP_MM = 6;
 const FOOTER_BRANCH_FONT_SIZES = [9, 8.5, 8, 7.5] as const;
@@ -174,12 +170,12 @@ export function applyZoovetFooterToAllPages(doc: jsPDF): void {
     let blockWidths: { wLeft: number; wRight: number }[] = [];
 
     for (const fs of FOOTER_BRANCH_FONT_SIZES) {
-      const widths = footerBranches.map((b) =>
+      const widths = ZOOVET_FOOTER_BRANCHES.map((b) =>
         measureFooterBranchBlock(doc, b.address, b.phone, FOOTER_BRANCH_SEP, fs),
       );
       const rowW =
         widths.reduce((s, w) => s + w.wLeft + w.wRight, 0) +
-        FOOTER_BRANCH_GAP_MM * (footerBranches.length - 1);
+        FOOTER_BRANCH_GAP_MM * (ZOOVET_FOOTER_BRANCHES.length - 1);
       if (rowW <= footerBandW) {
         branchFs = fs;
         blockWidths = widths;
@@ -189,7 +185,7 @@ export function applyZoovetFooterToAllPages(doc: jsPDF): void {
 
     if (blockWidths.length === 0) {
       branchFs = 7.5;
-      blockWidths = footerBranches.map((b) =>
+      blockWidths = ZOOVET_FOOTER_BRANCHES.map((b) =>
         measureFooterBranchBlock(
           doc,
           b.address,
@@ -202,12 +198,12 @@ export function applyZoovetFooterToAllPages(doc: jsPDF): void {
 
     const totalBranchRowW =
       blockWidths.reduce((s, w) => s + w.wLeft + w.wRight, 0) +
-      FOOTER_BRANCH_GAP_MM * (footerBranches.length - 1);
+      FOOTER_BRANCH_GAP_MM * (ZOOVET_FOOTER_BRANCHES.length - 1);
     let xCursor = footerBandLeft + (footerBandW - totalBranchRowW) / 2;
 
-    for (let i = 0; i < footerBranches.length; i++) {
+    for (let i = 0; i < ZOOVET_FOOTER_BRANCHES.length; i++) {
       const { wLeft, wRight } = blockWidths[i]!;
-      const { address, phone } = footerBranches[i]!;
+      const { address, phone } = ZOOVET_FOOTER_BRANCHES[i]!;
       const leftStr = `${address}${FOOTER_BRANCH_SEP}`;
       const phoneStr = `Tel. ${phone}`;
 
@@ -222,7 +218,7 @@ export function applyZoovetFooterToAllPages(doc: jsPDF): void {
       doc.text(phoneStr, xCursor + wLeft, fyBranch);
 
       xCursor += wLeft + wRight;
-      if (i < footerBranches.length - 1) {
+      if (i < ZOOVET_FOOTER_BRANCHES.length - 1) {
         xCursor += FOOTER_BRANCH_GAP_MM;
       }
     }

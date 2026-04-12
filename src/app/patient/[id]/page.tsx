@@ -16,7 +16,11 @@ import { usePatients } from "@/components/providers/patients-provider";
 import { LottieSpinner } from "@/components/ui/lottie-loading";
 import { Modal } from "@/components/ui/modal";
 import { WhatsAppIcon } from "@/components/ui/whatsapp-icon";
-import { calcularEdad, formatFecha } from "@/lib/date-utils";
+import {
+  calcularEdad,
+  formatFecha,
+  formatProximoRefuerzoDisplay,
+} from "@/lib/date-utils";
 import { exportConsultaPdf } from "@/lib/export-consulta-pdf";
 import { exportInternacionPdf } from "@/lib/export-internacion-pdf";
 import { buildWhatsAppUrl } from "@/lib/phone-utils";
@@ -59,16 +63,6 @@ function ConsultaHeader({ c }: { c: Consulta }) {
       ) : null}
     </div>
   );
-}
-
-const isoDateOnly = /^\d{4}-\d{2}-\d{2}$/;
-const ddmmyyyy = /^\d{2}\/\d{2}\/\d{4}$/;
-
-function formatRefuerzoDisplay(raw: string) {
-  const t = raw.trim();
-  if (ddmmyyyy.test(t)) return t;
-  if (isoDateOnly.test(t)) return formatFecha(t);
-  return t;
 }
 
 function ConsultaCard({
@@ -179,7 +173,8 @@ function ConsultaCard({
               ) : null}
               {c.meds ? (
                 <div className="mt-1 text-[13px] leading-relaxed text-[#555]">
-                  📅 Próximo refuerzo: {formatRefuerzoDisplay(c.meds)}
+                  📅 Próximo refuerzo:{" "}
+                  {formatProximoRefuerzoDisplay(c.meds)}
                 </div>
               ) : null}
             </>
@@ -423,6 +418,19 @@ export default function PatientDetailPage() {
                 <p className="mt-1 text-sm text-[#888]">
                   {patient.raza || patient.especie} · {calcularEdad(patient.fnac)}
                 </p>
+                {patient.carnetPublicToken ? (
+                  <div className="mt-2 flex justify-center">
+                    <Link
+                      href={`/carnet/${patient.carnetPublicToken}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[#5c1838]/45 bg-[#f5f0eb] px-2 py-1 text-[11px] font-semibold  tracking-wide text-[#5c1838] transition-colors hover:bg-[#ebe6df]"
+                      aria-label="Abrir carnet de vacunación público"
+                    >
+                      Carnet de vacunación
+                    </Link>
+                  </div>
+                ) : null}
                 {patient.internado ? (
                   <div className="mt-3 flex justify-center">
                     <Link

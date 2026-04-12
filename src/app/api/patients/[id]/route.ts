@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextAuthRequest } from "next-auth";
 import mongoose from "mongoose";
 import { auth } from "@/auth";
+import { generateCarnetPublicToken } from "@/lib/carnet-public";
 import { pacienteFromMongoLean } from "@/lib/mongodb-patient";
 import {
   describePatientChanges,
@@ -17,7 +18,7 @@ import {
   type StoredPatient,
 } from "@/lib/repositories/patient-repository";
 import { Patient } from "@/models/patient";
-import type { ModificacionPaciente } from "@/types/patient";
+import type { ModificacionPaciente, Paciente } from "@/types/patient";
 
 export const runtime = "nodejs";
 
@@ -42,9 +43,20 @@ export const GET = auth(async (req: NextAuthRequest, ctx) => {
 
   try {
     await connectMongo();
-    const doc = await Patient.findById(id).lean().exec();
+    let doc = await Patient.findById(id).lean().exec();
     if (!doc) {
       return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+    }
+    const prevTok = (doc as { carnetPublicToken?: string }).carnetPublicToken;
+    if (!prevTok?.trim()) {
+      await Patient.updateOne(
+        { _id: id },
+        { $set: { carnetPublicToken: generateCarnetPublicToken() } },
+      );
+      doc = await Patient.findById(id).lean().exec();
+      if (!doc) {
+        return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+      }
     }
     const patient = pacienteFromMongoLean(doc);
     return NextResponse.json({
@@ -96,12 +108,20 @@ export const PUT = auth(async (req: NextAuthRequest, ctx) => {
     }
 
     const pacientePrev = pacienteFromMongoLean(prevDoc);
+    const carnetPrev = (prevDoc as { carnetPublicToken?: string })
+      .carnetPublicToken;
+
+    const patientForAudit: Paciente = {
+      ...patient,
+      carnetPublicToken:
+        patient.carnetPublicToken ?? pacientePrev.carnetPublicToken,
+    };
 
     const sessionUser = req.auth!.user!;
     let historialModificaciones: ModificacionPaciente[] =
       pacientePrev.historialModificaciones ?? [];
 
-    if (hasPatientClinicalChanges(pacientePrev, patient)) {
+    if (hasPatientClinicalChanges(pacientePrev, patientForAudit)) {
       const usuarioNombre =
         typeof sessionUser.name === "string" && sessionUser.name.trim()
           ? sessionUser.name.trim()
@@ -112,7 +132,7 @@ export const PUT = auth(async (req: NextAuthRequest, ctx) => {
         usuarioId: sessionUser.id,
         usuarioDni: sessionUser.dni,
         usuarioNombre,
-        resumen: describePatientChanges(pacientePrev, patient),
+        resumen: describePatientChanges(pacientePrev, patientForAudit),
       };
       historialModificaciones = mergeHistorialTrasGuardado(
         historialModificaciones,
@@ -153,6 +173,8 @@ export const PUT = auth(async (req: NextAuthRequest, ctx) => {
           consultas: patient.consultas,
           estudios: patient.estudios,
           historialModificaciones,
+          carnetPublicToken:
+            carnetPrev?.trim() || generateCarnetPublicToken(),
         },
       },
       { new: true, runValidators: true },

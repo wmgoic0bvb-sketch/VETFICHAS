@@ -5,6 +5,18 @@ export function formatFecha(f: string): string {
   return `${d}/${m}/${y}`;
 }
 
+const ISO_DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+const DDMMYYYY = /^\d{2}\/\d{2}\/\d{4}$/;
+
+/** Fecha de próximo refuerzo tal como se guarda en consulta Vacuna (`meds`). */
+export function formatProximoRefuerzoDisplay(raw: string): string {
+  const t = raw.trim();
+  if (!t) return t;
+  if (DDMMYYYY.test(t)) return t;
+  if (ISO_DATE_ONLY.test(t)) return formatFecha(t);
+  return t;
+}
+
 export function calcularEdad(fnac: string): string {
   if (!fnac) return "—";
   const hoy = new Date();

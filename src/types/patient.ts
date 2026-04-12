@@ -150,6 +150,8 @@ export type SucursalPaciente = "AVENIDA" | "VILLEGAS" | "MITRE";
 
 export interface Paciente {
   id: string;
+  /** Token opaco para el carnet público (`/carnet/[token]`). */
+  carnetPublicToken?: string;
   especie: Especie;
   sucursal?: SucursalPaciente | null;
   nombre: string;
