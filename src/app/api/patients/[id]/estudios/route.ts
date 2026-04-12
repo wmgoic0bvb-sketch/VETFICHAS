@@ -11,6 +11,7 @@ import {
   pacienteParaRespuestaApi,
 } from "@/lib/patient-change-log";
 import { connectMongo } from "@/lib/mongodb";
+import { notifyEstudioSubido } from "@/lib/notify-estudio-subido";
 import { Patient } from "@/models/patient";
 import type { Estudio, EstudioCategoria, ModificacionPaciente } from "@/types/patient";
 
@@ -127,6 +128,18 @@ export const POST = auth(async (req: NextAuthRequest, ctx) => {
     }
 
     const out = pacienteFromMongoLean(updated);
+    const uploaderName =
+      typeof sessionUser.name === "string" && sessionUser.name.trim()
+        ? sessionUser.name.trim()
+        : "";
+    void notifyEstudioSubido({
+      uploaderUserId: sessionUser.id,
+      uploaderName,
+      patientId: id,
+      patientNombre: out.nombre,
+      estudio,
+    }).catch((err) => console.error("[estudios POST] notify", err));
+
     return NextResponse.json({
       patient: pacienteParaRespuestaApi(out, req.auth.user.role),
     });

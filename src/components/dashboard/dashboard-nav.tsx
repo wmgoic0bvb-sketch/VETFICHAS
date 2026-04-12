@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
+import { NavNotificationsBell } from "@/components/dashboard/nav-notifications-bell";
 
 function UserIcon() {
   return (
@@ -131,6 +132,7 @@ export function DashboardNav({
         ) : null}
       </div>
       <div className="flex shrink-0 items-center gap-2">
+        {session ? <NavNotificationsBell /> : null}
         {onNewPatient ? (
           <button
             type="button"

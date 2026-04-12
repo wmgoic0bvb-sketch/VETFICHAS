@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { AppToaster } from "@/components/ui/app-toaster";
+import { NotificationsProvider } from "@/components/providers/notifications-provider";
 import { PatientsProvider } from "@/components/providers/patients-provider";
+import { PusherBeamsClient } from "@/components/pusher-beams-client";
 import { SessionProvider } from "@/components/providers/session-provider";
 import "./globals.css";
 
@@ -25,7 +27,10 @@ export default function RootLayout({
     <html lang="es" className="h-full antialiased">
       <body className="min-h-full font-sans">
         <SessionProvider>
-          <PatientsProvider>{children}</PatientsProvider>
+          <NotificationsProvider>
+            <PatientsProvider>{children}</PatientsProvider>
+          </NotificationsProvider>
+          <PusherBeamsClient />
         </SessionProvider>
         <AppToaster />
       </body>
