@@ -1,20 +1,18 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { diasDelMesConActividadFicha } from "@/lib/calendario-paciente-actividad";
+import { mismoDia } from "@/lib/calendario-fecha";
 import { parseFechaHoraLocal } from "@/lib/proximo-control-utils";
 import type { Paciente } from "@/types/patient";
+
+export { mismoDia } from "@/lib/calendario-fecha";
 
 const DIAS_SEMANA = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sa", "Do"];
 export const MESES = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
 ];
-
-export function mismoDia(a: Date, b: Date): boolean {
-  return a.getDate() === b.getDate() &&
-    a.getMonth() === b.getMonth() &&
-    a.getFullYear() === b.getFullYear();
-}
 
 function ChevronIcon({ dir }: { dir: "left" | "right" }) {
   return (
@@ -56,6 +54,11 @@ export function MiniCalendario({
 
   const diasMarcados = useMemo(
     () => diasConControles(patients, vistaAño, vistaMes),
+    [patients, vistaAño, vistaMes],
+  );
+
+  const diasActividadFicha = useMemo(
+    () => diasDelMesConActividadFicha(patients, vistaAño, vistaMes),
     [patients, vistaAño, vistaMes],
   );
 
@@ -114,6 +117,7 @@ export function MiniCalendario({
           const esHoy = mismoDia(estaFecha, hoy);
           const esSeleccionado = mismoDia(estaFecha, selected);
           const tieneControl = diasMarcados.has(dia);
+          const tieneActividad = diasActividadFicha.has(dia);
           return (
             <button
               key={dia}
@@ -130,8 +134,21 @@ export function MiniCalendario({
               aria-pressed={esSeleccionado}
             >
               {dia}
-              {tieneControl && !esSeleccionado ? (
-                <span className="absolute bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-[#5c1838]/50" />
+              {(tieneControl || tieneActividad) && !esSeleccionado ? (
+                <span className="absolute bottom-0.5 left-1/2 flex -translate-x-1/2 gap-0.5">
+                  {tieneControl ? (
+                    <span
+                      className="h-1 w-1 rounded-full bg-[#5c1838]/50"
+                      aria-hidden
+                    />
+                  ) : null}
+                  {tieneActividad ? (
+                    <span
+                      className="h-1 w-1 rounded-full bg-amber-500/90"
+                      aria-hidden
+                    />
+                  ) : null}
+                </span>
               ) : null}
             </button>
           );

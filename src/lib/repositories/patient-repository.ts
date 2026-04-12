@@ -1,3 +1,4 @@
+import { isoFromMongoTimestamp } from "@/lib/mongo-timestamps";
 import {
   mergeDatosInternacion,
   normalizeInternacionHistorialItem,
@@ -248,6 +249,7 @@ export function normalizePatient(p: StoredPatient): Paciente {
     historialModificaciones: normalizeHistorialModificaciones(
       raw.historialModificaciones,
     ),
+    createdAt: isoFromMongoTimestamp(raw.createdAt),
   };
 }
 

@@ -150,6 +150,8 @@ export type SucursalPaciente = "AVENIDA" | "VILLEGAS" | "MITRE";
 
 export interface Paciente {
   id: string;
+  /** Fecha de alta en el sistema (Mongo `createdAt`), ISO 8601. */
+  createdAt?: string;
   /** Token opaco para el carnet público (`/carnet/[token]`). */
   carnetPublicToken?: string;
   /** URL de foto de perfil (Vercel Blob). */

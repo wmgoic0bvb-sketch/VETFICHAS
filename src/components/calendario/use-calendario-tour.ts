@@ -39,9 +39,9 @@ export function useCalendarioTour(ready: boolean, tieneControles: boolean) {
               {
                 element: "#tour-checkbox-asistencia",
                 popover: {
-                  title: "Marcar asistencia",
+                  title: "Asistencia del control",
                   description:
-                    "Tocá el check para marcar que el paciente asistió. Si no lo marcás, queda como ausente.",
+                    "Activá el interruptor si el paciente asistió; desactivalo para marcar ausente. También podés ajustarlo desde la ficha.",
                 },
               },
               {
