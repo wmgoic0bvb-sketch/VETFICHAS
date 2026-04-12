@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { formatDueñosCorto } from "@/lib/dueños-utils";
 import { esPacienteActivo, type Paciente } from "@/types/patient";
@@ -28,13 +29,25 @@ export function PatientCard({
     <Link
       href={`/patient/${patient.id}`}
       onClick={() => onOpen(patient.id)}
-      className={`cursor-pointer rounded-[18px] border-2 border-transparent px-4 py-5 text-center transition-all hover:-translate-y-0.5 hover:border-[#5c1838] ${
+      className={`group cursor-pointer rounded-[18px] border-2 border-transparent px-4 py-5 text-center transition-all hover:-translate-y-0.5 hover:border-[#5c1838] ${
         esOtraSucursal ? "bg-[#faf7f3]" : "bg-white"
       }`}
     >
-      <span className="mb-2 block text-[52px] leading-none" aria-hidden>
-        {emoji(patient.especie)}
-      </span>
+      {patient.fotoUrl ? (
+        <Image
+          src={patient.fotoUrl}
+          alt={`Foto de ${patient.nombre}`}
+          width={52}
+          height={52}
+          className="mx-auto mb-2 block h-[52px] w-[52px] rounded-full object-cover ring-2 ring-[#e8e0d8] transition-transform duration-200 ease-out group-hover:scale-[1.3]"
+          sizes="52px"
+          unoptimized
+        />
+      ) : (
+        <span className="mb-2 block text-[52px] leading-none" aria-hidden>
+          {emoji(patient.especie)}
+        </span>
+      )}
       <div className="text-base font-bold capitalize text-[#1a1a1a]">
         {patient.nombre}
       </div>
