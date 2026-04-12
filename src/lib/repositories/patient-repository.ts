@@ -208,6 +208,11 @@ export function normalizePatient(p: StoredPatient): Paciente {
     tel?: string;
   };
   const internadoFlag = typeof p.internado === "boolean" ? p.internado : false;
+  const carnetTok =
+    typeof raw.carnetPublicToken === "string" && raw.carnetPublicToken.trim()
+      ? raw.carnetPublicToken.trim()
+      : undefined;
+
   return {
     ...(rest as Omit<
       Paciente,
@@ -216,7 +221,9 @@ export function normalizePatient(p: StoredPatient): Paciente {
       | "datosInternacion"
       | "historialInternaciones"
       | "historialModificaciones"
+      | "carnetPublicToken"
     >),
+    carnetPublicToken: carnetTok,
     dueños: normalizeDueños(raw),
     estado: normalizeEstado(raw.estado),
     esExterno: typeof p.esExterno === "boolean" ? p.esExterno : false,

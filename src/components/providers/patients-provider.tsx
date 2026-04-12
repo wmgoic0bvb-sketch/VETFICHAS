@@ -26,6 +26,7 @@ import {
   fetchPatients,
   removeEstudioRemote,
   replacePatient,
+  uploadPatientFoto,
 } from "@/lib/patients-api";
 import { DEFAULT_SUCURSAL_ID } from "@/lib/sucursales";
 import type {
@@ -75,6 +76,7 @@ interface PatientsContextValue {
     estudio: Omit<Estudio, "id" | "fecha">,
   ) => Promise<void>;
   removeEstudio: (patientId: string, estudioId: string) => Promise<void>;
+  setPatientFoto: (patientId: string, file: Blob) => Promise<Paciente | undefined>;
 }
 
 const PatientsContext = createContext<PatientsContextValue | null>(null);
@@ -228,6 +230,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
           estado: data.estado ?? "activo",
           esExterno: data.esExterno,
           esUnicaConsulta: data.esUnicaConsulta,
+          fotoUrl: data.fotoUrl !== undefined ? data.fotoUrl : cur.fotoUrl,
           internado: data.internado,
           datosInternacion:
             data.datosInternacion !== undefined
@@ -486,6 +489,24 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
     [reloadFromServer],
   );
 
+  const setPatientFoto = useCallback(
+    async (patientId: string, file: Blob) => {
+      try {
+        const saved = await uploadPatientFoto(patientId, file);
+        setPatients((prev) =>
+          prev.map((p) => (p.id === patientId ? saved : p)),
+        );
+        return saved;
+      } catch (e) {
+        toast.error(
+          e instanceof Error ? e.message : "No se pudo subir la foto.",
+        );
+        return undefined;
+      }
+    },
+    [],
+  );
+
   const removeEstudio = useCallback(
     async (patientId: string, estudioId: string) => {
       try {
@@ -524,6 +545,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
       updateConsulta,
       addEstudio,
       removeEstudio,
+      setPatientFoto,
     }),
     [
       patients,
@@ -541,6 +563,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
       updateConsulta,
       addEstudio,
       removeEstudio,
+      setPatientFoto,
     ],
   );
 

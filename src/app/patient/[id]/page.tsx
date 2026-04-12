@@ -10,13 +10,18 @@ import {
   PatientFichaEditForm,
   PencilIcon,
 } from "@/components/dashboard/patient-ficha-edit-form";
+import { PatientFichaFotoBlock } from "@/components/dashboard/patient-ficha-foto-block";
 import { PatientEstudiosSection } from "@/components/dashboard/patient-estudios-section";
 import { ProximosControlesSection } from "@/components/dashboard/proximo-control-section";
 import { usePatients } from "@/components/providers/patients-provider";
 import { LottieSpinner } from "@/components/ui/lottie-loading";
 import { Modal } from "@/components/ui/modal";
 import { WhatsAppIcon } from "@/components/ui/whatsapp-icon";
-import { calcularEdad, formatFecha } from "@/lib/date-utils";
+import {
+  calcularEdad,
+  formatFecha,
+  formatProximoRefuerzoDisplay,
+} from "@/lib/date-utils";
 import { exportConsultaPdf } from "@/lib/export-consulta-pdf";
 import { exportInternacionPdf } from "@/lib/export-internacion-pdf";
 import { buildWhatsAppUrl } from "@/lib/phone-utils";
@@ -40,10 +45,6 @@ const tipoClass: Record<string, string> = {
 const cardClass =
   "rounded-2xl border border-[#ebe6df] bg-white p-5 shadow-sm";
 
-function emoji(especie: "Perro" | "Gato") {
-  return especie === "Perro" ? "🐶" : "🐱";
-}
-
 function ConsultaHeader({ c }: { c: Consulta }) {
   return (
     <div className="min-w-0 flex-1">
@@ -59,16 +60,6 @@ function ConsultaHeader({ c }: { c: Consulta }) {
       ) : null}
     </div>
   );
-}
-
-const isoDateOnly = /^\d{4}-\d{2}-\d{2}$/;
-const ddmmyyyy = /^\d{2}\/\d{2}\/\d{4}$/;
-
-function formatRefuerzoDisplay(raw: string) {
-  const t = raw.trim();
-  if (ddmmyyyy.test(t)) return t;
-  if (isoDateOnly.test(t)) return formatFecha(t);
-  return t;
 }
 
 function ConsultaCard({
@@ -179,7 +170,8 @@ function ConsultaCard({
               ) : null}
               {c.meds ? (
                 <div className="mt-1 text-[13px] leading-relaxed text-[#555]">
-                  📅 Próximo refuerzo: {formatRefuerzoDisplay(c.meds)}
+                  📅 Próximo refuerzo:{" "}
+                  {formatProximoRefuerzoDisplay(c.meds)}
                 </div>
               ) : null}
             </>
@@ -324,6 +316,7 @@ export default function PatientDetailPage() {
     addProximoControl,
     updateProximoControl,
     removeProximoControl,
+    setPatientFoto,
   } = usePatients();
   const [consultaOpen, setConsultaOpen] = useState(false);
   const [vacunaOpen, setVacunaOpen] = useState(false);
@@ -414,15 +407,29 @@ export default function PatientDetailPage() {
           <div className="flex flex-col gap-6">
             <section className={cardClass}>
               <div className="text-center">
-                <span className="mb-2 block text-[56px] leading-none" aria-hidden>
-                  {emoji(patient.especie)}
-                </span>
+                <PatientFichaFotoBlock
+                  patient={patient}
+                  setPatientFoto={setPatientFoto}
+                />
                 <h1 className="text-xl font-bold capitalize text-[#1a1a1a]">
                   {patient.nombre}
                 </h1>
                 <p className="mt-1 text-sm text-[#888]">
                   {patient.raza || patient.especie} · {calcularEdad(patient.fnac)}
                 </p>
+                {patient.carnetPublicToken ? (
+                  <div className="mt-2 flex justify-center">
+                    <Link
+                      href={`/carnet/${patient.carnetPublicToken}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[#5c1838]/45 bg-[#f5f0eb] px-2 py-1 text-[11px] font-semibold  tracking-wide text-[#5c1838] transition-colors hover:bg-[#ebe6df]"
+                      aria-label="Abrir carnet de vacunación público"
+                    >
+                      Carnet de vacunación
+                    </Link>
+                  </div>
+                ) : null}
                 {patient.internado ? (
                   <div className="mt-3 flex justify-center">
                     <Link
