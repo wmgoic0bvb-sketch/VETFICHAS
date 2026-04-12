@@ -152,6 +152,8 @@ export interface Paciente {
   id: string;
   /** Token opaco para el carnet público (`/carnet/[token]`). */
   carnetPublicToken?: string;
+  /** URL de foto de perfil (Vercel Blob). */
+  fotoUrl?: string;
   especie: Especie;
   sucursal?: SucursalPaciente | null;
   nombre: string;

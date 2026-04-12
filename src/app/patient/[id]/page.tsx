@@ -10,6 +10,7 @@ import {
   PatientFichaEditForm,
   PencilIcon,
 } from "@/components/dashboard/patient-ficha-edit-form";
+import { PatientFichaFotoBlock } from "@/components/dashboard/patient-ficha-foto-block";
 import { PatientEstudiosSection } from "@/components/dashboard/patient-estudios-section";
 import { ProximosControlesSection } from "@/components/dashboard/proximo-control-section";
 import { usePatients } from "@/components/providers/patients-provider";
@@ -43,10 +44,6 @@ const tipoClass: Record<string, string> = {
 
 const cardClass =
   "rounded-2xl border border-[#ebe6df] bg-white p-5 shadow-sm";
-
-function emoji(especie: "Perro" | "Gato") {
-  return especie === "Perro" ? "🐶" : "🐱";
-}
 
 function ConsultaHeader({ c }: { c: Consulta }) {
   return (
@@ -319,6 +316,7 @@ export default function PatientDetailPage() {
     addProximoControl,
     updateProximoControl,
     removeProximoControl,
+    setPatientFoto,
   } = usePatients();
   const [consultaOpen, setConsultaOpen] = useState(false);
   const [vacunaOpen, setVacunaOpen] = useState(false);
@@ -409,9 +407,10 @@ export default function PatientDetailPage() {
           <div className="flex flex-col gap-6">
             <section className={cardClass}>
               <div className="text-center">
-                <span className="mb-2 block text-[56px] leading-none" aria-hidden>
-                  {emoji(patient.especie)}
-                </span>
+                <PatientFichaFotoBlock
+                  patient={patient}
+                  setPatientFoto={setPatientFoto}
+                />
                 <h1 className="text-xl font-bold capitalize text-[#1a1a1a]">
                   {patient.nombre}
                 </h1>

@@ -40,10 +40,20 @@ type Props = {
  * Tarjeta tipo carnet: nombre de vacuna → descripción → metadatos (aplicada, lote, marca…).
  */
 export function CarnetEventoCard({ evento: ev, fechaAplicacion }: Props) {
-  const proximo = ev.proximoRefuerzo
-    ? formatProximoRefuerzoDisplay(ev.proximoRefuerzo)
-    : "—";
-  const lote = ev.lote?.trim() ? ev.lote : "—";
+  const showAplicada =
+    fechaAplicacion.trim() !== "" && fechaAplicacion !== "—";
+  const proximoRaw = ev.proximoRefuerzo?.trim() ?? "";
+  const proximo = proximoRaw
+    ? formatProximoRefuerzoDisplay(proximoRaw)
+    : "";
+  const showProximo = proximo.trim() !== "";
+  const lote = ev.lote?.trim() ?? "";
+  const showLote = lote.length > 0;
+  const marca = ev.marca?.trim() ?? "";
+  const showMarca = marca.length > 0;
+
+  const hasMetaGrid =
+    showAplicada || showProximo || showLote || showMarca;
 
   return (
     <li className="rounded-2xl border border-[#dcd0d8]/80 bg-white p-6 shadow-[0_2px_8px_rgba(0,0,0,0.08)] sm:p-8">
@@ -81,20 +91,18 @@ export function CarnetEventoCard({ evento: ev, fechaAplicacion }: Props) {
         })}
       </ul>
 
-      <div
-        className={`mt-8 grid gap-5 border-t border-[#EDE3D8] pt-6 ${
-          ev.marca
-            ? "sm:grid-cols-2 lg:grid-cols-4"
-            : "sm:grid-cols-3"
-        }`}
-      >
-        <MetaCell label="Aplicada" value={fechaAplicacion} />
-        <MetaCell label="Próximo refuerzo" value={proximo} />
-        <MetaCell label="Lote" value={lote} mono />
-        {ev.marca ? (
-          <MetaCell label="Marca" value={ev.marca} />
-        ) : null}
-      </div>
+      {hasMetaGrid ? (
+        <div className="mt-8 grid grid-cols-1 gap-5 border-t border-[#EDE3D8] pt-6 sm:grid-cols-2 lg:grid-cols-4">
+          {showAplicada ? (
+            <MetaCell label="Aplicada" value={fechaAplicacion} />
+          ) : null}
+          {showProximo ? (
+            <MetaCell label="Próximo refuerzo" value={proximo} />
+          ) : null}
+          {showLote ? <MetaCell label="Lote" value={lote} mono /> : null}
+          {showMarca ? <MetaCell label="Marca" value={marca} /> : null}
+        </div>
+      ) : null}
 
       <time className="sr-only" dateTime={ev.fecha}>
         {fechaAplicacion}

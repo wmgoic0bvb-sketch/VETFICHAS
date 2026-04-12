@@ -96,6 +96,14 @@ export const PUT = auth(async (req: NextAuthRequest, ctx) => {
 
   const patient = normalizePatient({ ...bodyClean, id } as StoredPatient);
 
+  const fotoUrlParaGuardar = (() => {
+    if (!("fotoUrl" in bodyClean)) return undefined as string | undefined;
+    const v = bodyClean.fotoUrl;
+    if (v === null || v === "") return undefined;
+    if (typeof v === "string" && v.trim()) return v.trim();
+    return undefined;
+  })();
+
   if (patient.id !== id) {
     return NextResponse.json({ error: "El id no coincide" }, { status: 400 });
   }
@@ -111,10 +119,14 @@ export const PUT = auth(async (req: NextAuthRequest, ctx) => {
     const carnetPrev = (prevDoc as { carnetPublicToken?: string })
       .carnetPublicToken;
 
+    const fotoUrlMerged =
+      "fotoUrl" in bodyClean ? fotoUrlParaGuardar : pacientePrev.fotoUrl;
+
     const patientForAudit: Paciente = {
       ...patient,
       carnetPublicToken:
         patient.carnetPublicToken ?? pacientePrev.carnetPublicToken,
+      fotoUrl: fotoUrlMerged,
     };
 
     const sessionUser = req.auth!.user!;
@@ -175,6 +187,7 @@ export const PUT = auth(async (req: NextAuthRequest, ctx) => {
           historialModificaciones,
           carnetPublicToken:
             carnetPrev?.trim() || generateCarnetPublicToken(),
+          fotoUrl: fotoUrlMerged,
         },
       },
       { new: true, runValidators: true },

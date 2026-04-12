@@ -74,11 +74,20 @@ export default async function CarnetPublicPage({ params }: Props) {
           <h2 id="patient-heading" className="sr-only">
             Datos del paciente
           </h2>
-          {/* TODO: cuando exista foto del paciente en datos públicos, mostrarla aquí en lugar del emoji. */}
-          <div className="flex items-center justify-center gap-2 sm:gap-3">
-            {especieEmoji ? (
+          <div className="flex flex-col items-center gap-4">
+            {paciente.fotoUrl ? (
+              <Image
+                src={paciente.fotoUrl}
+                alt={`Foto de ${paciente.nombre}`}
+                width={112}
+                height={112}
+                className="h-28 w-28 rounded-full object-cover ring-2 ring-[rgba(139,26,74,0.25)]"
+                sizes="112px"
+                unoptimized
+              />
+            ) : especieEmoji ? (
               <span
-                className="shrink-0 text-3xl leading-none sm:text-4xl"
+                className="text-5xl leading-none"
                 role="img"
                 aria-label={paciente.especie}
               >
@@ -142,16 +151,6 @@ export default async function CarnetPublicPage({ params }: Props) {
             </div>
           ))}
         </div>
-        <p className="mx-auto mt-8 max-w-2xl text-center text-sm text-white/85">
-          <a
-            href="https://zoovet.ar"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium underline decoration-white/40 underline-offset-2 transition hover:text-white"
-          >
-            zoovet.ar
-          </a>
-        </p>
       </footer>
       </div>
     </div>

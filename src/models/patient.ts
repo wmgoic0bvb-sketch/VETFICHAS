@@ -137,6 +137,8 @@ const patientSchema = new Schema(
       default: null,
     },
     nombre: { type: String, required: true, trim: true },
+    /** URL pública en Vercel Blob (foto de perfil). */
+    fotoUrl: { type: String, trim: true },
     raza: { type: String, default: "" },
     sexo: { type: String, default: "" },
     fnac: { type: String, default: "" },

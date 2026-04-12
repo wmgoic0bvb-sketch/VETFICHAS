@@ -36,6 +36,8 @@ export type CarnetPublicoPayload = {
     nombre: string;
     especie: string;
     raza: string;
+    /** URL en Vercel Blob (foto de perfil). */
+    fotoUrl?: string;
   };
   eventos: CarnetEventoVacuna[];
 };
@@ -165,6 +167,7 @@ export async function getCarnetPublicoPorToken(
       nombre: paciente.nombre,
       especie: paciente.especie,
       raza: paciente.raza ?? "",
+      fotoUrl: campoOpcional(paciente.fotoUrl),
     },
     eventos,
   };

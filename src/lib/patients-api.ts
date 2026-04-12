@@ -85,6 +85,23 @@ export async function replacePatient(patient: Paciente): Promise<Paciente> {
   return data.patient;
 }
 
+export async function uploadPatientFoto(
+  patientId: string,
+  file: Blob,
+  filename = "foto.jpg",
+): Promise<Paciente> {
+  const form = new FormData();
+  form.set("file", file, filename);
+  const res = await fetch(`/api/patients/${patientId}/foto`, {
+    method: "POST",
+    body: form,
+    credentials: "include",
+  });
+  await ensureOk(res);
+  const data = (await res.json()) as { patient: Paciente };
+  return data.patient;
+}
+
 /** Añade un estudio con $push en Mongo (evita pisar otros cambios concurrentes). */
 export async function appendEstudio(
   patientId: string,
