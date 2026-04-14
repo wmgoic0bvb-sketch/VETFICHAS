@@ -13,10 +13,12 @@ export function PatientCard({
   patient,
   onOpen,
   userSucursal,
+  href,
 }: {
   patient: Paciente;
   onOpen: (id: string) => void;
   userSucursal?: Paciente["sucursal"] | null;
+  href?: string;
 }) {
   const badgeClass =
     patient.especie === "Perro"
@@ -27,7 +29,7 @@ export function PatientCard({
 
   return (
     <Link
-      href={`/patient/${patient.id}`}
+      href={href ?? `/patient/${patient.id}`}
       onClick={() => onOpen(patient.id)}
       className={`group cursor-pointer rounded-[18px] border-2 border-transparent px-4 py-5 text-center transition-all hover:-translate-y-0.5 hover:border-[#5c1838] ${
         esOtraSucursal ? "bg-[#faf7f3]" : "bg-white"

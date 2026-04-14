@@ -213,6 +213,7 @@ export function InternacionesView() {
               <div key={p.id} className="flex flex-col">
                 <PatientCard
                   patient={p}
+                  href={`/internaciones/${p.id}`}
                   onOpen={(id) => push(`/internaciones/${id}`)}
                 />
                 <button
