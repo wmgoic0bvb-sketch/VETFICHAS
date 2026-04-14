@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { PatientFotoModal } from "@/components/dashboard/patient-foto-modal";
+import { Modal } from "@/components/ui/modal";
 import type { Paciente } from "@/types/patient";
 
 const MAX_BYTES = 4 * 1024 * 1024;
@@ -22,6 +23,7 @@ export function PatientFichaFotoBlock({
   const inputRef = useRef<HTMLInputElement>(null);
   const [pick, setPick] = useState<File | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [viewFullOpen, setViewFullOpen] = useState(false);
 
   const onPickFile = (list: FileList | null) => {
     const file = list?.[0];
@@ -43,15 +45,22 @@ export function PatientFichaFotoBlock({
     <>
       <div className="relative mx-auto mb-2 h-[120px] w-[120px] shrink-0">
         {patient.fotoUrl ? (
-          <Image
-            src={patient.fotoUrl}
-            alt={`Foto de ${patient.nombre}`}
-            width={120}
-            height={120}
-            className="h-[120px] w-[120px] rounded-full object-cover ring-2 ring-[#ebe6df]"
-            sizes="120px"
-            unoptimized
-          />
+          <button
+            type="button"
+            onClick={() => setViewFullOpen(true)}
+            className="block cursor-zoom-in rounded-full ring-2 ring-[#ebe6df] transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5c1838]"
+            aria-label={`Ver foto de ${patient.nombre} a tamaño completo`}
+          >
+            <Image
+              src={patient.fotoUrl}
+              alt={`Foto de ${patient.nombre}`}
+              width={120}
+              height={120}
+              className="pointer-events-none h-[120px] w-[120px] rounded-full object-cover"
+              sizes="120px"
+              unoptimized
+            />
+          </button>
         ) : (
           <span
             className="flex h-[120px] w-[120px] items-center justify-center rounded-full bg-[#f5f0eb] text-[56px] leading-none ring-2 ring-[#ebe6df]"
@@ -100,6 +109,27 @@ export function PatientFichaFotoBlock({
           if (r) toast.success("Foto actualizada.");
         }}
       />
+
+      {patient.fotoUrl ? (
+        <Modal
+          open={viewFullOpen}
+          onClose={() => setViewFullOpen(false)}
+          labelledBy="patient-foto-full-title"
+          maxWidthClass="max-w-[min(calc(100vw-2rem),72rem)]"
+          variant="bare"
+          overlayClassName="z-[215]"
+        >
+          <span id="patient-foto-full-title" className="sr-only">
+            Vista ampliada de la foto de {patient.nombre}
+          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element -- tamaño natural en lightbox */}
+          <img
+            src={patient.fotoUrl}
+            alt={`Foto de ${patient.nombre}`}
+            className="box-border max-h-[min(96vh,1080px)] w-auto max-w-full border border-solid border-[#e8e4de]"
+          />
+        </Modal>
+      ) : null}
     </>
   );
 }

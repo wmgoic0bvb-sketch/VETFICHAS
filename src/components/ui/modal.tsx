@@ -8,6 +8,9 @@ export function Modal({
   children,
   labelledBy,
   overlayClassName = "",
+  maxWidthClass = "max-w-[520px]",
+  panelPaddingClass = "px-6 py-7",
+  variant = "default",
 }: {
   open: boolean;
   onClose: () => void;
@@ -15,6 +18,12 @@ export function Modal({
   labelledBy?: string;
   /** p. ej. z-[210] para apilar sobre otro modal */
   overlayClassName?: string;
+  /** Ancho máximo del panel (p. ej. vista previa de imagen) */
+  maxWidthClass?: string;
+  /** Relleno del panel (p. ej. p-3 en vista solo imagen) */
+  panelPaddingClass?: string;
+  /** `bare`: solo contenido sobre el overlay, sin tarjeta blanca */
+  variant?: "default" | "bare";
 }) {
   useEffect(() => {
     if (!open) return;
@@ -36,7 +45,11 @@ export function Modal({
       }}
     >
       <div
-        className="relative max-h-[90vh] w-full max-w-[520px] overflow-y-auto rounded-3xl bg-white px-6 py-7 shadow-xl"
+        className={
+          variant === "bare"
+            ? `relative max-h-[90vh] w-auto overflow-y-auto ${maxWidthClass}`
+            : `relative max-h-[90vh] w-full overflow-y-auto rounded-3xl bg-white shadow-xl ${panelPaddingClass} ${maxWidthClass}`
+        }
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
