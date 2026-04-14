@@ -41,14 +41,33 @@ export function NavNotificationsBell() {
   const ctx = useNotifications();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const mobileSheetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {
-      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (
+        wrapRef.current?.contains(t) ||
+        mobileSheetRef.current?.contains(t)
+      ) {
+        return;
+      }
+      setOpen(false);
     };
     document.addEventListener("mousedown", onDown);
     return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const mq = window.matchMedia("(max-width: 767px)");
+    if (!mq.matches) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
   }, [open]);
 
   if (!ctx) return null;
@@ -57,78 +76,103 @@ export function NavNotificationsBell() {
   const badge =
     unreadCount > 0 ? (unreadCount > 99 ? "99+" : String(unreadCount)) : null;
 
-  return (
-    <div className="relative" ref={wrapRef}>
-      <button
-        type="button"
-        className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#e8e0d8] bg-white text-[#5c1838] hover:bg-[#efe8e0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5c1838]/40"
-        aria-label="Notificaciones"
-        aria-expanded={open}
-        aria-haspopup="dialog"
-        onClick={() => setOpen((o) => !o)}
-      >
-        <BellIcon className="h-[18px] w-[18px]" />
-        {badge ? (
-          <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#5c1838] px-1 text-[10px] font-semibold leading-none text-white">
-            {badge}
-          </span>
+  const listSection = (
+    <>
+      <div className="flex items-center justify-between border-b border-[#f0ebe4] px-4 py-3 md:px-3 md:py-2">
+        <span className="text-sm font-semibold text-[#1a1a1a]">
+          Notificaciones
+        </span>
+        {unreadCount > 0 ? (
+          <button
+            type="button"
+            className="text-xs font-medium text-[#5c1838] hover:underline"
+            onClick={() => void markAllRead()}
+          >
+            Marcar leídas
+          </button>
         ) : null}
-      </button>
-      {open ? (
-        <div
-          role="dialog"
-          aria-label="Lista de notificaciones"
-          className="absolute right-0 top-full z-[120] mt-1 w-[min(100vw-2rem,22rem)] max-h-[min(70vh,24rem)] overflow-hidden rounded-lg border border-[#e8e0d8] bg-white shadow-md"
-        >
-          <div className="flex items-center justify-between border-b border-[#f0ebe4] px-3 py-2">
-            <span className="text-sm font-semibold text-[#1a1a1a]">
-              Notificaciones
-            </span>
-            {unreadCount > 0 ? (
-              <button
-                type="button"
-                className="text-xs font-medium text-[#5c1838] hover:underline"
-                onClick={() => void markAllRead()}
+      </div>
+      <ul className="min-h-0 flex-1 overflow-y-auto py-1 md:max-h-[min(60vh,20rem)]">
+        {items.length === 0 ? (
+          <li className="px-4 py-8 text-center text-sm text-[#888] md:px-3 md:py-6">
+            No hay notificaciones
+          </li>
+        ) : (
+          items.map((n) => (
+            <li key={n.id} className="border-b border-[#f7f4f0] last:border-0">
+              <Link
+                href={`/patient/${n.patientId}`}
+                className={`block px-4 py-3 text-left hover:bg-[#f5f0eb] md:px-3 md:py-2.5 ${n.read ? "opacity-80" : "bg-[#faf7f4]"}`}
+                onClick={() => {
+                  if (!n.read) void markRead(n.id);
+                  setOpen(false);
+                }}
               >
-                Marcar leídas
-              </button>
-            ) : null}
+                <p className="text-sm font-medium text-[#1a1a1a]">
+                  Nuevo estudio · {n.patientNombre}
+                </p>
+                {n.titulo ? (
+                  <p className="truncate text-xs text-[#555]">{n.titulo}</p>
+                ) : (
+                  <p className="text-xs text-[#555]">{n.estudioCategoria}</p>
+                )}
+                <p className="mt-1 text-[11px] text-[#999]">
+                  {n.uploadedByName ? `${n.uploadedByName} · ` : ""}
+                  {formatShort(n.createdAt)}
+                </p>
+              </Link>
+            </li>
+          ))
+        )}
+      </ul>
+    </>
+  );
+
+  return (
+    <>
+      <div className="relative" ref={wrapRef}>
+        <button
+          type="button"
+          className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#e8e0d8] bg-white text-[#5c1838] hover:bg-[#efe8e0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5c1838]/40"
+          aria-label="Notificaciones"
+          aria-expanded={open}
+          aria-haspopup="dialog"
+          onClick={() => setOpen((o) => !o)}
+        >
+          <BellIcon className="h-[18px] w-[18px]" />
+          {badge ? (
+            <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#5c1838] px-1 text-[10px] font-semibold leading-none text-white">
+              {badge}
+            </span>
+          ) : null}
+        </button>
+        {open ? (
+          <div
+            role="dialog"
+            aria-label="Lista de notificaciones"
+            className="absolute right-0 top-full z-[120] mt-1 hidden max-h-[min(70vh,24rem)] w-[min(100vw-2rem,22rem)] overflow-hidden rounded-lg border border-[#e8e0d8] bg-white shadow-md md:block"
+          >
+            {listSection}
           </div>
-          <ul className="max-h-[min(60vh,20rem)] overflow-y-auto py-1">
-            {items.length === 0 ? (
-              <li className="px-3 py-6 text-center text-sm text-[#888]">
-                No hay notificaciones
-              </li>
-            ) : (
-              items.map((n) => (
-                <li key={n.id} className="border-b border-[#f7f4f0] last:border-0">
-                  <Link
-                    href={`/patient/${n.patientId}`}
-                    className={`block px-3 py-2.5 text-left hover:bg-[#f5f0eb] ${n.read ? "opacity-80" : "bg-[#faf7f4]"}`}
-                    onClick={() => {
-                      if (!n.read) void markRead(n.id);
-                      setOpen(false);
-                    }}
-                  >
-                    <p className="text-sm font-medium text-[#1a1a1a]">
-                      Nuevo estudio · {n.patientNombre}
-                    </p>
-                    {n.titulo ? (
-                      <p className="truncate text-xs text-[#555]">{n.titulo}</p>
-                    ) : (
-                      <p className="text-xs text-[#555]">{n.estudioCategoria}</p>
-                    )}
-                    <p className="mt-1 text-[11px] text-[#999]">
-                      {n.uploadedByName ? `${n.uploadedByName} · ` : ""}
-                      {formatShort(n.createdAt)}
-                    </p>
-                  </Link>
-                </li>
-              ))
-            )}
-          </ul>
-        </div>
+        ) : null}
+      </div>
+      {open ? (
+        <>
+          <div
+            role="presentation"
+            className="fixed inset-x-0 bottom-0 top-14 z-[118] bg-black/30 md:hidden"
+            onClick={() => setOpen(false)}
+          />
+          <div
+            ref={mobileSheetRef}
+            role="dialog"
+            aria-label="Lista de notificaciones"
+            className="fixed inset-x-0 bottom-0 top-14 z-[120] flex max-h-[calc(100dvh-3.5rem)] flex-col overflow-hidden border-t border-[#e8e0d8] bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.08)] md:hidden"
+          >
+            {listSection}
+          </div>
+        </>
       ) : null}
-    </div>
+    </>
   );
 }
