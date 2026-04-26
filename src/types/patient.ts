@@ -45,6 +45,8 @@ export type EstudioCategoria =
 
 export interface Estudio {
   id: string;
+  /** Identificador opcional para agrupar archivos subidos juntos. */
+  loteId?: string;
   categoria: EstudioCategoria;
   /** Título o nota breve (ej. hemograma, tórax VD). */
   titulo: string;

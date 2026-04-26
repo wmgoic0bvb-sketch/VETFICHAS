@@ -38,6 +38,7 @@ const consultaSchema = new Schema(
 const estudioSchema = new Schema(
   {
     id: { type: String, required: true },
+    loteId: { type: String },
     categoria: { type: String, required: true },
     titulo: { type: String, default: "" },
     url: { type: String, required: true },

@@ -484,6 +484,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
         } catch {
           /* ignore */
         }
+        throw e;
       }
     },
     [reloadFromServer],

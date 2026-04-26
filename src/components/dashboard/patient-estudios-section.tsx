@@ -1,128 +1,54 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { EstudioUploadModal } from "@/components/dashboard/estudio-upload-modal";
+import { EstudiosGroupCard } from "@/components/dashboard/estudios-group-card";
 import { usePatients } from "@/components/providers/patients-provider";
 import { ConfirmAlertDialog } from "@/components/ui/confirm-alert-dialog";
 import { DbLoadingOverlay } from "@/components/ui/lottie-loading";
-import { formatFecha } from "@/lib/date-utils";
-import type { Estudio, EstudioCategoria, Paciente } from "@/types/patient";
+import type { Estudio, Paciente } from "@/types/patient";
 import { toast } from "sonner";
-
-const categoriaBadgeClass: Record<EstudioCategoria, string> = {
-  "Sangre / laboratorio": "bg-rose-100 text-rose-900",
-  Radiografía: "bg-sky-100 text-sky-900",
-  Ecografía: "bg-violet-100 text-violet-900",
-  Otro: "bg-stone-100 text-stone-800",
-};
-
-function isImageType(ct: string) {
-  return /^image\//i.test(ct);
-}
 
 function toProtectedBlobUrl(url: string): string {
   return `/api/blob/file?url=${encodeURIComponent(url)}`;
 }
 
-function EstudioHeader({ e }: { e: Estudio }) {
-  const fechaStr = formatFecha(e.fecha.split("T")[0] ?? e.fecha);
-  const tituloLine = e.titulo.trim() || e.nombreArchivo;
-
-  return (
-    <div className="min-w-0 flex-1">
-      <div className="mb-1 text-xs text-[#888]">{fechaStr}</div>
-      <span
-        className={`mb-1.5 inline-block max-w-full rounded-full px-2.5 py-0.5 text-[11px] font-semibold leading-tight ${categoriaBadgeClass[e.categoria] ?? "bg-emerald-100 text-emerald-900"}`}
-      >
-        {e.categoria}
-      </span>
-      <div className="text-[15px] font-semibold leading-snug text-[#1a1a1a]">{tituloLine}</div>
-    </div>
-  );
+interface EstudioGroup {
+  key: string;
+  estudios: Estudio[];
 }
 
-function EstudioCard({
-  e,
-  onRemoveClick,
-}: {
-  e: Estudio;
-  onRemoveClick: (e: Estudio) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const panelId = `estudio-detail-${e.id}`;
-  const triggerId = `estudio-trigger-${e.id}`;
+function groupEstudios(estudios: Estudio[]): EstudioGroup[] {
+  const groups = new Map<string, EstudioGroup>();
+  for (const e of estudios) {
+    const key = e.loteId?.trim() ? `lote:${e.loteId}` : `single:${e.id}`;
+    const current = groups.get(key);
+    if (current) current.estudios.push(e);
+    else groups.set(key, { key, estudios: [e] });
+  }
+  return [...groups.values()];
+}
 
-  return (
-    <div className="overflow-hidden rounded-[14px] border-l-[3px] border-[#5c1838]/35 bg-[#f5f0eb]">
-      <button
-        type="button"
-        id={triggerId}
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        aria-controls={panelId}
-        className="flex w-full items-start gap-2 px-4 py-3.5 text-left transition-colors hover:bg-[#efeae2]"
-      >
-        <EstudioHeader e={e} />
-        <span
-          className={`mt-1 inline-block shrink-0 text-[10px] leading-none text-[#888] transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-          aria-hidden
-        >
-          ▼
-        </span>
-      </button>
-      {open ? (
-        <div
-          id={panelId}
-          role="region"
-          aria-labelledby={triggerId}
-          className="border-t border-[#e0d9cf] bg-[#faf8f5] px-4 py-3"
-        >
-          <div className="flex gap-3">
-            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-[#f0ebe4]">
-              {isImageType(e.contentType) ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={toProtectedBlobUrl(e.url)}
-                  alt=""
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-3xl">
-                  📄
-                </div>
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="break-words text-[13px] leading-relaxed text-[#555]">
-                <span className="text-[#888]">Archivo: </span>
-                {e.nombreArchivo}
-              </div>
-              <div className="mt-2 flex flex-wrap gap-3">
-                <a
-                  href={toProtectedBlobUrl(e.url)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[13px] font-semibold text-[#5c1838] underline"
-                >
-                  Abrir / descargar
-                </a>
-                <button
-                  type="button"
-                  onClick={(ev) => {
-                    ev.preventDefault();
-                    onRemoveClick(e);
-                  }}
-                  className="text-[13px] font-medium text-red-600 hover:underline"
-                >
-                  Quitar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
-    </div>
-  );
+function fileExt(estudio: Estudio): string {
+  const fromName = estudio.nombreArchivo.split(".").pop()?.trim().toLowerCase() ?? "";
+  if (fromName) return fromName;
+  if (estudio.contentType === "application/pdf") return "pdf";
+  if (estudio.contentType.startsWith("image/")) return estudio.contentType.split("/")[1] ?? "jpg";
+  return "bin";
+}
+
+function sanitizeFilenamePart(input: string): string {
+  return input
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9_-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function estudioTipoDescarga(categoria: Estudio["categoria"]): string {
+  if (categoria === "Sangre / laboratorio") return "Laboratorio";
+  return categoria;
 }
 
 export function PatientEstudiosSection({ patient }: { patient: Paciente }) {
@@ -132,10 +58,16 @@ export function PatientEstudiosSection({ patient }: { patient: Paciente }) {
     null,
   );
   const [removing, setRemoving] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedGroupKeys, setSelectedGroupKeys] = useState<string[]>([]);
+  const [downloading, setDownloading] = useState(false);
 
   const estudios = [...(patient.estudios ?? [])].sort(
     (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
   );
+  const grupos = useMemo(() => groupEstudios(estudios), [estudios]);
+  const selectedGroups = grupos.filter((g) => selectedGroupKeys.includes(g.key));
+  const selectedFilesCount = selectedGroups.reduce((acc, g) => acc + g.estudios.length, 0);
 
   const executeRemoveEstudio = async (e: Estudio) => {
     setRemoving(true);
@@ -162,20 +94,118 @@ export function PatientEstudiosSection({ patient }: { patient: Paciente }) {
     }
   };
 
+  const exitSelectionMode = () => {
+    setSelectionMode(false);
+    setSelectedGroupKeys([]);
+  };
+
+  const toggleGroupSelection = (key: string) => {
+    setSelectedGroupKeys((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
+    );
+  };
+
+  const downloadSelected = async () => {
+    if (selectedGroups.length === 0) {
+      toast.error("Seleccioná al menos una card para descargar.");
+      return;
+    }
+    const petName = sanitizeFilenamePart(patient.nombre) || "Mascota";
+    const usedNames = new Map<string, number>();
+    setDownloading(true);
+    try {
+      for (const group of selectedGroups) {
+        for (const estudio of group.estudios) {
+          const categoria =
+            sanitizeFilenamePart(estudioTipoDescarga(estudio.categoria)) || "Estudio";
+          const ext = fileExt(estudio);
+          const base = `${categoria}-${petName}`;
+          const prevUses = usedNames.get(`${base}.${ext}`) ?? 0;
+          const nextUses = prevUses + 1;
+          usedNames.set(`${base}.${ext}`, nextUses);
+          const suffix = nextUses > 1 ? `-${nextUses}` : "";
+          const filename = `${base}${suffix}.${ext}`;
+          const res = await fetch(toProtectedBlobUrl(estudio.url));
+          if (!res.ok) throw new Error("No se pudo descargar uno de los archivos.");
+          const blob = await res.blob();
+          const localUrl = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = localUrl;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(localUrl);
+        }
+      }
+      toast.success("Descargas iniciadas.");
+      exitSelectionMode();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Error al descargar.");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <section className="relative">
-      <DbLoadingOverlay show={removing} />
+      <DbLoadingOverlay show={removing || downloading} />
       <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-xs font-bold uppercase tracking-wider text-[#5c1838]">
           Estudios (PDF / imágenes) ({estudios.length})
         </h2>
-        <button
-          type="button"
-          onClick={() => setUploadModalOpen(true)}
-          className="shrink-0 rounded-xl bg-[#5c1838] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#401127] sm:w-auto sm:self-center"
-        >
-          + Subir estudio
-        </button>
+        <div className="flex flex-wrap gap-2">
+          {selectionMode ? (
+            <>
+              <button
+                type="button"
+                onClick={() => void downloadSelected()}
+                disabled={selectedGroupKeys.length === 0 || downloading}
+                className="rounded-xl bg-[#5c1838] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#401127] disabled:opacity-50"
+              >
+                Descargar seleccionados ({selectedFilesCount})
+              </button>
+              <button
+                type="button"
+                onClick={exitSelectionMode}
+                disabled={downloading}
+                className="rounded-xl border border-[#5c1838]/30 bg-white px-4 py-2.5 text-sm font-semibold text-[#5c1838] hover:bg-[#f8f1f5] disabled:opacity-50"
+              >
+                Cancelar selección
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setSelectionMode(true)}
+              aria-label="Seleccionar para descargar"
+              title="Seleccionar para descargar"
+              className="rounded-xl border border-[#5c1838]/30 bg-[#f5f0eb] px-3 py-2.5 text-[#5c1838] transition-colors hover:bg-[#efe7df]"
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 3v12" />
+                <path d="m7 10 5 5 5-5" />
+                <path d="M5 21h14" />
+              </svg>
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setUploadModalOpen(true)}
+            className="shrink-0 rounded-xl bg-[#5c1838] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#401127] sm:w-auto sm:self-center"
+          >
+            + Subir estudio
+          </button>
+        </div>
       </div>
 
       <EstudioUploadModal
@@ -201,15 +231,21 @@ export function PatientEstudiosSection({ patient }: { patient: Paciente }) {
         }}
       />
 
-      {estudios.length === 0 ? (
+      {grupos.length === 0 ? (
         <div className="py-8 text-center text-sm text-[#aaa]">
           Sin estudios adjuntos
         </div>
       ) : (
         <ul className="list-none space-y-4 p-0">
-          {estudios.map((e) => (
-            <li key={e.id}>
-              <EstudioCard e={e} onRemoveClick={setEstudioPendingRemove} />
+          {grupos.map((group) => (
+            <li key={group.key}>
+              <EstudiosGroupCard
+                group={group.estudios}
+                selected={selectedGroupKeys.includes(group.key)}
+                selectable={selectionMode}
+                onToggleSelect={() => toggleGroupSelection(group.key)}
+                onRemoveClick={setEstudioPendingRemove}
+              />
             </li>
           ))}
         </ul>

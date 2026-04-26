@@ -40,7 +40,9 @@ function isEstudioInput(body: unknown): body is Omit<Estudio, "id" | "fecha"> {
   const o = body as Record<string, unknown>;
   const url = typeof o.url === "string" ? o.url.trim() : "";
   const categoria = o.categoria;
+  const loteId = o.loteId;
   if (!url || typeof categoria !== "string") return false;
+  if (loteId !== undefined && typeof loteId !== "string") return false;
   return CATEGORIAS.includes(categoria as EstudioCategoria);
 }
 
@@ -69,7 +71,8 @@ export const POST = auth(async (req: NextAuthRequest, ctx) => {
     ...body,
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
     fecha: new Date().toISOString(),
-    titulo: typeof body.titulo === "string" ? body.titulo : "",
+    titulo: typeof body.titulo === "string" ? body.titulo.trim() : "",
+    loteId: typeof body.loteId === "string" ? body.loteId.trim() : undefined,
     nombreArchivo:
       typeof body.nombreArchivo === "string" ? body.nombreArchivo : "",
     contentType:
