@@ -9,6 +9,11 @@ export type ConsultaTipo =
   | "Cirugía";
 
 export type AsistenciaProximoControl = "asistio" | "ausente";
+export type ReminderWindow = "24h_before" | "same_day_08am";
+
+export interface ProximoControlReminderMeta {
+  lastSentAtByWindow?: Partial<Record<ReminderWindow, string>>;
+}
 
 /** Recordatorio de próximo control (varios por paciente). */
 export interface ProximoControl {
@@ -20,6 +25,8 @@ export interface ProximoControl {
   nota?: string;
   /** Solo cuando la fecha ya pasó: si asistió o se ausentó. */
   asistencia?: AsistenciaProximoControl | null;
+  /** Trazabilidad de recordatorios enviados por ventana. */
+  reminderMeta?: ProximoControlReminderMeta;
 }
 
 export interface Consulta {

@@ -15,6 +15,12 @@ const proximoControlSchema = new Schema(
     sucursalId: { type: String, required: true },
     nota: { type: String },
     asistencia: { type: Schema.Types.Mixed, default: null },
+    reminderMeta: {
+      lastSentAtByWindow: {
+        "24h_before": { type: String },
+        same_day_08am: { type: String },
+      },
+    },
   },
   { _id: false },
 );

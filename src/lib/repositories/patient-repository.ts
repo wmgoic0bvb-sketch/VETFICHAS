@@ -55,6 +55,27 @@ function normalizeProximoControlBody(
       ? asRaw
       : null;
 
+  const reminderMetaRaw = o.reminderMeta;
+  const reminderMeta = (() => {
+    if (!reminderMetaRaw || typeof reminderMetaRaw !== "object") return undefined;
+    const byWindow = (
+      reminderMetaRaw as { lastSentAtByWindow?: unknown }
+    ).lastSentAtByWindow;
+    if (!byWindow || typeof byWindow !== "object") return undefined;
+    const d24 = (byWindow as { ["24h_before"]?: unknown })["24h_before"];
+    const d8 = (byWindow as { same_day_08am?: unknown }).same_day_08am;
+    const out: NonNullable<ProximoControl["reminderMeta"]> = {
+      lastSentAtByWindow: {},
+    };
+    if (typeof d24 === "string" && d24.trim()) {
+      out.lastSentAtByWindow["24h_before"] = d24.trim();
+    }
+    if (typeof d8 === "string" && d8.trim()) {
+      out.lastSentAtByWindow.same_day_08am = d8.trim();
+    }
+    return Object.keys(out.lastSentAtByWindow).length > 0 ? out : undefined;
+  })();
+
   const build = (
     fechaHora: string,
     sid: string,
@@ -64,7 +85,9 @@ function normalizeProximoControlBody(
       sucursalId: sid,
       asistencia,
     };
-    return nota !== undefined ? { ...base, nota } : base;
+    if (nota !== undefined) base.nota = nota;
+    if (reminderMeta) base.reminderMeta = reminderMeta;
+    return base;
   };
 
   if (fechaHoraRaw && isFechaHoraProximoControlValida(fechaHoraRaw)) {
