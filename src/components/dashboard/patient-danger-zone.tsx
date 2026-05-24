@@ -3,11 +3,11 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState } from "react";
+import { PatientArchiveModal } from "@/components/dashboard/patient-archive-modal";
 import {
   draftFromPatient,
 } from "@/components/dashboard/patient-ficha-edit-form";
 import { usePatients } from "@/components/providers/patients-provider";
-import { ConfirmAlertDialog } from "@/components/ui/confirm-alert-dialog";
 import { DbLoadingOverlay } from "@/components/ui/lottie-loading";
 import {
   ESTADO_PACIENTE_LABELS,
@@ -218,18 +218,11 @@ export function PatientDangerZone({ patient }: { patient: Paciente }) {
         </div>
       </section>
 
-      <ConfirmAlertDialog
+      <PatientArchiveModal
         open={archiveConfirmOpen}
-        onOpenChange={setArchiveConfirmOpen}
-        title="¿Archivar esta ficha?"
-        description="Dejará de aparecer en el listado principal. El historial se conserva y podés verla en «fichas archivadas»."
-        confirmLabel="Archivar"
-        cancelLabel="Cancelar"
-        onConfirm={() => {
-          void aplicarEstado("archivado").finally(() =>
-            setArchiveConfirmOpen(false),
-          );
-        }}
+        patient={patient}
+        onClose={() => setArchiveConfirmOpen(false)}
+        onPendingChange={setPending}
       />
     </>
   );

@@ -9,12 +9,15 @@ import { usePatients } from "@/components/providers/patients-provider";
 import { DbLoadingOverlay, LottieSpinner } from "@/components/ui/lottie-loading";
 import { Modal } from "@/components/ui/modal";
 import { usePendingNavigation } from "@/lib/use-pending-navigation";
-import { defaultDatosInternacion } from "@/lib/internacion-utils";
+import {
+  buildInternacionHistorialEntry,
+  defaultDatosInternacion,
+} from "@/lib/internacion-utils";
 import {
   dueñosParaBusqueda,
   formatDueñosCorto,
 } from "@/lib/dueños-utils";
-import type { InternacionHistorial, Paciente, TipoEgreso } from "@/types/patient";
+import type { Paciente, TipoEgreso } from "@/types/patient";
 
 interface EgresoModalState {
   paciente: Paciente;
@@ -93,18 +96,12 @@ export function InternacionesView() {
     setBusyId(paciente.id);
     try {
       const base = paciente.datosInternacion ?? defaultDatosInternacion();
-      const internacionCompletada = {
-        ...base,
+      const histEntry = buildInternacionHistorialEntry({
+        base,
         fechaAlta: new Date(fechaHoraLocal).toISOString(),
-        tipoEgreso: tipo,
-        ...(tipo === "fallecimiento" && causa.trim()
-          ? { causaFallecimiento: causa.trim() }
-          : {}),
-      };
-      const histEntry: InternacionHistorial = {
-        ...internacionCompletada,
-        id: `int-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-      };
+        tipo,
+        causa,
+      });
       await updatePatient(paciente.id, {
         ...draftFromPatient(paciente),
         internado: false,

@@ -27,6 +27,31 @@ export function defaultDatosInternacion(): DatosInternacion {
   };
 }
 
+export function nuevoIdInternacionHistorial(): string {
+  return `int-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+export function buildInternacionHistorialEntry({
+  base,
+  fechaAlta,
+  tipo,
+  causa,
+}: {
+  base: DatosInternacion;
+  fechaAlta: string;
+  tipo: TipoEgreso;
+  causa?: string;
+}): InternacionHistorial {
+  return {
+    ...base,
+    fechaAlta,
+    tipoEgreso: tipo,
+    causaFallecimiento:
+      tipo === "fallecimiento" && causa?.trim() ? causa.trim() : undefined,
+    id: nuevoIdInternacionHistorial(),
+  };
+}
+
 function normalizeOrden(raw: unknown): OrdenTratamientoInternacion | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
