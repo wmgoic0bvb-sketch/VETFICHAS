@@ -86,12 +86,11 @@ export function Dashboard() {
     return (
       <AppShell onNewPatient={() => {}}>
         <div
-          className="flex flex-1 flex-col items-center justify-center gap-3 text-[#888]"
+          className="flex min-h-[70vh] flex-1 flex-col items-center justify-center text-[#888]"
           role="status"
           aria-label="Cargando pacientes"
         >
           <LottieSpinner size={140} />
-          <span className="text-sm">Cargando…</span>
         </div>
       </AppShell>
     );

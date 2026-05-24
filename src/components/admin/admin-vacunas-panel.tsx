@@ -73,12 +73,11 @@ export function AdminVacunasPanel() {
       <div className="overflow-hidden rounded-2xl border border-[#e8e0d8] bg-white shadow-sm">
         {loading ? (
           <div
-            className="flex flex-col items-center justify-center gap-3 p-10"
+            className="flex min-h-[50vh] flex-col items-center justify-center p-10"
             role="status"
             aria-label="Cargando vacunas"
           >
             <LottieSpinner size={120} />
-            <span className="text-sm text-[#888]">Cargando…</span>
           </div>
         ) : vacunas.length === 0 ? (
           <p className="p-8 text-center text-[#888]">

@@ -12,7 +12,7 @@ import {
 import { User } from "@/models/user";
 import mongoose from "mongoose";
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 
 export async function PATCH(request: NextRequest, context: Ctx) {
   const auth = await requireAdminToken(request);
@@ -23,7 +23,7 @@ export async function PATCH(request: NextRequest, context: Ctx) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
-  const { id } = context.params;
+  const { id } = await context.params;
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return NextResponse.json({ error: "ID inválido" }, { status: 400 });
   }
@@ -164,7 +164,7 @@ export async function DELETE(request: NextRequest, context: Ctx) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
-  const { id } = context.params;
+  const { id } = await context.params;
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return NextResponse.json({ error: "ID inválido" }, { status: 400 });
   }

@@ -13,16 +13,16 @@ function forbidden() {
 }
 
 async function paramId(ctx: {
-  params: Promise<{ id: string }> | { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const p = await Promise.resolve(ctx.params);
+  const p = await ctx.params;
   return p.id;
 }
 
 export const PATCH = auth(
   async (
     req: NextAuthRequest,
-    context: { params: Promise<{ id: string }> | { id: string } },
+    context: { params: Promise<{ id: string }> },
   ) => {
   if (req.auth?.user?.role !== "admin") {
     return forbidden();
@@ -88,7 +88,7 @@ export const PATCH = auth(
 export const DELETE = auth(
   async (
     _req: NextAuthRequest,
-    context: { params: Promise<{ id: string }> | { id: string } },
+    context: { params: Promise<{ id: string }> },
   ) => {
   if (_req.auth?.user?.role !== "admin") {
     return forbidden();
