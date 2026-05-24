@@ -125,9 +125,8 @@ export function InternacionesView() {
 
   if (!ready) {
     return (
-      <main className="mx-auto flex w-full max-w-[900px] flex-1 flex-col items-center justify-center gap-3 px-4 py-16 text-[#888]">
+      <main className="mx-auto flex min-h-[70vh] w-full max-w-[900px] flex-1 flex-col items-center justify-center px-4 text-[#888]">
         <LottieSpinner size={140} />
-        <span className="text-sm">Cargando…</span>
       </main>
     );
   }
@@ -167,7 +166,7 @@ export function InternacionesView() {
                       {p.especie === "Perro" ? "🐶" : "🐱"}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block font-semibold text-[#1a1a1a]">
+                      <span className="block font-semibold capitalize text-[#1a1a1a]">
                         {p.nombre}
                       </span>
                       <span className="text-[13px] text-[#888]">
@@ -210,6 +209,7 @@ export function InternacionesView() {
               <div key={p.id} className="flex flex-col">
                 <PatientCard
                   patient={p}
+                  href={`/internaciones/${p.id}`}
                   onOpen={(id) => push(`/internaciones/${id}`)}
                 />
                 <button
@@ -249,7 +249,7 @@ export function InternacionesView() {
               >
                 Registrar egreso
               </h2>
-              <p className="mt-0.5 text-[14px] text-[#888]">
+              <p className="mt-0.5 text-[14px] capitalize text-[#888]">
                 {egresoModal.paciente.nombre}
               </p>
             </div>

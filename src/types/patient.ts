@@ -2,6 +2,7 @@ export type Especie = "Perro" | "Gato";
 
 export type ConsultaTipo =
   | "Consulta"
+  | "Consulta a domicilio"
   | "Control"
   | "Vacuna"
   | "Urgencia"
@@ -44,6 +45,8 @@ export type EstudioCategoria =
 
 export interface Estudio {
   id: string;
+  /** Identificador opcional para agrupar archivos subidos juntos. */
+  loteId?: string;
   categoria: EstudioCategoria;
   /** Título o nota breve (ej. hemograma, tórax VD). */
   titulo: string;
@@ -145,9 +148,18 @@ export interface DatosInternacion {
   evoluciones: EvolucionRondaInternacion[];
 }
 
+export type SucursalPaciente = "AVENIDA" | "VILLEGAS" | "MITRE";
+
 export interface Paciente {
   id: string;
+  /** Fecha de alta en el sistema (Mongo `createdAt`), ISO 8601. */
+  createdAt?: string;
+  /** Token opaco para el carnet público (`/carnet/[token]`). */
+  carnetPublicToken?: string;
+  /** URL de foto de perfil (Vercel Blob). */
+  fotoUrl?: string;
   especie: Especie;
+  sucursal?: SucursalPaciente | null;
   nombre: string;
   raza: string;
   sexo: string;

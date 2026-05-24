@@ -4,6 +4,7 @@ import { useEffect, useId, useState } from "react";
 import { usePatients } from "@/components/providers/patients-provider";
 import type { PacienteEditable } from "@/components/providers/patients-provider";
 import { FieldError, inputErrorRing } from "@/components/ui/field-error";
+import { toPascalCase } from "@/lib/name-case";
 import {
   normalizePhoneInput,
   normalizeStoredPhoneForEdit,
@@ -15,7 +16,10 @@ import {
   type DueñoContacto,
   type EstadoPaciente,
   type Paciente,
+  type SucursalPaciente,
 } from "@/types/patient";
+
+const SUCURSALES: SucursalPaciente[] = ["AVENIDA", "VILLEGAS", "MITRE"];
 
 type FieldKeys = "especie" | "nombre" | "dueño1";
 type FieldErrors = Partial<Record<FieldKeys, string>>;
@@ -23,6 +27,7 @@ type FieldErrors = Partial<Record<FieldKeys, string>>;
 export function draftFromPatient(p: Paciente): PacienteEditable {
   return {
     especie: p.especie,
+    sucursal: p.sucursal ?? null,
     nombre: p.nombre,
     raza: p.raza,
     sexo: p.sexo,
@@ -112,8 +117,8 @@ export function PatientFichaEditForm({
   };
 
   const saveEdit = async () => {
-    const n = draft.nombre.trim();
-    const d1 = draft.dueños[0].nombre.trim();
+    const n = toPascalCase(draft.nombre);
+    const d1 = toPascalCase(draft.dueños[0].nombre);
     const nextErrors: FieldErrors = {};
     if (!draft.especie) nextErrors.especie = "Elegí si es perro o gato.";
     if (!n) nextErrors.nombre = "Ingresá el nombre de la mascota.";
@@ -134,7 +139,7 @@ export function PatientFichaEditForm({
         dueños: [
           { nombre: d1, tel: normalizePhoneInput(draft.dueños[0].tel) },
           {
-            nombre: draft.dueños[1].nombre.trim(),
+            nombre: toPascalCase(draft.dueños[1].nombre),
             tel: normalizePhoneInput(draft.dueños[1].tel),
           },
         ],
@@ -205,6 +210,33 @@ export function PatientFichaEditForm({
         {fieldErrors.especie ? (
           <FieldError message={fieldErrors.especie} />
         ) : null}
+      </div>
+
+      <div>
+        <span className="mb-2 block text-[13px] font-semibold text-[#555]">
+          Sucursal
+        </span>
+        <div className="flex gap-2">
+          {SUCURSALES.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() =>
+                setDraft((prev) => ({
+                  ...prev,
+                  sucursal: prev.sucursal === s ? null : s,
+                }))
+              }
+              className={`flex-1 rounded-xl border-[1.5px] py-2 text-[13px] font-semibold transition-colors ${
+                draft.sucursal === s
+                  ? "border-[#5c1838] bg-[#5c1838] text-white"
+                  : "border-[#e8e0d8] bg-[#faf9f7] text-[#555] hover:border-[#c4a3a8]"
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div>

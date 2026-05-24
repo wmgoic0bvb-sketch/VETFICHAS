@@ -28,6 +28,7 @@ const authConfig = {
         token.id = user.id;
         token.dni = user.dni;
         token.role = user.role ?? "user";
+        token.sucursal = user.sucursal ?? null;
         token.name = user.name ?? "";
         token.picture = user.image ?? undefined;
       }
@@ -44,6 +45,7 @@ const authConfig = {
         session.user.id = (token.id as string) ?? token.sub ?? "";
         session.user.dni = token.dni as string;
         session.user.role = token.role ?? "user";
+        session.user.sucursal = token.sucursal ?? null;
         session.user.name =
           typeof token.name === "string" ? token.name : "";
         session.user.image =

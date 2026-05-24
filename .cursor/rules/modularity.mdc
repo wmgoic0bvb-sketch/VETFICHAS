@@ -1,0 +1,9 @@
+---
+description: Evitar archivos gigantes en la visualización del paciente
+globs: ["src/app/patient/[id]/**/*", "src/components/internaciones/**/*"]
+alwaysApply: true
+---
+
+# Modularidad en VetFichas
+- **Límite de Líneas:** Máximo 250 líneas por archivo.
+- **Refactorización:** Si vas a añadir una funcionalidad a la ficha del paciente (ej. un nuevo modal de estudio), créalo como un componente separado en `src/components/` y transpórtalo.

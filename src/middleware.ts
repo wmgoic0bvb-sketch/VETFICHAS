@@ -25,6 +25,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  if (pathname.startsWith("/carnet") || pathname.startsWith("/api/carnet")) {
+    return NextResponse.next();
+  }
+
   if (!isLoggedIn) {
     return NextResponse.redirect(new URL("/login", request.url));
   }

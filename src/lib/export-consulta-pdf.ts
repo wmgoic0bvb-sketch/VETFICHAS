@@ -37,26 +37,46 @@ export async function exportConsultaPdf(
     value: c.veterinario ?? "",
   });
 
+  const esVacuna = c.tipo === "Vacuna";
+
   y = drawSectionTitle(
     doc,
     pageW,
-    "Detalle de la consulta",
+    esVacuna ? "Detalle de la vacunación" : "Detalle de la consulta",
     y,
     c.fecha ? formatFecha(c.fecha) : undefined,
   );
 
   y = drawBrandRule(doc, pageW, y, true);
 
-  const rows: Array<[string, string | undefined | null]> = [
-    ["Tipo", c.tipo],
-    ["Motivo", c.motivo],
-    ["Veterinario/a", c.veterinario],
-    ["Peso", c.peso ? `${c.peso} kg` : undefined],
-    ["Temperatura", c.temp ? `${c.temp} °C` : undefined],
-    ["Diagnóstico", c.diag],
-    ["Tratamiento", c.trat],
-    ["Medicación", c.meds],
-  ];
+  const refuerzoPdf =
+    esVacuna && c.meds?.trim()
+      ? /^\d{4}-\d{2}-\d{2}$/.test(c.meds.trim())
+        ? formatFecha(c.meds.trim())
+        : /^\d{2}\/\d{2}\/\d{4}$/.test(c.meds.trim())
+          ? c.meds.trim()
+        : c.meds.trim()
+      : c.meds;
+
+  const rows: Array<[string, string | undefined | null]> = esVacuna
+    ? [
+        ["Tipo", c.tipo],
+        ["Vacuna", c.motivo],
+        ["Veterinario/a", c.veterinario],
+        ["Marca", c.diag],
+        ["Lote", c.trat],
+        ["Próximo refuerzo", refuerzoPdf],
+      ]
+    : [
+        ["Tipo", c.tipo],
+        ["Motivo", c.motivo],
+        ["Veterinario/a", c.veterinario],
+        ["Peso", c.peso ? `${c.peso} kg` : undefined],
+        ["Temperatura", c.temp ? `${c.temp} °C` : undefined],
+        ["Diagnóstico", c.diag],
+        ["Tratamiento", c.trat],
+        ["Medicación", c.meds],
+      ];
 
   let rowIndex = 0;
   for (const [label, value] of rows) {

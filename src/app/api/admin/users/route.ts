@@ -17,6 +17,7 @@ type UserListLean = {
   dni: string | number;
   name?: string | null;
   role?: string;
+  sucursal?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
 };
@@ -37,7 +38,7 @@ export const GET = auth(async (req: NextAuthRequest) => {
       roleFilter === "vet" ? { role: "vet" as const } : {};
 
     const rows = (await User.find(query)
-      .select("dni name role createdAt updatedAt")
+      .select("dni name role sucursal createdAt updatedAt")
       .sort({ createdAt: -1 })
       .lean()
       .exec()) as unknown as UserListLean[];
@@ -47,6 +48,7 @@ export const GET = auth(async (req: NextAuthRequest) => {
       dni: typeof u.dni === "string" ? u.dni : String(u.dni),
       name: u.name ?? null,
       role: roleFromDb(u.role),
+      sucursal: (u.sucursal as "AVENIDA" | "VILLEGAS" | "MITRE" | null) ?? null,
       createdAt: u.createdAt?.toISOString() ?? null,
       updatedAt: u.updatedAt?.toISOString() ?? null,
     }));
@@ -101,6 +103,12 @@ export const POST = auth(async (req: NextAuthRequest) => {
 
   const role = isValidRole(roleIn) ? roleIn : "user";
 
+  const SUCURSALES = ["AVENIDA", "VILLEGAS", "MITRE"] as const;
+  type Sucursal = (typeof SUCURSALES)[number];
+  const sucursalIn = b.sucursal;
+  const sucursal: Sucursal | null =
+    SUCURSALES.includes(sucursalIn as Sucursal) ? (sucursalIn as Sucursal) : null;
+
   try {
     await connectMongo();
     const passwordHash = await hashPassword(password);
@@ -109,6 +117,7 @@ export const POST = auth(async (req: NextAuthRequest) => {
       passwordHash,
       name,
       role,
+      sucursal,
     });
 
     return NextResponse.json({
@@ -117,6 +126,7 @@ export const POST = auth(async (req: NextAuthRequest) => {
         dni: String(doc.dni),
         name: doc.name ?? null,
         role: roleFromDb(doc.role),
+        sucursal: (doc.sucursal as Sucursal | null) ?? null,
         createdAt: doc.createdAt?.toISOString() ?? null,
         updatedAt: doc.updatedAt?.toISOString() ?? null,
       },

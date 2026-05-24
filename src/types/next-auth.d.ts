@@ -4,6 +4,7 @@ declare module "next-auth" {
   interface User {
     dni: string;
     role?: "user" | "admin" | "vet";
+    sucursal?: "AVENIDA" | "VILLEGAS" | "MITRE" | null;
   }
 
   interface Session {
@@ -12,6 +13,7 @@ declare module "next-auth" {
       dni: string;
       role: "user" | "admin" | "vet";
       name: string;
+      sucursal?: "AVENIDA" | "VILLEGAS" | "MITRE" | null;
     };
   }
 }
@@ -21,6 +23,7 @@ declare module "next-auth/jwt" {
     id?: string;
     dni?: string;
     role?: "user" | "admin" | "vet";
+    sucursal?: "AVENIDA" | "VILLEGAS" | "MITRE" | null;
     name?: string;
     picture?: string | null;
   }

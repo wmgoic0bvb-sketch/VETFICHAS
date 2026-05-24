@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+import Link from "next/link";
 import { formatDueñosCorto } from "@/lib/dueños-utils";
 import { esPacienteActivo, type Paciente } from "@/types/patient";
 
@@ -10,35 +12,64 @@ function emoji(especie: Paciente["especie"]) {
 export function PatientCard({
   patient,
   onOpen,
+  userSucursal,
+  href,
 }: {
   patient: Paciente;
   onOpen: (id: string) => void;
+  userSucursal?: Paciente["sucursal"] | null;
+  href?: string;
 }) {
   const badgeClass =
     patient.especie === "Perro"
       ? "bg-sky-100 text-blue-900"
       : "bg-violet-100 text-violet-900";
+  const esOtraSucursal =
+    !!userSucursal && !!patient.sucursal && patient.sucursal !== userSucursal;
 
   return (
-    <button
-      type="button"
+    <Link
+      href={href ?? `/patient/${patient.id}`}
       onClick={() => onOpen(patient.id)}
-      className="cursor-pointer rounded-[18px] border-2 border-transparent bg-white px-4 py-5 text-center transition-all hover:-translate-y-0.5 hover:border-[#5c1838]"
+      className={`group cursor-pointer rounded-[18px] border-2 border-transparent px-4 py-5 text-center transition-all hover:-translate-y-0.5 hover:border-[#5c1838] ${
+        esOtraSucursal ? "bg-[#faf7f3]" : "bg-white"
+      }`}
     >
-      <span className="mb-2 block text-[52px] leading-none" aria-hidden>
-        {emoji(patient.especie)}
-      </span>
-      <div className="text-base font-bold text-[#1a1a1a]">{patient.nombre}</div>
+      {patient.fotoUrl ? (
+        <Image
+          src={patient.fotoUrl}
+          alt={`Foto de ${patient.nombre}`}
+          width={52}
+          height={52}
+          className="mx-auto mb-2 block h-[52px] w-[52px] rounded-full object-cover ring-2 ring-[#e8e0d8] transition-transform duration-200 ease-out group-hover:scale-[1.3]"
+          sizes="52px"
+          unoptimized
+        />
+      ) : (
+        <span className="mb-2 block text-[52px] leading-none" aria-hidden>
+          {emoji(patient.especie)}
+        </span>
+      )}
+      <div className="text-base font-bold capitalize text-[#1a1a1a]">
+        {patient.nombre}
+      </div>
       <div className="mt-1 text-xs text-[#888]">
         {patient.raza || patient.especie}
       </div>
-      <div className="mt-1.5 text-xs font-medium text-[#5c1838]">
+      <div className="mt-1.5 text-xs font-medium capitalize text-[#5c1838]">
         👤 {formatDueñosCorto(patient.dueños)}
       </div>
       {!esPacienteActivo(patient) ? (
         <div className="mt-2 flex justify-center">
           <span className="rounded-full bg-stone-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-800">
             Archivado
+          </span>
+        </div>
+      ) : null}
+      {esOtraSucursal ? (
+        <div className="mt-2 flex justify-center">
+          <span className="rounded-full bg-[#efe3d4] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#8b5e3c]">
+            📍 {patient.sucursal}
           </span>
         </div>
       ) : null}
@@ -68,6 +99,6 @@ export function PatientCard({
       >
         {patient.especie}
       </span>
-    </button>
+    </Link>
   );
 }

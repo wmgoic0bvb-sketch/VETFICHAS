@@ -27,11 +27,11 @@ function deepEqual(a: unknown, b: unknown): boolean {
   );
 }
 
-/** Paciente sin el historial de auditoría (solo comparación clínica). */
+/** Paciente sin el historial de auditoría (solo comparación clínica). Excluye foto de perfil. */
 export function patientClinicalSnapshot(
   p: Paciente,
-): Omit<Paciente, "historialModificaciones"> {
-  const { historialModificaciones: _h, ...rest } = p;
+): Omit<Paciente, "historialModificaciones" | "fotoUrl"> {
+  const { historialModificaciones: _h, fotoUrl: _f, ...rest } = p;
   return rest;
 }
 

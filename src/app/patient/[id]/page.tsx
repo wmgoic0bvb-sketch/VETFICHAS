@@ -10,13 +10,18 @@ import {
   PatientFichaEditForm,
   PencilIcon,
 } from "@/components/dashboard/patient-ficha-edit-form";
+import { PatientFichaFotoBlock } from "@/components/dashboard/patient-ficha-foto-block";
 import { PatientEstudiosSection } from "@/components/dashboard/patient-estudios-section";
 import { ProximosControlesSection } from "@/components/dashboard/proximo-control-section";
 import { usePatients } from "@/components/providers/patients-provider";
 import { LottieSpinner } from "@/components/ui/lottie-loading";
 import { Modal } from "@/components/ui/modal";
 import { WhatsAppIcon } from "@/components/ui/whatsapp-icon";
-import { calcularEdad, formatFecha } from "@/lib/date-utils";
+import {
+  calcularEdad,
+  formatFecha,
+  formatProximoRefuerzoDisplay,
+} from "@/lib/date-utils";
 import { exportConsultaPdf } from "@/lib/export-consulta-pdf";
 import { exportInternacionPdf } from "@/lib/export-internacion-pdf";
 import { buildWhatsAppUrl } from "@/lib/phone-utils";
@@ -39,10 +44,6 @@ const tipoClass: Record<string, string> = {
 
 const cardClass =
   "rounded-2xl border border-[#ebe6df] bg-white p-5 shadow-sm";
-
-function emoji(especie: "Perro" | "Gato") {
-  return especie === "Perro" ? "🐶" : "🐱";
-}
 
 function ConsultaHeader({ c }: { c: Consulta }) {
   return (
@@ -70,7 +71,10 @@ function ConsultaCard({
   patient: Pick<Paciente, "nombre" | "especie" | "raza">;
   onEdit: (consulta: Consulta) => void;
 }) {
-  const hasDetails = Boolean(c.peso || c.temp || c.diag || c.trat || c.meds);
+  const esVacuna = c.tipo === "Vacuna";
+  const hasDetails = esVacuna
+    ? Boolean(c.diag || c.trat || c.meds)
+    : Boolean(c.peso || c.temp || c.diag || c.trat || c.meds);
   const [open, setOpen] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const panelId = `consulta-detail-${c.id}`;
@@ -145,22 +149,51 @@ function ConsultaCard({
           aria-labelledby={triggerId}
           className="border-t border-[#e0d9cf] bg-[#faf8f5] px-4 py-3"
         >
-          {(c.peso || c.temp) && (
+          {!esVacuna && (c.peso || c.temp) ? (
             <div className="text-[13px] leading-relaxed text-[#555]">
               {c.peso ? `⚖️ Peso: ${c.peso} kg` : ""}
               {c.peso && c.temp ? " · " : ""}
               {c.temp ? `🌡️ Temp: ${c.temp}°C` : ""}
             </div>
+          ) : null}
+          {esVacuna ? (
+            <>
+              {c.diag ? (
+                <div className="mt-1 text-[13px] leading-relaxed text-[#555]">
+                  🏷️ Marca: {c.diag}
+                </div>
+              ) : null}
+              {c.trat ? (
+                <div className="mt-1 text-[13px] leading-relaxed text-[#555]">
+                  📦 Lote: {c.trat}
+                </div>
+              ) : null}
+              {c.meds ? (
+                <div className="mt-1 text-[13px] leading-relaxed text-[#555]">
+                  📅 Próximo refuerzo:{" "}
+                  {formatProximoRefuerzoDisplay(c.meds)}
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <>
+              {c.diag ? (
+                <div className="mt-1 text-[13px] leading-relaxed text-[#555]">
+                  📋 {c.diag}
+                </div>
+              ) : null}
+              {c.trat ? (
+                <div className="mt-1 text-[13px] leading-relaxed text-[#555]">
+                  💊 {c.trat}
+                </div>
+              ) : null}
+              {c.meds ? (
+                <div className="mt-1 text-[13px] leading-relaxed text-[#555]">
+                  🧴 {c.meds}
+                </div>
+              ) : null}
+            </>
           )}
-          {c.diag ? (
-            <div className="mt-1 text-[13px] leading-relaxed text-[#555]">📋 {c.diag}</div>
-          ) : null}
-          {c.trat ? (
-            <div className="mt-1 text-[13px] leading-relaxed text-[#555]">💊 {c.trat}</div>
-          ) : null}
-          {c.meds ? (
-            <div className="mt-1 text-[13px] leading-relaxed text-[#555]">🧴 {c.meds}</div>
-          ) : null}
         </div>
       ) : null}
       <div className="flex justify-end border-t border-[#e0d9cf]/80 bg-[#faf8f5]/60 px-4 py-2.5">
@@ -251,11 +284,23 @@ function InternacionHistorialCard({
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({
+  label,
+  value,
+  capitalize = false,
+}: {
+  label: string;
+  value: string;
+  capitalize?: boolean;
+}) {
   return (
     <div className="flex justify-between gap-4 py-2">
       <span className="text-[#888]">{label}</span>
-      <span className="text-right font-medium text-[#1a1a1a]">{value}</span>
+      <span
+        className={`text-right font-medium text-[#1a1a1a] ${capitalize ? "capitalize" : ""}`}
+      >
+        {value}
+      </span>
     </div>
   );
 }
@@ -271,8 +316,11 @@ export default function PatientDetailPage() {
     addProximoControl,
     updateProximoControl,
     removeProximoControl,
+    setPatientFoto,
   } = usePatients();
   const [consultaOpen, setConsultaOpen] = useState(false);
+  const [vacunaOpen, setVacunaOpen] = useState(false);
+  const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [editingConsulta, setEditingConsulta] = useState<Consulta | null>(
     null,
   );
@@ -308,12 +356,11 @@ export default function PatientDetailPage() {
     return (
       <AppShell>
         <main
-          className={`${mainClass} flex flex-col items-center justify-center gap-3 py-16 text-[#888]`}
+          className={`${mainClass} flex min-h-[70vh] flex-col items-center justify-center text-[#888]`}
           role="status"
           aria-label="Cargando ficha"
         >
           <LottieSpinner size={140} />
-          <span className="text-sm">Cargando…</span>
         </main>
       </AppShell>
     );
@@ -359,13 +406,29 @@ export default function PatientDetailPage() {
           <div className="flex flex-col gap-6">
             <section className={cardClass}>
               <div className="text-center">
-                <span className="mb-2 block text-[56px] leading-none" aria-hidden>
-                  {emoji(patient.especie)}
-                </span>
-                <h1 className="text-xl font-bold text-[#1a1a1a]">{patient.nombre}</h1>
+                <PatientFichaFotoBlock
+                  patient={patient}
+                  setPatientFoto={setPatientFoto}
+                />
+                <h1 className="text-xl font-bold capitalize text-[#1a1a1a]">
+                  {patient.nombre}
+                </h1>
                 <p className="mt-1 text-sm text-[#888]">
                   {patient.raza || patient.especie} · {calcularEdad(patient.fnac)}
                 </p>
+                {patient.carnetPublicToken ? (
+                  <div className="mt-2 flex justify-center">
+                    <Link
+                      href={`/carnet/${patient.carnetPublicToken}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[#5c1838]/45 bg-[#f5f0eb] px-2 py-1 text-[11px] font-semibold  tracking-wide text-[#5c1838] transition-colors hover:bg-[#ebe6df]"
+                      aria-label="Abrir carnet de vacunación público"
+                    >
+                      Carnet de vacunación
+                    </Link>
+                  </div>
+                ) : null}
                 {patient.internado ? (
                   <div className="mt-3 flex justify-center">
                     <Link
@@ -429,7 +492,11 @@ export default function PatientDetailPage() {
                       </a>
                     ) : null}
                   </div>
-                  <Row label="Nombre" value={patient.dueños[0].nombre || "—"} />
+                  <Row
+                    label="Nombre"
+                    value={patient.dueños[0].nombre || "—"}
+                    capitalize
+                  />
                   {patient.dueños[0].tel ? (
                     <Row label="Teléfono" value={patient.dueños[0].tel} />
                   ) : null}
@@ -456,6 +523,7 @@ export default function PatientDetailPage() {
                     <Row
                       label="Nombre"
                       value={patient.dueños[1].nombre || "—"}
+                      capitalize
                     />
                     {patient.dueños[1].tel ? (
                       <Row label="Teléfono" value={patient.dueños[1].tel} />
@@ -488,16 +556,46 @@ export default function PatientDetailPage() {
                 <h2 className="text-xs font-bold uppercase tracking-wider text-[#5c1838]">
                   Historial de consultas ({patient.consultas?.length ?? 0})
                 </h2>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingConsulta(null);
-                    setConsultaOpen(true);
-                  }}
-                  className="shrink-0 rounded-xl bg-[#5c1838] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#401127] sm:w-auto sm:self-center"
-                >
-                  + Agregar consulta
-                </button>
+                <div className="relative shrink-0 sm:self-center">
+                  <button
+                    type="button"
+                    onClick={() => setAddMenuOpen((v) => !v)}
+                    className="rounded-xl bg-[#5c1838] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#401127]"
+                  >
+                    + Agregar consulta
+                  </button>
+                  {addMenuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setAddMenuOpen(false)} />
+                      <div className="absolute right-0 top-full z-20 pt-1">
+                        <div className="min-w-[190px] overflow-hidden rounded-xl border border-[#e8e0d8] bg-white shadow-lg">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAddMenuOpen(false);
+                              setEditingConsulta(null);
+                              setConsultaOpen(true);
+                            }}
+                            className="w-full px-4 py-2.5 text-left text-sm text-[#333] hover:bg-[#f5f0eb]"
+                          >
+                            Agregar consulta
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAddMenuOpen(false);
+                              setEditingConsulta(null);
+                              setVacunaOpen(true);
+                            }}
+                            className="w-full border-t border-[#e8e0d8] px-4 py-2.5 text-left text-sm text-[#333] hover:bg-[#f5f0eb]"
+                          >
+                            Agregar vacuna
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
               {consultas.length === 0 ? (
                 <div className="py-8 text-center text-sm text-[#aaa]">
@@ -541,10 +639,12 @@ export default function PatientDetailPage() {
         <PatientDangerZone patient={patient} />
 
         <ConsultaModal
-          open={consultaOpen || editingConsulta !== null}
+          open={consultaOpen || vacunaOpen || editingConsulta !== null}
           initialConsulta={editingConsulta}
+          initialTipo={vacunaOpen ? "Vacuna" : undefined}
           onClose={() => {
             setConsultaOpen(false);
+            setVacunaOpen(false);
             setEditingConsulta(null);
           }}
           onSave={async (data) => {

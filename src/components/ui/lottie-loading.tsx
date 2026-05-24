@@ -1,8 +1,15 @@
 "use client";
 
-import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import styles from "./lottie-loading.module.css";
 
-const LOTTIE_SRC = "https://lottie.host/2cacf7a1-146e-4a9b-85e4-72b2bb5ad0fc/wjGU87hC46.lottie";
+const SIZE_CLASS: Record<number, string> = {
+  28: styles.size28,
+  48: styles.size48,
+  56: styles.size56,
+  80: styles.size80,
+  120: styles.size120,
+  140: styles.size140,
+};
 
 export function LottieSpinner({
   className,
@@ -11,13 +18,18 @@ export function LottieSpinner({
   className?: string;
   size?: number;
 }) {
+  const sizeClass = SIZE_CLASS[size] ?? styles.size120;
+
   return (
     <div
-      className={className}
-      style={{ width: size, height: size, background: "transparent" }}
+      className={[styles.root, className].filter(Boolean).join(" ")}
       aria-hidden
     >
-      <DotLottieReact src={LOTTIE_SRC} loop autoplay style={{ background: "transparent" }} />
+      <div className={[styles.threeBody, sizeClass].join(" ")}>
+        <div className={styles.dot} />
+        <div className={styles.dot} />
+        <div className={styles.dot} />
+      </div>
     </div>
   );
 }
@@ -44,12 +56,8 @@ export function DbLoadingOverlay({
       }
       role="status"
       aria-busy="true"
-      aria-label={label ?? "Cargando"}
     >
-      <LottieSpinner size={140} />
-      {label ? (
-        <p className="mt-2 text-sm font-medium text-white">{label}</p>
-      ) : null}
+      <LottieSpinner size={28} />
     </div>
   );
 }

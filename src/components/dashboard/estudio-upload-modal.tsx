@@ -25,6 +25,7 @@ export function EstudioUploadModal({
   const { addEstudio } = usePatients();
   const [categoria, setCategoria] = useState<EstudioCategoria>("Sangre / laboratorio");
   const [titulo, setTitulo] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -33,49 +34,67 @@ export function EstudioUploadModal({
     if (!open) return;
     setCategoria("Sangre / laboratorio");
     setTitulo("");
+    setSelectedFiles([]);
     setError(null);
     setUploading(false);
     if (inputRef.current) inputRef.current.value = "";
   }, [open]);
 
-  const handleFile = async (fileList: FileList | null) => {
-    const file = fileList?.[0];
-    if (!file) return;
+  const handleFileSelection = (fileList: FileList | null) => {
+    setSelectedFiles(fileList ? Array.from(fileList) : []);
+    setError(null);
+  };
+
+  const handleUpload = async () => {
+    if (selectedFiles.length === 0) {
+      setError("Seleccioná al menos un archivo.");
+      return;
+    }
+    const tituloLimpio = titulo.trim();
+    const loteId =
+      selectedFiles.length > 1
+        ? `lote-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+        : undefined;
 
     setError(null);
     setUploading(true);
     try {
-      const form = new FormData();
-      form.set("file", file);
-      form.set("patientId", patientId);
+      for (const file of selectedFiles) {
+        const form = new FormData();
+        form.set("file", file);
+        form.set("patientId", patientId);
 
-      const res = await fetch("/api/blob", {
-        method: "POST",
-        body: form,
-      });
+        const res = await fetch("/api/blob", {
+          method: "POST",
+          body: form,
+        });
 
-      const data = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        url?: string;
-        contentType?: string;
-      };
+        const data = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          url?: string;
+          contentType?: string;
+        };
 
-      if (!res.ok) {
-        throw new Error(data.error || "Error al subir el archivo");
+        if (!res.ok) {
+          throw new Error(data.error || "Error al subir el archivo");
+        }
+
+        if (!data.url || !data.contentType) {
+          throw new Error("Respuesta incompleta del servidor");
+        }
+
+        await addEstudio(patientId, {
+          categoria,
+          titulo: tituloLimpio,
+          loteId,
+          url: data.url,
+          nombreArchivo: file.name,
+          contentType: data.contentType,
+        });
       }
 
-      if (!data.url || !data.contentType) {
-        throw new Error("Respuesta incompleta del servidor");
-      }
-
-      await addEstudio(patientId, {
-        categoria,
-        titulo: titulo.trim(),
-        url: data.url,
-        nombreArchivo: file.name,
-        contentType: data.contentType,
-      });
       setTitulo("");
+      setSelectedFiles([]);
       if (inputRef.current) inputRef.current.value = "";
       onClose();
     } catch (e) {
@@ -168,15 +187,22 @@ export function EstudioUploadModal({
             ref={inputRef}
             id="estudio-modal-file"
             type="file"
+            multiple
             accept="application/pdf,image/jpeg,image/png,image/webp,image/gif,.pdf"
             disabled={uploading}
-            onChange={(ev) => void handleFile(ev.target.files)}
+            onChange={(ev) => handleFileSelection(ev.target.files)}
             className="block w-full text-sm text-[#555] file:mr-3 file:rounded-lg file:border-0 file:bg-[#5c1838] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-[#401127] disabled:opacity-60"
           />
           <p className="mt-1 text-[11px] text-[#999]">
-            Máx. 4 MB. Se guarda en Vercel Blob (requiere token en el servidor).
+            Máx. 4 MB por archivo. Podés seleccionar varios archivos juntos.
           </p>
         </div>
+        {selectedFiles.length > 0 ? (
+          <p className="text-[12px] text-[#666]">
+            {selectedFiles.length} archivo{selectedFiles.length === 1 ? "" : "s"} seleccionado
+            {selectedFiles.length === 1 ? "" : "s"}.
+          </p>
+        ) : null}
         {error ? (
           <p className="text-[13px] font-medium text-red-600" role="alert">
             {error}
@@ -184,6 +210,14 @@ export function EstudioUploadModal({
         ) : null}
       </div>
       <div className="mt-6">
+        <button
+          type="button"
+          onClick={() => void handleUpload()}
+          disabled={uploading}
+          className="mb-2 w-full rounded-xl bg-[#5c1838] py-3 text-[15px] font-semibold text-white hover:bg-[#401127] disabled:opacity-50"
+        >
+          Subir archivo{selectedFiles.length === 1 ? "" : "s"}
+        </button>
         <button
           type="button"
           onClick={requestClose}

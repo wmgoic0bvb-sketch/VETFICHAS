@@ -6,19 +6,29 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import {
+  combinarMaskedAFechaHoraGuardada,
+  esFechaMaskedAnteriorAHoy,
+  isFechaHoraProximoControlValida,
+} from "@/lib/proximo-control-utils";
+import {
   appendEstudio,
   createPatient,
   deletePatient as deletePatientApi,
+  DuplicadoPacienteError,
+  fetchLastUpdated,
   fetchPatients,
   removeEstudioRemote,
   replacePatient,
+  uploadPatientFoto,
 } from "@/lib/patients-api";
+import { DEFAULT_SUCURSAL_ID } from "@/lib/sucursales";
 import type {
   Consulta,
   Estudio,
@@ -33,7 +43,12 @@ export type PacienteEditable = Omit<PacienteDraft, "consultas">;
 interface PatientsContextValue {
   patients: Paciente[];
   ready: boolean;
-  addPatient: (draft: PacienteDraft) => Promise<Paciente>;
+  isRefreshing: boolean;
+  refresh: () => void;
+  addPatient: (
+    draft: PacienteDraft,
+    opts?: { force?: boolean },
+  ) => Promise<Paciente>;
   updatePatient: (id: string, data: PacienteEditable) => Promise<void>;
   addProximoControl: (
     patientId: string,
@@ -61,6 +76,7 @@ interface PatientsContextValue {
     estudio: Omit<Estudio, "id" | "fecha">,
   ) => Promise<void>;
   removeEstudio: (patientId: string, estudioId: string) => Promise<void>;
+  setPatientFoto: (patientId: string, file: Blob) => Promise<Paciente | undefined>;
 }
 
 const PatientsContext = createContext<PatientsContextValue | null>(null);
@@ -69,10 +85,31 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
   const { status } = useSession();
   const [patients, setPatients] = useState<Paciente[]>([]);
   const [ready, setReady] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const isRefreshingRef = useRef(false);
+  const lastServerTs = useRef<number>(0);
 
   const reloadFromServer = useCallback(async () => {
     const list = await fetchPatients();
     setPatients(list);
+  }, []);
+
+  const refresh = useCallback(async () => {
+    if (isRefreshingRef.current) return;
+    isRefreshingRef.current = true;
+    setIsRefreshing(true);
+    try {
+      const [list, ts] = await Promise.all([fetchPatients(), fetchLastUpdated()]);
+      setPatients(list);
+      lastServerTs.current = ts;
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "No se pudieron cargar los pacientes.",
+      );
+    } finally {
+      isRefreshingRef.current = false;
+      setIsRefreshing(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -88,8 +125,11 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     (async () => {
       try {
-        const list = await fetchPatients();
-        if (!cancelled) setPatients(list);
+        const [list, ts] = await Promise.all([fetchPatients(), fetchLastUpdated()]);
+        if (!cancelled) {
+          setPatients(list);
+          lastServerTs.current = ts;
+        }
       } catch (e) {
         toast.error(
           e instanceof Error
@@ -105,18 +145,53 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
     };
   }, [status]);
 
-  const addPatient = useCallback(async (draft: PacienteDraft): Promise<Paciente> => {
-    try {
-      const patient = await createPatient(draft);
-      setPatients((prev) => [patient, ...prev]);
-      return patient;
-    } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : "No se pudo crear el paciente.",
-      );
-      throw e;
-    }
-  }, []);
+  // Poll for remote changes every 45s and auto-reload when detected
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    const id = setInterval(async () => {
+      try {
+        const ts = await fetchLastUpdated();
+        if (ts > lastServerTs.current && !isRefreshingRef.current) {
+          isRefreshingRef.current = true;
+          setIsRefreshing(true);
+          try {
+            const list = await fetchPatients();
+            setPatients(list);
+            lastServerTs.current = ts;
+          } finally {
+            isRefreshingRef.current = false;
+            setIsRefreshing(false);
+          }
+        }
+      } catch {
+        // silent — no toast for background polling errors
+      }
+    }, 10_000);
+    return () => clearInterval(id);
+  }, [status]);
+
+  const addPatient = useCallback(
+    async (
+      draft: PacienteDraft,
+      opts?: { force?: boolean },
+    ): Promise<Paciente> => {
+      try {
+        const patient = await createPatient(draft, opts);
+        setPatients((prev) => [patient, ...prev]);
+        return patient;
+      } catch (e) {
+        if (e instanceof DuplicadoPacienteError) {
+          // No mostrar toast: el wizard abre un modal de confirmación.
+          throw e;
+        }
+        toast.error(
+          e instanceof Error ? e.message : "No se pudo crear el paciente.",
+        );
+        throw e;
+      }
+    },
+    [],
+  );
 
   const removePatient = useCallback(async (id: string) => {
     try {
@@ -143,6 +218,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
         merged = {
           ...cur,
           especie: data.especie,
+          sucursal: data.sucursal ?? null,
           nombre: data.nombre,
           raza: data.raza,
           sexo: data.sexo,
@@ -154,6 +230,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
           estado: data.estado ?? "activo",
           esExterno: data.esExterno,
           esUnicaConsulta: data.esUnicaConsulta,
+          fotoUrl: data.fotoUrl !== undefined ? data.fotoUrl : cur.fotoUrl,
           internado: data.internado,
           datosInternacion:
             data.datosInternacion !== undefined
@@ -290,9 +367,40 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
       setPatients((prev) => {
         const cur = prev.find((p) => p.id === patientId);
         if (!cur) return prev;
+        const refMasked = consulta.meds.trim();
+        const shouldAutoControl =
+          consulta.tipo === "Vacuna" &&
+          /^\d{2}\/\d{2}\/\d{4}$/.test(refMasked) &&
+          !esFechaMaskedAnteriorAHoy(refMasked);
+        const autoFechaHora = shouldAutoControl
+          ? combinarMaskedAFechaHoraGuardada(refMasked, "09:00")
+          : null;
+        const autoNota = shouldAutoControl ? "Refuerzo de vacuna" : "";
+        const exists =
+          shouldAutoControl &&
+          autoFechaHora &&
+          cur.proximosControles.some(
+            (c) => c.fechaHora === autoFechaHora && (c.nota ?? "") === autoNota,
+          );
+        const autoControl: ProximoControl | null =
+          shouldAutoControl &&
+          autoFechaHora &&
+          !exists &&
+          isFechaHoraProximoControlValida(autoFechaHora)
+            ? {
+                id: `pc-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+                fechaHora: autoFechaHora,
+                sucursalId: DEFAULT_SUCURSAL_ID,
+                nota: autoNota,
+                asistencia: null,
+              }
+            : null;
         nextPatient = {
           ...cur,
           consultas: [...(cur.consultas ?? []), consulta],
+          proximosControles: autoControl
+            ? [...cur.proximosControles, autoControl]
+            : cur.proximosControles,
         };
         return prev.map((p) =>
           p.id === patientId ? nextPatient! : p,
@@ -318,7 +426,41 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
         if (idx === -1) return prev;
         const nextList = [...list];
         nextList[idx] = { ...data, id: consultaId };
-        nextPatient = { ...cur, consultas: nextList };
+        const refMasked = data.meds.trim();
+        const shouldAutoControl =
+          data.tipo === "Vacuna" &&
+          /^\d{2}\/\d{2}\/\d{4}$/.test(refMasked) &&
+          !esFechaMaskedAnteriorAHoy(refMasked);
+        const autoFechaHora = shouldAutoControl
+          ? combinarMaskedAFechaHoraGuardada(refMasked, "09:00")
+          : null;
+        const autoNota = shouldAutoControl ? "Refuerzo de vacuna" : "";
+        const exists =
+          shouldAutoControl &&
+          autoFechaHora &&
+          cur.proximosControles.some(
+            (c) => c.fechaHora === autoFechaHora && (c.nota ?? "") === autoNota,
+          );
+        const autoControl: ProximoControl | null =
+          shouldAutoControl &&
+          autoFechaHora &&
+          !exists &&
+          isFechaHoraProximoControlValida(autoFechaHora)
+            ? {
+                id: `pc-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+                fechaHora: autoFechaHora,
+                sucursalId: DEFAULT_SUCURSAL_ID,
+                nota: autoNota,
+                asistencia: null,
+              }
+            : null;
+        nextPatient = {
+          ...cur,
+          consultas: nextList,
+          proximosControles: autoControl
+            ? [...cur.proximosControles, autoControl]
+            : cur.proximosControles,
+        };
         return prev.map((p) => (p.id === patientId ? nextPatient! : p));
       });
       if (nextPatient) await persistOne(nextPatient);
@@ -342,9 +484,28 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
         } catch {
           /* ignore */
         }
+        throw e;
       }
     },
     [reloadFromServer],
+  );
+
+  const setPatientFoto = useCallback(
+    async (patientId: string, file: Blob) => {
+      try {
+        const saved = await uploadPatientFoto(patientId, file);
+        setPatients((prev) =>
+          prev.map((p) => (p.id === patientId ? saved : p)),
+        );
+        return saved;
+      } catch (e) {
+        toast.error(
+          e instanceof Error ? e.message : "No se pudo subir la foto.",
+        );
+        return undefined;
+      }
+    },
+    [],
   );
 
   const removeEstudio = useCallback(
@@ -372,6 +533,8 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
     () => ({
       patients,
       ready,
+      isRefreshing,
+      refresh,
       addPatient,
       updatePatient,
       addProximoControl,
@@ -383,10 +546,13 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
       updateConsulta,
       addEstudio,
       removeEstudio,
+      setPatientFoto,
     }),
     [
       patients,
       ready,
+      isRefreshing,
+      refresh,
       addPatient,
       updatePatient,
       addProximoControl,
@@ -398,6 +564,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
       updateConsulta,
       addEstudio,
       removeEstudio,
+      setPatientFoto,
     ],
   );
 

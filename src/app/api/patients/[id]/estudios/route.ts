@@ -11,6 +11,7 @@ import {
   pacienteParaRespuestaApi,
 } from "@/lib/patient-change-log";
 import { connectMongo } from "@/lib/mongodb";
+import { notifyEstudioSubido } from "@/lib/notify-estudio-subido";
 import { Patient } from "@/models/patient";
 import type { Estudio, EstudioCategoria, ModificacionPaciente } from "@/types/patient";
 
@@ -28,9 +29,9 @@ function unauthorized() {
 }
 
 async function paramId(ctx: {
-  params: Promise<{ id: string }> | { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const p = await Promise.resolve(ctx.params);
+  const p = await ctx.params;
   return p.id;
 }
 
@@ -39,7 +40,9 @@ function isEstudioInput(body: unknown): body is Omit<Estudio, "id" | "fecha"> {
   const o = body as Record<string, unknown>;
   const url = typeof o.url === "string" ? o.url.trim() : "";
   const categoria = o.categoria;
+  const loteId = o.loteId;
   if (!url || typeof categoria !== "string") return false;
+  if (loteId !== undefined && typeof loteId !== "string") return false;
   return CATEGORIAS.includes(categoria as EstudioCategoria);
 }
 
@@ -68,7 +71,8 @@ export const POST = auth(async (req: NextAuthRequest, ctx) => {
     ...body,
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
     fecha: new Date().toISOString(),
-    titulo: typeof body.titulo === "string" ? body.titulo : "",
+    titulo: typeof body.titulo === "string" ? body.titulo.trim() : "",
+    loteId: typeof body.loteId === "string" ? body.loteId.trim() : undefined,
     nombreArchivo:
       typeof body.nombreArchivo === "string" ? body.nombreArchivo : "",
     contentType:
@@ -127,6 +131,18 @@ export const POST = auth(async (req: NextAuthRequest, ctx) => {
     }
 
     const out = pacienteFromMongoLean(updated);
+    const uploaderName =
+      typeof sessionUser.name === "string" && sessionUser.name.trim()
+        ? sessionUser.name.trim()
+        : "";
+    void notifyEstudioSubido({
+      uploaderUserId: sessionUser.id,
+      uploaderName,
+      patientId: id,
+      patientNombre: out.nombre,
+      estudio,
+    }).catch((err) => console.error("[estudios POST] notify", err));
+
     return NextResponse.json({
       patient: pacienteParaRespuestaApi(out, req.auth.user.role),
     });

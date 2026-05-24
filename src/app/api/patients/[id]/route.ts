@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextAuthRequest } from "next-auth";
 import mongoose from "mongoose";
 import { auth } from "@/auth";
+import { generateCarnetPublicToken } from "@/lib/carnet-public";
 import { pacienteFromMongoLean } from "@/lib/mongodb-patient";
 import {
   describePatientChanges,
@@ -11,12 +12,13 @@ import {
   pacienteParaRespuestaApi,
 } from "@/lib/patient-change-log";
 import { connectMongo } from "@/lib/mongodb";
+import { toPascalCase } from "@/lib/name-case";
 import {
   normalizePatient,
   type StoredPatient,
 } from "@/lib/repositories/patient-repository";
 import { Patient } from "@/models/patient";
-import type { ModificacionPaciente } from "@/types/patient";
+import type { ModificacionPaciente, Paciente } from "@/types/patient";
 
 export const runtime = "nodejs";
 
@@ -24,8 +26,8 @@ function unauthorized() {
   return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 }
 
-async function paramId(ctx: { params: Promise<{ id: string }> | { id: string } }) {
-  const p = await Promise.resolve(ctx.params);
+async function paramId(ctx: { params: Promise<{ id: string }> }) {
+  const p = await ctx.params;
   return p.id;
 }
 
@@ -41,9 +43,20 @@ export const GET = auth(async (req: NextAuthRequest, ctx) => {
 
   try {
     await connectMongo();
-    const doc = await Patient.findById(id).lean().exec();
+    let doc = await Patient.findById(id).lean().exec();
     if (!doc) {
       return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+    }
+    const prevTok = (doc as { carnetPublicToken?: string }).carnetPublicToken;
+    if (!prevTok?.trim()) {
+      await Patient.updateOne(
+        { _id: id },
+        { $set: { carnetPublicToken: generateCarnetPublicToken() } },
+      );
+      doc = await Patient.findById(id).lean().exec();
+      if (!doc) {
+        return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+      }
     }
     const patient = pacienteFromMongoLean(doc);
     return NextResponse.json({
@@ -83,6 +96,14 @@ export const PUT = auth(async (req: NextAuthRequest, ctx) => {
 
   const patient = normalizePatient({ ...bodyClean, id } as StoredPatient);
 
+  const fotoUrlParaGuardar = (() => {
+    if (!("fotoUrl" in bodyClean)) return undefined as string | undefined;
+    const v = bodyClean.fotoUrl;
+    if (v === null || v === "") return undefined;
+    if (typeof v === "string" && v.trim()) return v.trim();
+    return undefined;
+  })();
+
   if (patient.id !== id) {
     return NextResponse.json({ error: "El id no coincide" }, { status: 400 });
   }
@@ -95,12 +116,24 @@ export const PUT = auth(async (req: NextAuthRequest, ctx) => {
     }
 
     const pacientePrev = pacienteFromMongoLean(prevDoc);
+    const carnetPrev = (prevDoc as { carnetPublicToken?: string })
+      .carnetPublicToken;
+
+    const fotoUrlMerged =
+      "fotoUrl" in bodyClean ? fotoUrlParaGuardar : pacientePrev.fotoUrl;
+
+    const patientForAudit: Paciente = {
+      ...patient,
+      carnetPublicToken:
+        patient.carnetPublicToken ?? pacientePrev.carnetPublicToken,
+      fotoUrl: fotoUrlMerged,
+    };
 
     const sessionUser = req.auth!.user!;
     let historialModificaciones: ModificacionPaciente[] =
       pacientePrev.historialModificaciones ?? [];
 
-    if (hasPatientClinicalChanges(pacientePrev, patient)) {
+    if (hasPatientClinicalChanges(pacientePrev, patientForAudit)) {
       const usuarioNombre =
         typeof sessionUser.name === "string" && sessionUser.name.trim()
           ? sessionUser.name.trim()
@@ -111,7 +144,7 @@ export const PUT = auth(async (req: NextAuthRequest, ctx) => {
         usuarioId: sessionUser.id,
         usuarioDni: sessionUser.dni,
         usuarioNombre,
-        resumen: describePatientChanges(pacientePrev, patient),
+        resumen: describePatientChanges(pacientePrev, patientForAudit),
       };
       historialModificaciones = mergeHistorialTrasGuardado(
         historialModificaciones,
@@ -124,13 +157,23 @@ export const PUT = auth(async (req: NextAuthRequest, ctx) => {
       {
         $set: {
           especie: patient.especie,
-          nombre: patient.nombre,
+          sucursal: patient.sucursal ?? null,
+          nombre: toPascalCase(patient.nombre),
           raza: patient.raza,
           sexo: patient.sexo,
           fnac: patient.fnac,
           castrado: patient.castrado,
           color: patient.color,
-          dueños: patient.dueños,
+          dueños: [
+            {
+              nombre: toPascalCase(patient.dueños[0]?.nombre ?? ""),
+              tel: patient.dueños[0]?.tel ?? "",
+            },
+            {
+              nombre: toPascalCase(patient.dueños[1]?.nombre ?? ""),
+              tel: patient.dueños[1]?.tel ?? "",
+            },
+          ],
           dir: patient.dir,
           estado: patient.estado,
           esExterno: patient.esExterno,
@@ -142,6 +185,9 @@ export const PUT = auth(async (req: NextAuthRequest, ctx) => {
           consultas: patient.consultas,
           estudios: patient.estudios,
           historialModificaciones,
+          carnetPublicToken:
+            carnetPrev?.trim() || generateCarnetPublicToken(),
+          fotoUrl: fotoUrlMerged,
         },
       },
       { new: true, runValidators: true },

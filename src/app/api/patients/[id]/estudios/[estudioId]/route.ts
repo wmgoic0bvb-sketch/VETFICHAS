@@ -21,9 +21,9 @@ function unauthorized() {
 }
 
 async function paramIds(ctx: {
-  params: Promise<{ id: string; estudioId: string }> | { id: string; estudioId: string };
+  params: Promise<{ id: string; estudioId: string }>;
 }) {
-  const p = await Promise.resolve(ctx.params);
+  const p = await ctx.params;
   return p;
 }
 

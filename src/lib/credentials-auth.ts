@@ -12,6 +12,7 @@ type UserLean = {
   name?: string | null;
   imageData?: string | null;
   role?: string | null;
+  sucursal?: string | null;
 };
 
 function digitsOnlyDni(input: string): string {
@@ -113,11 +114,17 @@ export async function authorizeWithDniPassword(
   const role = roleFromDb(doc.role ?? undefined);
 
   const userId = doc._id.toString();
+  const sucursal =
+    doc.sucursal === "AVENIDA" || doc.sucursal === "VILLEGAS" || doc.sucursal === "MITRE"
+      ? doc.sucursal
+      : null;
+
   return {
     id: userId,
     dni: dniOut,
     name: doc.name ?? undefined,
     image: doc.imageData ? `/api/users/${userId}/avatar` : undefined,
     role,
+    sucursal,
   };
 }

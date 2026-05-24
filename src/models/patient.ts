@@ -38,6 +38,7 @@ const consultaSchema = new Schema(
 const estudioSchema = new Schema(
   {
     id: { type: String, required: true },
+    loteId: { type: String },
     categoria: { type: String, required: true },
     titulo: { type: String, default: "" },
     url: { type: String, required: true },
@@ -131,7 +132,14 @@ const internacionHistorialSchema = new Schema(
 const patientSchema = new Schema(
   {
     especie: { type: String, enum: ["Perro", "Gato"], required: true },
+    sucursal: {
+      type: String,
+      enum: ["AVENIDA", "VILLEGAS", "MITRE", null],
+      default: null,
+    },
     nombre: { type: String, required: true, trim: true },
+    /** URL pública en Vercel Blob (foto de perfil). */
+    fotoUrl: { type: String, trim: true },
     raza: { type: String, default: "" },
     sexo: { type: String, default: "" },
     fnac: { type: String, default: "" },
@@ -165,6 +173,13 @@ const patientSchema = new Schema(
     datosInternacion: { type: datosInternacionSchema, required: false },
     historialInternaciones: { type: [internacionHistorialSchema], default: [] },
     proximosControles: { type: [proximoControlSchema], default: [] },
+    /** URL pública `/carnet/[token]` (único, opaco). */
+    carnetPublicToken: {
+      type: String,
+      trim: true,
+      sparse: true,
+      unique: true,
+    },
     consultas: { type: [consultaSchema], default: [] },
     estudios: { type: [estudioSchema], default: [] },
     historialModificaciones: {

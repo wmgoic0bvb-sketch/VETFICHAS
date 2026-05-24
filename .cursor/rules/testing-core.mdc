@@ -1,0 +1,10 @@
+---
+description: Forzar tests en lógica crítica de veterinaria
+globs: ["src/lib/export-*.ts", "src/lib/date-utils.ts", "src/app/api/patients/[id]/**"]
+alwaysApply: false
+---
+
+# Testing de Lógica Crítica
+- **Funciones Core:** Generación de PDFs (`jsPDF`), lógica de egreso (fallecimiento/alta), y el Audit Trail (`patient-change-log.ts`).
+- **Requisito:** Cualquier cambio en estas funciones DEBE incluir un archivo `.test.ts`. 
+- **Validación:** Asegúrate de que los cálculos de fechas (edad del animal, tiempo de internación) tengan cobertura de tests unitarios para evitar errores médicos.

@@ -3,9 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   combinarMaskedAFechaHoraGuardada,
-  diasCalendarioHastaFechaHora,
-  esControlFechaPasadaOHoy,
-  esControlFechaYaOcurrida,
   esFechaMaskedAnteriorAHoy,
   fechaHoraGuardadaToMaskedInputs,
   isFechaHoraProximoControlValida,
@@ -13,11 +10,8 @@ import {
   sortProximosControlesPorFecha,
 } from "@/lib/proximo-control-utils";
 import { DbLoadingOverlay } from "@/components/ui/lottie-loading";
-import {
-  DEFAULT_SUCURSAL_ID,
-  getSucursalById,
-  SUCURSALES,
-} from "@/lib/sucursales";
+import { ControlCard } from "./control-card";
+import { DEFAULT_SUCURSAL_ID, SUCURSALES } from "@/lib/sucursales";
 import type { Paciente, ProximoControl } from "@/types/patient";
 
 const HORA_DEFECTO_GUARDADO = "09:00";
@@ -28,22 +22,6 @@ const shellClass =
 
 const inputClass =
   "w-full rounded-xl border-[1.5px] border-[#e8e0d8] bg-[#faf9f7] px-3.5 py-2.5 font-mono text-[15px] tabular-nums tracking-wide outline-none transition-colors placeholder:text-[#c4bbb0] focus:border-[#5c1838] focus:bg-white";
-
-function badgeFor(fechaHora: string) {
-  const d = diasCalendarioHastaFechaHora(fechaHora);
-  if (d !== null && d >= 0 && d <= 7) {
-    return (
-      <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-semibold text-amber-900">
-        Próximo
-      </span>
-    );
-  }
-  return (
-    <span className="rounded-full bg-yellow-100 px-2.5 py-0.5 text-[11px] font-semibold text-yellow-900">
-      Programado
-    </span>
-  );
-}
 
 type FormMode = null | { type: "new" } | { type: "edit"; id: string };
 
@@ -179,107 +157,17 @@ export function ProximosControlesSection({
         </div>
       ) : null}
 
-      <ul className="space-y-3">
-        {ordenados.map((pc) => {
-          const yaOcurrio = esControlFechaYaOcurrida(pc.fechaHora);
-          const puedeMarcarAsistencia = esControlFechaPasadaOHoy(pc.fechaHora);
-          const vistaFecha = fechaHoraGuardadaToMaskedInputs(pc.fechaHora).fecha;
-          return (
-            <li
-              key={pc.id}
-              className={`rounded-xl border p-4 ${
-                yaOcurrio
-                  ? "border-stone-200 bg-stone-100/90 text-stone-500"
-                  : "border-[#b7d5c9] bg-[#f0faf5] text-[#1a1a1a]"
-              }`}
-            >
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                <span
-                  className={`text-lg font-semibold ${
-                    yaOcurrio ? "text-stone-500" : "text-[#401127]"
-                  }`}
-                >
-                  {vistaFecha || pc.fechaHora}
-                </span>
-                {puedeMarcarAsistencia ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPersisting(true);
-                      void Promise.resolve(
-                        onUpdate(pc.id, {
-                          asistencia:
-                            pc.asistencia === "ausente" ? "asistio" : "ausente",
-                        }),
-                      ).finally(() => setPersisting(false));
-                    }}
-                    className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 ${
-                      pc.asistencia === "ausente"
-                        ? "bg-red-100 text-red-800 ring-red-300 focus-visible:ring-red-400"
-                        : "bg-emerald-100 text-emerald-900 ring-emerald-300 focus-visible:ring-emerald-500"
-                    }`}
-                  >
-                    {pc.asistencia === "ausente" ? "Ausente" : "Realizado"}
-                  </button>
-                ) : (
-                  badgeFor(pc.fechaHora)
-                )}
-              </div>
-
-              {!yaOcurrio ? (
-                <p className="mt-2 text-sm font-medium text-[#1a1a1a]">
-                  📍 {getSucursalById(pc.sucursalId)?.nombre ?? pc.sucursalId}
-                </p>
-              ) : null}
-
-              {pc.nota ? (
-                <p
-                  className={`mt-2 text-sm leading-relaxed ${
-                    yaOcurrio ? "text-stone-500" : "text-[#333]"
-                  }`}
-                >
-                  {pc.nota}
-                </p>
-              ) : null}
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  disabled={yaOcurrio}
-                  title={
-                    yaOcurrio
-                      ? "El control ya se realizó. Agregá uno nuevo abajo."
-                      : undefined
-                  }
-                  onClick={() => setFormMode({ type: "edit", id: pc.id })}
-                  className={
-                    yaOcurrio
-                      ? "cursor-not-allowed rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-sm font-medium text-stone-400"
-                      : "rounded-xl border border-[#5c1838] bg-white px-3 py-2 text-sm font-medium text-[#401127] hover:bg-[#e8f5ef]"
-                  }
-                >
-                  Editar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPersisting(true);
-                    void Promise.resolve(onRemove(pc.id)).finally(() =>
-                      setPersisting(false),
-                    );
-                  }}
-                  className={`rounded-xl border px-3 py-2 text-sm font-medium ${
-                    yaOcurrio
-                      ? "border-stone-300 bg-stone-50/80 text-stone-600 hover:bg-stone-100"
-                      : "border-[#e8e0d8] bg-transparent text-[#666] hover:bg-[#f5f0eb]"
-                  }`}
-                >
-                  Quitar
-                </button>
-              </div>
-            </li>
-          );
-        })}
+      <ul className="space-y-2">
+        {ordenados.map((pc) => (
+          <ControlCard
+            key={pc.id}
+            pc={pc}
+            onUpdate={onUpdate}
+            onRemove={onRemove}
+            onEdit={(id) => setFormMode({ type: "edit", id })}
+            setPersisting={setPersisting}
+          />
+        ))}
       </ul>
 
       {ordenados.length > 0 && !formMode ? (
