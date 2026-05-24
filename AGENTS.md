@@ -2,7 +2,9 @@
 # This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
-- Mantener la modularidad. 
+
+- Mantener la modularidad.
+- No usar estilos inline, mantener estilos en archivos separados.
 - No crear archivos de más de 300 lìneas
 - DRY - Investiga si algo ya existe en el proyecto.
 - Separar UI, lógica de negocio y persistencia.
