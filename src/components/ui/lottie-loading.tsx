@@ -1,9 +1,5 @@
 "use client";
 
-import { DotLottieReact } from "@lottiefiles/dotlottie-react";
-
-const LOTTIE_SRC = "https://lottie.host/2cacf7a1-146e-4a9b-85e4-72b2bb5ad0fc/wjGU87hC46.lottie";
-
 export function LottieSpinner({
   className,
   size = 120,
@@ -11,13 +7,32 @@ export function LottieSpinner({
   className?: string;
   size?: number;
 }) {
+  const ringWidth = Math.max(3, Math.round(size / 14));
+  const coreSize = Math.max(8, Math.round(size / 5));
+
   return (
     <div
-      className={className}
-      style={{ width: size, height: size, background: "transparent" }}
+      className={`relative inline-flex items-center justify-center ${className ?? ""}`}
+      style={{ width: size, height: size }}
       aria-hidden
     >
-      <DotLottieReact src={LOTTIE_SRC} loop autoplay style={{ background: "transparent" }} />
+      <div
+        className="absolute rounded-full border-[#8B1A4A]/15 border-t-[#8B1A4A] animate-spin"
+        style={{
+          inset: ringWidth / 2,
+          borderWidth: ringWidth,
+        }}
+      />
+      <div
+        className="absolute rounded-full border border-[#8B1A4A]/25"
+        style={{
+          inset: ringWidth * 2.1,
+        }}
+      />
+      <div
+        className="rounded-full bg-[#8B1A4A]/85 animate-pulse"
+        style={{ width: coreSize, height: coreSize }}
+      />
     </div>
   );
 }
