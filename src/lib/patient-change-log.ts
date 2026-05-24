@@ -77,6 +77,9 @@ export function describePatientChanges(prev: Paciente, next: Paciente): string {
     );
     partes.push(detalleInternacion || "Datos de internación");
   }
+  if (!deepEqual(prev.historialInternaciones, next.historialInternaciones)) {
+    partes.push("Historial de internaciones");
+  }
   if (!deepEqual(prev.proximosControles, next.proximosControles)) {
     partes.push("Próximos controles");
   }
