@@ -43,15 +43,15 @@ async function userRole(request: NextRequest): Promise<string | undefined> {
 }
 
 async function paramId(ctx: {
-  params: Promise<{ id: string }> | { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const p = await Promise.resolve(ctx.params);
+  const p = await ctx.params;
   return p.id;
 }
 
 export async function POST(
   request: NextRequest,
-  ctx: { params: Promise<{ id: string }> | { id: string } },
+  ctx: { params: Promise<{ id: string }> },
 ) {
   const auth = await requireUserToken(request);
   if (!auth.ok && auth.error === "config") {
