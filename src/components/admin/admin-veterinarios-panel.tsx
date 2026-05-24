@@ -61,7 +61,6 @@ export function AdminVeterinariosPanel() {
             aria-label="Cargando veterinarios"
           >
             <LottieSpinner size={120} />
-            <span className="text-sm text-[#888]">Cargando…</span>
           </div>
         ) : vets.length === 0 ? (
           <p className="p-8 text-center text-[#888]">

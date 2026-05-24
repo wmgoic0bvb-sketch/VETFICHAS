@@ -356,12 +356,11 @@ export default function PatientDetailPage() {
     return (
       <AppShell>
         <main
-          className={`${mainClass} flex flex-col items-center justify-center gap-3 py-16 text-[#888]`}
+          className={`${mainClass} flex min-h-[70vh] flex-col items-center justify-center text-[#888]`}
           role="status"
           aria-label="Cargando ficha"
         >
           <LottieSpinner size={140} />
-          <span className="text-sm">Cargando…</span>
         </main>
       </AppShell>
     );

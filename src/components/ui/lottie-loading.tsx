@@ -1,5 +1,16 @@
 "use client";
 
+import styles from "./lottie-loading.module.css";
+
+const SIZE_CLASS: Record<number, string> = {
+  28: styles.size28,
+  48: styles.size48,
+  56: styles.size56,
+  80: styles.size80,
+  120: styles.size120,
+  140: styles.size140,
+};
+
 export function LottieSpinner({
   className,
   size = 120,
@@ -7,32 +18,18 @@ export function LottieSpinner({
   className?: string;
   size?: number;
 }) {
-  const ringWidth = Math.max(3, Math.round(size / 14));
-  const coreSize = Math.max(8, Math.round(size / 5));
+  const sizeClass = SIZE_CLASS[size] ?? styles.size120;
 
   return (
     <div
-      className={`relative inline-flex items-center justify-center ${className ?? ""}`}
-      style={{ width: size, height: size }}
+      className={[styles.root, className].filter(Boolean).join(" ")}
       aria-hidden
     >
-      <div
-        className="absolute rounded-full border-[#8B1A4A]/15 border-t-[#8B1A4A] animate-spin"
-        style={{
-          inset: ringWidth / 2,
-          borderWidth: ringWidth,
-        }}
-      />
-      <div
-        className="absolute rounded-full border border-[#8B1A4A]/25"
-        style={{
-          inset: ringWidth * 2.1,
-        }}
-      />
-      <div
-        className="rounded-full bg-[#8B1A4A]/85 animate-pulse"
-        style={{ width: coreSize, height: coreSize }}
-      />
+      <div className={[styles.threeBody, sizeClass].join(" ")}>
+        <div className={styles.dot} />
+        <div className={styles.dot} />
+        <div className={styles.dot} />
+      </div>
     </div>
   );
 }
@@ -59,12 +56,8 @@ export function DbLoadingOverlay({
       }
       role="status"
       aria-busy="true"
-      aria-label={label ?? "Cargando"}
     >
-      <LottieSpinner size={140} />
-      {label ? (
-        <p className="mt-2 text-sm font-medium text-white">{label}</p>
-      ) : null}
+      <LottieSpinner size={28} />
     </div>
   );
 }

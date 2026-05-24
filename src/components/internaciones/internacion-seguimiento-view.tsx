@@ -201,9 +201,8 @@ export function InternacionSeguimientoView() {
 
   if (!ready) {
     return (
-      <main className="mx-auto flex w-full max-w-[900px] flex-1 flex-col items-center justify-center gap-3 px-4 py-16 text-[#888]">
+      <main className="mx-auto flex min-h-[70vh] w-full max-w-[900px] flex-1 flex-col items-center justify-center px-4 text-[#888]">
         <LottieSpinner size={140} />
-        <span className="text-sm">Cargando…</span>
       </main>
     );
   }
